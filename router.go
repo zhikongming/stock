@@ -11,5 +11,5 @@ import (
 func customizedRegister(r *server.Hertz) {
 	r.GET("/ping", handler.Ping)
 
-	// your code ...
+	r.POST("/task/stock/code", handler.SyncStockCode)
 }
