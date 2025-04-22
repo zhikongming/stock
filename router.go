@@ -12,4 +12,6 @@ func customizedRegister(r *server.Hertz) {
 	r.GET("/ping", handler.Ping)
 
 	r.POST("/task/stock/code", handler.SyncStockCode)
+	r.POST("/analyze/stock/code", handler.AnalyzeStockCode)
+	r.POST("/filter/stock/code", handler.FilterStockCode)
 }

@@ -82,3 +82,24 @@ func (d *StockDailyData) GetColumnIndexByKey(keyName string) int {
 	}
 	return -1
 }
+
+type StockRelationResp struct {
+	ErrorCode        int                `json:"error_code"`
+	ErrorDescription string             `json:"error_description"`
+	Data             *StockRelationData `json:"data"`
+}
+
+type StockRelationData struct {
+	StockItemList []*StockRelationItem `json:"item"`
+}
+
+type StockRelationItem struct {
+	Symbol   string  `json:"symbol"`
+	Current  float64 `json:"current"`
+	Chg      float64 `json:"chg"`
+	Premium  float64 `json:"premium"`
+	Name     string  `json:"name"`
+	Type     int     `json:"type"`
+	Percent  float64 `json:"percent"`
+	TickSize float64 `json:"tick_size"`
+}
