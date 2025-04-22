@@ -1,8 +1,8 @@
 DB:
   host: "localhost"
   port: 3306
-  user: "stock"
-  password: "stock_zw_zzy_01"
+  user: "root"
+  password: ""
   dbname: "stock_agent"
 Server:
-  port: 80
+  port: 6789
