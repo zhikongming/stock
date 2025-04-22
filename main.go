@@ -4,9 +4,13 @@ package main
 
 import (
 	"github.com/cloudwego/hertz/pkg/app/server"
+	"github.com/zhikongming/stock/biz/config"
 )
 
 func main() {
+
+	config.InitConfig()
+
 	h := server.Default(
 		server.WithHostPorts(":6789"),
 	)

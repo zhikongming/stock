@@ -12,22 +12,37 @@ import (
 	"github.com/zhikongming/stock/utils"
 )
 
+const (
+	ShortPeriod  = 12
+	LongPeriod   = 26
+	SignalPeriod = 9
+
+	KdjRsvPeriod = 9
+	KdjEmaPeriod = 3
+)
+
 func SyncStockCode(ctx context.Context, req *model.SyncStockCodeReq) error {
-	var err error
+	if len(req.Code) != 0 {
+		return syncOneStockCode(ctx, req)
+	} else {
+		return syncAllStockCode(ctx, req)
+	}
+}
+
+func syncOneStockCode(ctx context.Context, req *model.SyncStockCodeReq) error {
 	// 判断代码是否存在
-	if !dal.IsStockCodeExist(req.Code) {
-		err = dal.CreateStockCode(req.Code)
+	exist, err := dal.IsStockCodeExist(ctx, req.Code)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		err = SyncStockBasic(ctx, req)
 		if err != nil {
 			return err
 		}
 	}
 
-	// err = SyncStockBaiscData(ctx, req)
-	// if err != nil {
-	// 	return err
-	// }
-
-	err = SyncStockDailyData(ctx, req)
+	err = SyncStockDailyPrice(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -35,89 +50,145 @@ func SyncStockCode(ctx context.Context, req *model.SyncStockCodeReq) error {
 	return nil
 }
 
-func SyncStockBaiscData(ctx context.Context, req *model.SyncStockCodeReq) error {
-	// 检查是否存在股票基础数据, 如果不存在就同步数据
-	if !dal.IsStockBasicExist(req.Code) {
-		err := dal.CreateStockBasic(req.Code)
+func syncAllStockCode(ctx context.Context, req *model.SyncStockCodeReq) error {
+	// 获取所有股票代码
+	stockCodeList, err := dal.GetAllStockCode(ctx)
+	if err != nil {
+		return err
+	}
+	for _, stockCode := range stockCodeList {
+		tmpReq := model.SyncStockCodeReq{
+			Code: stockCode.CompanyCode,
+		}
+		err = SyncStockDailyPrice(ctx, &tmpReq)
 		if err != nil {
 			return err
 		}
 	}
-	stockBasicData, err := dal.GetStockBasic(req.Code)
-	fmt.Printf("stockBasicData: %v, err: %v\n", stockBasicData, err)
-
-	if stockBasicData == nil || err != nil {
-		stockBasicData, err := GetRemoteStockBasic(ctx, req.Code)
-		if err != nil {
-			return err
-		}
-		err = dal.SaveStockBasic(req.Code, stockBasicData)
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
-func SyncStockDailyData(ctx context.Context, req *model.SyncStockCodeReq) error {
+func SyncStockBasic(ctx context.Context, req *model.SyncStockCodeReq) error {
 	// 检查是否存在股票基础数据, 如果不存在就同步数据
-	if !dal.IsStockDailyExist(req.Code) {
-		err := dal.CreateStockDaily(req.Code)
-		if err != nil {
-			return err
-		}
+	stockBasicData, err := GetRemoteStockCode(ctx, req.Code)
+	if err != nil {
+		return err
 	}
-	localStockDailyData, _ := dal.GetStockDaily(req.Code)
-	localStockDailyMap := make(map[string]struct{})
-	for _, item := range localStockDailyData {
-		localStockDailyMap[item.Date] = struct{}{}
+	stockCode := &dal.StockCode{
+		CompanyCode:   req.Code,
+		CompanyCodeHK: "",
+		CompanyName:   stockBasicData.OrgShortNameCN,
+		CompanyNameHK: "",
+		ClassiName:    stockBasicData.ClassiName,
+		BusinessType:  req.BusinessType,
+		ListedDate:    utils.TimestampToDate(stockBasicData.ListedDate / 1000),
 	}
 
-	if localStockDailyData == nil {
-		localStockDailyData = make([]*model.LocalStockDailyData, 0)
+	// 	获取相关股票，以确定HK代码
+	stockRelationList, err := GetRemoteStockRelation(ctx, req.Code)
+	if err != nil {
+		return err
+	}
+	if len(stockRelationList) > 0 {
+		stockCode.CompanyCodeHK = stockRelationList[0].Symbol
+		stockCode.CompanyNameHK = stockRelationList[0].Name
+	}
+
+	err = dal.CreateStockCode(ctx, stockCode)
+	return err
+}
+
+func SyncStockDailyPrice(ctx context.Context, req *model.SyncStockCodeReq) error {
+	// 检查是否存在股票基础数据, 如果不存在就同步数据
+	localStockDailyData, err := dal.GetLastStockPrice(ctx, req.Code)
+	if err != nil {
+		return err
 	}
 	dateTime := time.Now()
 	stockDailyData, err := GetRemoteStockDaily(ctx, req.Code, dateTime)
 	if err != nil {
 		return err
 	}
+	stockPriceList := make([]*dal.StockPrice, 0)
 	for _, item := range stockDailyData.Item {
 		timestampIndex := stockDailyData.GetColumnIndexByKey("timestamp")
 		timestamp, _ := strconv.ParseInt(utils.ToString(item[timestampIndex]), 10, 64)
 		date := utils.TimestampToDate(timestamp / int64(time.Microsecond))
-		if _, ok := localStockDailyMap[date]; ok {
-			continue
-		}
-		localStockDailyData = append(localStockDailyData, &model.LocalStockDailyData{
-			Date:          date,
-			PriceHigh:     utils.Float64KeepDecimal(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("high")]), 2),
-			PriceLow:      utils.Float64KeepDecimal(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("low")]), 2),
-			PriceOpen:     utils.Float64KeepDecimal(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("open")]), 2),
-			PriceClose:    utils.Float64KeepDecimal(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("close")]), 2),
-			ChangePercent: utils.Float64KeepDecimal(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("percent")]), 2),
-			Amount:        int64(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("amount")])),
-			BollingUp:     0,
-			BollingDown:   0,
-			BollingMid:    0,
-			Ma5:           0,
-			Ma10:          0,
-			Ma20:          0,
-			Ma30:          0,
-			Ma60:          0,
+		stockPriceList = append(stockPriceList, &dal.StockPrice{
+			CompanyCode: req.Code,
+			Date:        utils.ParseDate(date),
+			PriceHigh:   utils.Float64KeepDecimal(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("high")]), 2),
+			PriceLow:    utils.Float64KeepDecimal(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("low")]), 2),
+			PriceOpen:   utils.Float64KeepDecimal(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("open")]), 2),
+			PriceClose:  utils.Float64KeepDecimal(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("close")]), 2),
+			Amount:      int64(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("amount")])),
+			BollingUp:   0,
+			BollingDown: 0,
+			BollingMid:  0,
+			Ma5:         0,
+			Ma10:        0,
+			Ma20:        0,
+			Ma30:        0,
+			Ma60:        0,
+			MacdDif:     0,
+			MacdDea:     0,
+			KdjK:        0,
+			KdjD:        0,
+			KdjJ:        0,
 		})
 	}
 
-	CalculateMaAndBolling(localStockDailyData)
-	err = dal.SaveStockDaily(req.Code, localStockDailyData)
-	if err != nil {
-		return err
+	CalculateMa(stockPriceList)
+	CalculateBolling(stockPriceList)
+	CalculateMacd(stockPriceList)
+	CalculateKdj(stockPriceList)
+	currentTime := time.Now()
+	for _, item := range stockPriceList {
+		if localStockDailyData != nil && !utils.IsDateGreaterThan(utils.FormatDate(item.Date), utils.FormatDate(localStockDailyData.Date)) {
+			// 检查是否需要更新
+			stockPrice, err := dal.GetStockPriceByCodeAndDate(ctx, item.CompanyCode, utils.FormatDate(item.Date))
+			if err != nil {
+				return err
+			}
+			if stockPrice == nil {
+				continue
+			}
+			if stockPrice.BollingUp == 0.0 || stockPrice.BollingDown == 0.0 || stockPrice.BollingMid == 0.0 ||
+				stockPrice.Ma5 == 0.0 || stockPrice.Ma10 == 0.0 || stockPrice.Ma20 == 0.0 || stockPrice.Ma30 == 0.0 || stockPrice.Ma60 == 0.0 ||
+				stockPrice.MacdDif == 0.0 || stockPrice.MacdDea == 0.0 || stockPrice.KdjK == 0.0 || stockPrice.KdjD == 0.0 || stockPrice.KdjJ == 0.0 {
+				stockPrice.BollingDown = item.BollingDown
+				stockPrice.BollingMid = item.BollingMid
+				stockPrice.BollingUp = item.BollingUp
+				stockPrice.Ma5 = item.Ma5
+				stockPrice.Ma10 = item.Ma10
+				stockPrice.Ma20 = item.Ma20
+				stockPrice.Ma30 = item.Ma30
+				stockPrice.Ma60 = item.Ma60
+				stockPrice.MacdDif = item.MacdDif
+				stockPrice.MacdDea = item.MacdDea
+				stockPrice.KdjK = item.KdjK
+				stockPrice.KdjD = item.KdjD
+				stockPrice.KdjJ = item.KdjJ
+				err = dal.UpdateStockPrice(ctx, stockPrice)
+				if err != nil {
+					return err
+				}
+			}
+			continue
+		}
+		closeTime := fmt.Sprintf("%s 16:00:00", utils.FormatDate(item.Date))
+		closeTimeStamp := utils.ParseTime(closeTime)
+		if currentTime.After(closeTimeStamp) {
+			err = dal.CreateStockPrice(ctx, item)
+			if err != nil {
+				return err
+			}
+		}
 	}
-
 	return nil
 }
 
-func CalculateMaAndBolling(dailyData []*model.LocalStockDailyData) {
+func CalculateMa(dailyData []*dal.StockPrice) {
 	maSum5 := 0.0
 	maSum10 := 0.0
 	maSum20 := 0.0
@@ -155,6 +226,14 @@ func CalculateMaAndBolling(dailyData []*model.LocalStockDailyData) {
 			if i >= 59 {
 				item.Ma60 = utils.Float64KeepDecimal(maSum60/60.0, 2)
 			}
+		}
+	}
+}
+
+func CalculateBolling(dailyData []*dal.StockPrice) {
+	for i := 0; i < len(dailyData); i++ {
+		item := dailyData[i]
+		if i >= 19 {
 			item.BollingMid = item.Ma20
 			standardDeviation := CalculateStandardDeviation(dailyData[i-19:i+1], item.Ma20)
 			item.BollingUp = utils.Float64KeepDecimal(item.Ma20+standardDeviation*2, 2)
@@ -163,7 +242,7 @@ func CalculateMaAndBolling(dailyData []*model.LocalStockDailyData) {
 	}
 }
 
-func CalculateStandardDeviation(dailyData []*model.LocalStockDailyData, sma float64) float64 {
+func CalculateStandardDeviation(dailyData []*dal.StockPrice, sma float64) float64 {
 	sum := 0.0
 	for _, item := range dailyData {
 		deviation := item.PriceClose - sma
@@ -171,4 +250,123 @@ func CalculateStandardDeviation(dailyData []*model.LocalStockDailyData, sma floa
 	}
 	variance := sum / float64(len(dailyData))
 	return math.Sqrt(variance)
+}
+
+func getPriceCloseList(dailyData []*dal.StockPrice) []float64 {
+	priceCloseList := make([]float64, len(dailyData))
+	for i := 0; i < len(dailyData); i++ {
+		priceCloseList[i] = dailyData[i].PriceClose
+	}
+	return priceCloseList
+}
+
+func CalculateMacd(dailyData []*dal.StockPrice) {
+	n := len(dailyData)
+	priceList := getPriceCloseList(dailyData)
+	ema12 := calculateEMA(priceList, ShortPeriod, true)
+	ema26 := calculateEMA(priceList, LongPeriod, true)
+	dif := make([]float64, n)
+	for i := 0; i < n; i++ {
+		dif[i] = ema12[i] - ema26[i]
+	}
+	dea := calculateEMA(dif, SignalPeriod, false)
+	for i := 0; i < n; i++ {
+		dailyData[i].MacdDif = utils.Float64KeepDecimal(dif[i], 2)
+		dailyData[i].MacdDea = utils.Float64KeepDecimal(dea[i], 2)
+	}
+}
+
+// 计算EMA
+// data: 收盘价序列
+// period: 周期（如12或26）
+// initialSMA: 是否用前period日的SMA作为EMA初始值
+func calculateEMA(data []float64, period int, initialSMA bool) []float64 {
+	ema := make([]float64, len(data))
+	if len(data) < period {
+		return ema // 数据不足时返回空值
+	}
+
+	// 计算初始值（SMA或首日收盘价）
+	initial := 0.0
+	if initialSMA {
+		for i := 0; i < period; i++ {
+			initial += data[i]
+		}
+		initial /= float64(period)
+	} else {
+		initial = data[0]
+	}
+
+	// 计算EMA
+	multiplier := 2.0 / (float64(period) + 1)
+	ema[period-1] = initial // 初始EMA
+
+	for i := period; i < len(data); i++ {
+		ema[i] = (data[i]-ema[i-1])*multiplier + ema[i-1]
+	}
+
+	return ema
+}
+
+func CalculateKdj(dailyData []*dal.StockPrice) {
+	length := len(dailyData)
+	K := make([]float64, length)
+	D := make([]float64, length)
+	J := make([]float64, length)
+	RSV := make([]float64, length)
+
+	for i := 0; i < length; i++ {
+		// 计算RSV需要至少N天的数据
+		if i < KdjRsvPeriod-1 {
+			RSV[i] = 0.0
+			continue
+		}
+
+		// 获取最近N天的数据
+		start := i - KdjRsvPeriod + 1
+		if start < 0 {
+			start = 0
+		}
+		window := dailyData[start : i+1]
+
+		// 计算最高价和最低价
+		highestHigh := window[0].PriceHigh
+		lowestLow := window[0].PriceLow
+		for _, d := range window {
+			if d.PriceHigh > highestHigh {
+				highestHigh = d.PriceHigh
+			}
+			if d.PriceLow < lowestLow {
+				lowestLow = d.PriceLow
+			}
+		}
+
+		// 计算RSV
+		if math.Abs(highestHigh-lowestLow) < 1e-6 {
+			RSV[i] = 0.0
+		} else {
+			RSV[i] = (dailyData[i].PriceClose - lowestLow) / (highestHigh - lowestLow) * 100
+		}
+
+		// 初始化K和D
+		if i == KdjRsvPeriod-1 {
+			K[i] = RSV[i]
+			D[i] = K[i]
+		} else {
+			// 计算K值：前一日K的2/3 + 当日RSV的1/3
+			K[i] = (2.0/3.0)*K[i-1] + (1.0/3.0)*RSV[i]
+			// 计算D值：前一日D的2/3 + 当日K的1/3
+			D[i] = (2.0/3.0)*D[i-1] + (1.0/3.0)*K[i]
+		}
+
+		// 计算J值
+		J[i] = 3*K[i] - 2*D[i]
+	}
+
+	// 将计算结果赋值给DailyData
+	for i := 0; i < length; i++ {
+		dailyData[i].KdjK = utils.Float64KeepDecimal(K[i], 2)
+		dailyData[i].KdjD = utils.Float64KeepDecimal(D[i], 2)
+		dailyData[i].KdjJ = utils.Float64KeepDecimal(J[i], 2)
+	}
 }
