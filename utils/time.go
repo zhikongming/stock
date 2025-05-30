@@ -3,8 +3,9 @@ package utils
 import "time"
 
 const (
-	DateFormat = "2006-01-02"
-	TimeFormat = "2006-01-02 15:04:05"
+	DateFormat  = "2006-01-02"
+	TimeFormat  = "2006-01-02 15:04:05"
+	Date2Format = "20060102"
 )
 
 func TimestampToDate(timestamp int64) string {
@@ -12,12 +13,25 @@ func TimestampToDate(timestamp int64) string {
 	return t.Format(DateFormat)
 }
 
+func TimeToTimestamp(t time.Time) int64 {
+	return t.Unix()
+}
+
 func FormatDate(t time.Time) string {
 	return t.Format(DateFormat)
 }
 
+func FormatDate2(t time.Time) string {
+	return t.Format(Date2Format)
+}
+
 func ParseDate(date string) time.Time {
 	t, _ := time.Parse(DateFormat, date)
+	return t
+}
+
+func ParseDate2(date string) time.Time {
+	t, _ := time.Parse(Date2Format, date)
 	return t
 }
 

@@ -70,7 +70,8 @@ func syncAllStockCode(ctx context.Context, req *model.SyncStockCodeReq) error {
 
 func SyncStockBasic(ctx context.Context, req *model.SyncStockCodeReq) error {
 	// 检查是否存在股票基础数据, 如果不存在就同步数据
-	stockBasicData, err := GetRemoteStockCode(ctx, req.Code)
+	client := NewEastMoneyClient()
+	stockBasicData, err := client.GetRemoteStockCode(ctx, req.Code)
 	if err != nil {
 		return err
 	}
@@ -85,7 +86,7 @@ func SyncStockBasic(ctx context.Context, req *model.SyncStockCodeReq) error {
 	}
 
 	// 	获取相关股票，以确定HK代码
-	stockRelationList, err := GetRemoteStockRelation(ctx, req.Code)
+	stockRelationList, err := client.GetRemoteStockRelation(ctx, req.Code)
 	if err != nil {
 		return err
 	}
@@ -100,12 +101,13 @@ func SyncStockBasic(ctx context.Context, req *model.SyncStockCodeReq) error {
 
 func SyncStockDailyPrice(ctx context.Context, req *model.SyncStockCodeReq) error {
 	// 检查是否存在股票基础数据, 如果不存在就同步数据
+	client := NewEastMoneyClient()
 	localStockDailyData, err := dal.GetLastStockPrice(ctx, req.Code)
 	if err != nil {
 		return err
 	}
 	dateTime := time.Now()
-	stockDailyData, err := GetRemoteStockDaily(ctx, req.Code, dateTime)
+	stockDailyData, err := client.GetRemoteStockDaily(ctx, req.Code, dateTime)
 	if err != nil {
 		return err
 	}
