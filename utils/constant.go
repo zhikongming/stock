@@ -22,6 +22,17 @@ const (
 	TendencyMiddle Tendency = "middle"
 )
 
+var (
+	StockPrefixList = []string{
+		"SH", "SZ", "BJ",
+	}
+	StockIdMap = map[string]string{
+		"SH": "1",
+		"SZ": "0",
+		"BJ": "0",
+	}
+)
+
 func GetMALineString(lineType MALineType) string {
 	value := ""
 	if lineType&MALineToUp == MALineToUp {
