@@ -20,6 +20,8 @@ const (
 	TendencyUp     Tendency = "up"
 	TendencyDown   Tendency = "down"
 	TendencyMiddle Tendency = "middle"
+
+	StockPriceMaxLimit = 360
 )
 
 var (

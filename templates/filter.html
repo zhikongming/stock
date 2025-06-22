@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票高级筛选系统 - 水平筛选条件</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="http://localhost:6789/common.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #0c1729, #1a2b4a);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 25px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(74, 107, 255, 0.3);
+        }
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            color: #4facfe;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a0d2ff;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        .filters-container {
+            background: rgba(30, 40, 70, 0.7);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+            border: 1px solid rgba(74, 107, 255, 0.3);
+        }
+        .filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .filters-header h2 {
+            color: #4facfe;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .filters-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-section {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(40, 50, 90, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(74, 107, 255, 0.2);
+        }
+        .filter-section h3 {
+            color: #00f2fe;
+            margin-bottom: 18px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        .param-group {
+            margin-bottom: 15px;
+        }
+        .param-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #a0d2ff;
+            font-size: 0.95rem;
+        }
+        .param-group input, .param-group select {
+            width: 100%;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(74, 107, 255, 0.5);
+            background: rgba(25, 35, 60, 0.8);
+            color: #fff;
+            font-size: 1rem;
+        }
+        .param-group input:focus, .param-group select:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 8px rgba(79, 172, 254, 0.5);
+        }
+        .actions-container {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        .search-btn {
+            padding: 14px 30px;
+            border-radius: 30px;
+            border: none;
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            color: #1a2a6c;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .search-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+        }
+        .action-btn {
+            padding: 12px 25px;
+            border-radius: 30px;
+            border: none;
+            background: rgba(40, 50, 90, 0.8);
+            color: #a0d2ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        .action-btn:hover {
+            background: rgba(74, 107, 255, 0.5);
+        }
+        .indicator-description {
+            background: rgba(40, 50, 90, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            color: #a0d2ff;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .results-container {
+            background: rgba(25, 35, 60, 0.8);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(74, 107, 255, 0.3);
+        }
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .results-header h2 {
+            color: #4facfe;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .results-info {
+            color: #a0d2ff;
+            font-size: 1rem;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .results-table th {
+            background: rgba(74, 107, 255, 0.3);
+            padding: 16px 20px;
+            text-align: left;
+            color: #4facfe;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        .results-table td {
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.1);
+        }
+        .results-table tbody tr {
+            transition: all 0.3s ease;
+            background: rgba(40, 50, 90, 0.4);
+        }
+        .results-table tbody tr:hover {
+            background: rgba(40, 50, 90, 0.7);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .stock-symbol {
+            color: #4facfe;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .stock-name {
+            color: #c1d8ff;
+            font-size: 0.95rem;
+        }
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 300px;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(79, 172, 254, 0.3);
+            border-top: 5px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            color: #a0d2ff;
+            font-size: 1.2rem;
+        }
+        .no-results {
+            text-align: center;
+            padding: 50px;
+            color: #a0d2ff;
+            font-size: 1.2rem;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            color: #a0d2ff;
+            font-size: 0.9rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+        }
+        .filter-controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .filter-control {
+            flex: 1;
+            min-width: 200px;
+        }
+        /* 多选下拉框样式 */
+        .multi-select-container {
+            position: relative;
+            width: 100%;
+        }
+        .multi-select-input {
+            width: 100%;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(74, 107, 255, 0.5);
+            background: rgba(25, 35, 60, 0.8);
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .multi-select-input:after {
+            content: "▼";
+            font-size: 0.8rem;
+            transition: transform 0.3s;
+        }
+        .multi-select-input.open:after {
+            transform: rotate(180deg);
+        }
+        .multi-select-dropdown {
+            position: absolute;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(40, 50, 90, 0.95);
+            border-radius: 8px;
+            border: 1px solid rgba(74, 107, 255, 0.5);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            display: none;
+            margin-top: 5px;
+        }
+        .multi-select-dropdown.open {
+            display: block;
+        }
+        .multi-select-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        .multi-select-option:hover {
+            background: rgba(74, 107, 255, 0.3);
+        }
+        .multi-select-option input {
+            margin-right: 10px;
+        }
+        .non-width {
+            width: auto !important;
+        }
+        .selected-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .selected-tag {
+            background: rgba(79, 172, 254, 0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .selected-tag i {
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .selected-tag i:hover {
+            color: #ff6b6b;
+        }
+        @media (max-width: 1100px) {
+            .filters-row {
+                flex-direction: column;
+            }
+            .filter-section {
+                min-width: 100%;
+            }
+            .filter-controls {
+                flex-direction: column;
+            }
+        }
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            .results-table th, .results-table td {
+                padding: 12px 15px;
+            }
+            .actions-container {
+                flex-direction: column;
+            }
+            .search-btn, .action-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">        
+        <div class="filters-container">            
+            <div class="filters-row">
+                <div class="filter-section">
+                    <h3><i class="fas fa-shield-cat"></i> 通用参数</h3>
+                    <div class="filter-controls">
+                        <div class="filter-control">
+                            <div class="param-group">
+                                <label for="endDate">截止日期</label>
+                                <input type="date" id="endDate" value="">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="filter-section">
+                    <h3><i class="fas fa-wave-square"></i> MACD指标</h3>
+                    <div class="filter-controls">
+                        <div class="filter-control">
+                            <div class="param-group">
+                                <label for="macdFast">快线截止最大值</label>
+                                <input type="number" id="macdFast" min="-10.00" max="10.00" value="0.00" step="0.01">
+                            </div>
+                            <div class="param-group">
+                                <label for="macdSlow">慢线截止最大值</label>
+                                <input type="number" id="macdSlow" min="-10.00" max="100.00" value="0.00" step="0.01">
+                            </div>
+                        </div>
+                        <div class="filter-control">
+                            <div class="param-group">
+                                <label for="macdLength">持续最少长度</label>
+                                <input type="number" id="macdLength" min="0" max="30" value="6">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="indicator-description">
+                        MACD指标用于识别股票价格动量的变化方向、强度及趋势的持续性。
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <h3><i class="fas fa-bolt"></i> 均线指标</h3>
+                    <div class="filter-controls">
+                        <div class="filter-control">
+                            <div class="param-group">
+                                <label for="rsiOptions">均线排序</label>
+                                <div class="multi-select-container" id="rsiMultiSelect">
+                                    <div class="multi-select-input" id="rsiSelectInput">
+                                        请选择均线顺序...
+                                    </div>
+                                    <div class="multi-select-dropdown" id="maSelectDropdown">
+                                        <label class="multi-select-option">
+                                            <input type="checkbox" name="rsiOption" value="ma5" class="non-width"> 五日均线
+                                        </label>
+                                        <label class="multi-select-option">
+                                            <input type="checkbox" name="rsiOption" value="ma10" class="non-width"> 十日均线
+                                        </label>
+                                        <label class="multi-select-option">
+                                            <input type="checkbox" name="rsiOption" value="ma20" class="non-width"> 二十日均线
+                                        </label>
+                                        <label class="multi-select-option">
+                                            <input type="checkbox" name="rsiOption" value="ma30" class="non-width"> 三十日均线
+                                        </label>
+                                        <label class="multi-select-option">
+                                            <input type="checkbox" name="rsiOption" value="ma60" class="non-width"> 六十日均线
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="selected-options" id="selectedRsiOptions">
+                                    <!-- 已选择的选项将显示在这里 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="indicator-description">
+                        根据均线位置做过滤，可以识别股票价格的趋势强度和方向，选择的顺序即位置顺序。
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <h3><i class="fas fa-exchange-alt"></i> 布林指标</h3>
+                    <div class="filter-controls">
+                        <div class="filter-control">
+                            <div class="param-group">
+                                <label for="bollingPosition">当前布林线位置</label>
+                                <select id="bollingPosition">
+                                    <option value="">-</option>
+                                    <option value="up">靠近上轨</option>
+                                    <option value="mid">靠近中轨</option>
+                                    <option value="down">靠近下轨</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="indicator-description">
+                        成交量分析用于确认价格趋势的强度，高成交量通常意味着趋势的可靠性更高。
+                    </div>
+                </div>
+            </div>
+            
+            <div class="actions-container">
+                <button class="search-btn" id="searchBtn">
+                    <i class="fas fa-search"></i> 应用筛选条件
+                </button>
+            </div>
+        </div>
+        
+        <div class="results-container">
+            <div class="results-header">
+                <h2><i class="fas fa-table"></i> 筛选结果</h2>
+                <div class="results-info">找到 <span id="resultsCount">0</span> 只符合条件的股票</div>
+            </div>
+            
+            <div id="resultsContent">
+                <div class="loading-container" id="loadingIndicator" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">正在从服务器获取数据...</div>
+                </div>
+                
+                <div class="no-results" id="noResults">
+                    <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                    <p>请配置筛选条件并点击"应用筛选条件"按钮</p>
+                    <p>系统将根据您的技术指标参数搜索符合条件的股票</p>
+                </div>
+                
+                <table class="results-table" id="resultsTable" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>股票代码</th>
+                            <th>股票名称</th>
+                            <th>股价最后日期</th>
+                            <th>MACD指标</th>
+                            <th>均线指标</th>
+                            <th>布林线指标</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                        <!-- 结果将通过JavaScript动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 新增：存储按选择顺序排列的选项
+        let selectedOptions = [];
+        
+        // 设置当前日期
+        document.addEventListener('DOMContentLoaded', function() {
+            // 添加搜索按钮事件
+            document.getElementById('searchBtn').addEventListener('click', searchStocks);
+
+            initMultiSelect();
+        });
+        
+        // 初始化多选下拉框
+        function initMultiSelect() {
+            const selectInput = document.getElementById('rsiSelectInput');
+            const dropdown = document.getElementById('maSelectDropdown');
+            const selectedOptionsContainer = document.getElementById('selectedRsiOptions');
+            const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+            
+            const optionLabels = {
+                'ma5': '五日均线',
+                'ma10': '十日均线',
+                'ma20': '二十日均线',
+                'ma30': '三十日均线',
+                'ma60': '六十日均线'
+            };
+            
+            // 切换下拉框显示状态
+            selectInput.addEventListener('click', function() {
+                dropdown.classList.toggle('open');
+                selectInput.classList.toggle('open');
+            });
+            
+            // 点击选项
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const value = this.value;
+                    
+                    // 新增：按选择顺序存储选项
+                    if (this.checked) {
+                        // 如果未选择过，添加到数组末尾
+                        if (!selectedOptions.includes(value)) {
+                            selectedOptions.push(value);
+                        }
+                    } else {
+                        // 取消选择时从数组中移除
+                        const index = selectedOptions.indexOf(value);
+                        if (index > -1) {
+                            selectedOptions.splice(index, 1);
+                        }
+                    }
+                    
+                    updateSelectedOptions();
+                });
+            });
+            
+            // 更新已选选项显示
+            function updateSelectedOptions() {
+                selectedOptionsContainer.innerHTML = '';
+                let hasSelection = false;
+                
+                // 修改：按照选择的顺序遍历选项
+                selectedOptions.forEach(value => {
+                    // 找到对应的checkbox
+                    const checkbox = dropdown.querySelector(`input[value="${value}"]`);
+                    if (checkbox && checkbox.checked) {
+                        hasSelection = true;
+                        const tag = document.createElement('div');
+                        tag.className = 'selected-tag';
+                        tag.innerHTML = `
+                            ${optionLabels[value]}
+                            <i class="fas fa-times" data-value="${value}"></i>
+                        `;
+                        selectedOptionsContainer.appendChild(tag);
+                        
+                        // 添加删除按钮事件
+                        tag.querySelector('i').addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const valToRemove = this.getAttribute('data-value');
+                            const cb = dropdown.querySelector(`input[value="${valToRemove}"]`);
+                            if (cb) {
+                                cb.checked = false;
+                                
+                                // 从选择顺序数组中移除
+                                const index = selectedOptions.indexOf(valToRemove);
+                                if (index > -1) {
+                                    selectedOptions.splice(index, 1);
+                                }
+                            }
+                            updateSelectedOptions();
+                        });
+                    }
+                });
+                
+                // 更新输入框显示
+                if (hasSelection) {
+                    const selectedLabels = selectedOptions
+                        .filter(value => {
+                            const cb = dropdown.querySelector(`input[value="${value}"]`);
+                            return cb && cb.checked;
+                        })
+                        .map(value => optionLabels[value]);
+                    
+                    selectInput.textContent = selectedLabels.join(', ');
+                } else {
+                    selectInput.textContent = '请选择均线顺序...';
+                }
+            }
+            
+            // 点击页面其他区域关闭下拉框
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.multi-select-container')) {
+                    dropdown.classList.remove('open');
+                    selectInput.classList.remove('open');
+                }
+            });
+        }
+
+        // 搜索股票
+        function searchStocks() {
+            // 显示加载指示器
+            document.getElementById('loadingIndicator').style.display = 'flex';
+            document.getElementById('noResults').style.display = 'none';
+            document.getElementById('resultsTable').style.display = 'none';
+            
+            // 获取筛选条件值
+            const macdFast = document.getElementById('macdFast').value;
+            const macdSlow = document.getElementById('macdSlow').value;
+            const macdLength = document.getElementById('macdLength').value;
+            const endDate = document.getElementById('endDate').value;
+            const bollingPosition = document.getElementById('bollingPosition').value;
+
+            let resp = filterCode(endDate, macdFast, macdSlow, macdLength, selectedOptions, bollingPosition);
+            displayResults(resp);
+        }
+        
+        // 显示结果
+        function displayResults(results) {
+            // 隐藏加载指示器
+            document.getElementById('loadingIndicator').style.display = 'none';
+            results.then(data => {
+                if (data.length === 0) {
+                    document.getElementById('noResults').style.display = 'block';
+                    document.getElementById('resultsCount').textContent = '0';
+                    return;
+                }
+
+                // 更新结果计数
+                document.getElementById('resultsCount').textContent = data.length;
+
+                // 填充表格
+                const tbody = document.getElementById('resultsBody');
+                tbody.innerHTML = '';
+            
+                for (let i = 0; i < data.length; i++) {
+                    const stock = data[i];
+                    const result = stock.result;
+                    const row = document.createElement('tr');
+
+                    let macdValue = "<p>建议: " + getSuggestOperation(result.macd.suggest_operation)  + "</p>";
+                    if (result.macd.suggest_operation !== "none") {
+                        macdValue += "<p>原因: "+ result.macd.suggest_reason +"</p>";
+                        macdValue += "<p>时间区间: "+ result.macd.suggest_range +"</p>";
+                        macdValue += "<p>macd最新dif值: "+ result.macd.macd_value.last_dif +"</p>";
+                        macdValue += "<p>macd最新dea值: "+ result.macd.macd_value.last_dea +"</p>";
+                        macdValue += "<p>macd长度: "+ result.macd.macd_value.length +"</p>";
+                    }
+
+                    let maValue = "<p>建议: " + getSuggestOperation(result.ma.suggest_operation)  + "</p>";
+                    if (result.ma.suggest_operation!== "none") {
+                        maValue += "<p>原因: "+ result.ma.suggest_reason +"</p>";
+                        maValue += "<p>五日均线值: "+ result.ma.ma_value.ma5 +"</p>";
+                        maValue += "<p>十日均线值: "+ result.ma.ma_value.ma10 +"</p>";
+                        maValue += "<p>二十日均线值: "+ result.ma.ma_value.ma20 +"</p>";
+                        maValue += "<p>三十日均线值: "+ result.ma.ma_value.ma30 +"</p>";
+                        maValue += "<p>六十日均线值: "+ result.ma.ma_value.ma60 +"</p>";
+                    }
+
+                    let bollingValue = "<p>建议: " + getSuggestOperation(result.bolling.suggest_operation)  + "</p>";
+                    if (result.bolling.suggest_operation!== "none") {
+                        bollingValue += "<p>原因: "+ result.bolling.suggest_reason +"</p>";
+                        bollingValue += "<p>最新收盘价: "+ result.bolling.bolling_value.last_price +"</p>";
+                        bollingValue += "<p>最新上轨: "+ result.bolling.bolling_value.last_bolling_up +"</p>";
+                        bollingValue += "<p>最新中轨: "+ result.bolling.bolling_value.last_bolling_mid +"</p>";
+                        bollingValue += "<p>最新下轨: "+ result.bolling.bolling_value.last_bolling_down +"</p>";
+                        bollingValue += "<p>最接近位置: "+ getBollingPosition(result.bolling.bolling_value.closed_position) +"</p>";
+                    }
+
+                    row.innerHTML = `
+                        <td><span class="stock-symbol">${stock.code}</span></td>
+                        <td><span class="stock-name">${stock.company_name}</span></td>
+                        <td>${stock.last_date}</td>
+                        <td>${macdValue}</td>
+                        <td>${maValue}</td>
+                        <td>${bollingValue}</td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                }
+            });
+            
+            // 显示结果表格
+            document.getElementById('resultsTable').style.display = 'table';
+        }
+    </script>
+</body>
+</html>

@@ -283,7 +283,7 @@ func AnalyzeMacdBuyPoint(stockPriceList []*dal.StockPrice) *model.MacdAnalyzeRes
 		return &model.MacdAnalyzeResult{
 			IsBuyPoint: false,
 			Length:     0,
-			Reason:     "数据确实，不足以分析macd指标",
+			Reason:     "数据缺失，不足以分析macd指标",
 		}
 	}
 

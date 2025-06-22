@@ -33,3 +33,14 @@ func SyncStockCode(ctx context.Context, c *app.RequestContext) {
 		"message": "pong",
 	})
 }
+
+func GetAllCode(ctx context.Context, c *app.RequestContext) {
+	codeList, err := service.GetAllCode(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.H{
+			"message": fmt.Sprintf("internal server error: %v", err),
+		})
+		return
+	}
+	c.JSON(consts.StatusOK, codeList)
+}

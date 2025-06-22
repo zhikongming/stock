@@ -6,3 +6,6 @@ DB:
   dbname: "stock_agent"
 Server:
   port: 80
+Replace:
+  origin_domain: "localhost:6789"
+  replaced_domain: "localhost"

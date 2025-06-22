@@ -9,6 +9,7 @@ type StockStrategy string
 type StockSuggestOperation string
 type StockMaType string
 type BollingPosition string
+type KLineType int
 
 const (
 	StockStrategyMa      StockStrategy = "ma"
@@ -34,6 +35,9 @@ const (
 
 	KdjOversold   = 20
 	KdjOverbought = 80
+
+	KLineTypeDay   KLineType = 0
+	KLineType30Min KLineType = 1
 )
 
 type SyncStockCodeReq struct {
@@ -246,4 +250,48 @@ func (f *KdjFilter) Filter(item *FilterStockCodeItem) bool {
 		return false
 	}
 	return true
+}
+
+type AnalyzeTrendCodeReq struct {
+	Code      string    `json:"code"`
+	StartDate string    `json:"start_date,omitempty"`
+	EndDate   string    `json:"end_date,omitempty"`
+	KLineType KLineType `json:"k_line_type"`
+}
+
+type AnalyzeTrendCodeResp struct {
+	TrendFractal        []*FractalItem         `json:"trend_fractal"`
+	PriceData           []*PriceItem           `json:"price_data"`
+	PivotData           []*PivotItem           `json:"pivot_data"`
+	DivergencePointData []*DivergencePointItem `json:"divergence_point_data"`
+}
+
+type PriceItem struct {
+	Date       string  `json:"date"`
+	PriceHigh  float64 `json:"price_high"`
+	PriceLow   float64 `json:"price_low"`
+	PriceOpen  float64 `json:"price_open"`
+	PriceClose float64 `json:"price_close"`
+	Amount     int64   `json:"amount" gorm:"column:amount"`
+}
+
+type FractalItem struct {
+	StartDate  string    `json:"start_date"`
+	EndDate    string    `json:"end_date"`
+	Class      ClassType `json:"class"`
+	PriceStart float64   `json:"price_start"`
+	PriceEnd   float64   `json:"price_end"`
+}
+
+type PivotItem struct {
+	StartDate string  `json:"start_date"`
+	EndDate   string  `json:"end_date"`
+	PriceLow  float64 `json:"price_low"`
+	PriceHigh float64 `json:"price_high"`
+}
+
+type DivergencePointItem struct {
+	Date      string  `json:"date"`
+	PointType string  `json:"point_type"`
+	Price     float64 `json:"price"`
 }

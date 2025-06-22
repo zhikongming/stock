@@ -35,6 +35,10 @@ func (StockPrice) TableName() string {
 	return "stock_price"
 }
 
+func (s *StockPrice) GetMacdValue() float64 {
+	return s.MacdDif - s.MacdDea
+}
+
 func GetStockPriceByDate(ctx context.Context, code string, dateStart string, dateEnd string, limit int) ([]*StockPrice, error) {
 	var stockPrice []*StockPrice
 	db := GetDB()
