@@ -5,7 +5,7 @@ DB:
   password: "stock_zw_zzy_01"
   dbname: "stock_agent"
 Server:
-  port: 80
+  port: 7112
 Replace:
   origin_domain: "localhost:6789"
-  replaced_domain: "localhost"
+  replaced_domain: "115.190.101.171:7112"
