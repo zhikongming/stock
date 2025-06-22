@@ -95,3 +95,28 @@ func FilterStockCode(ctx context.Context, c *app.RequestContext) {
 	c.JSON(consts.StatusOK, data)
 	return
 }
+
+func AnalyzeTrendCode(ctx context.Context, c *app.RequestContext) {
+	var req model.AnalyzeTrendCodeReq
+	if c.BindJSON(&req) != nil {
+		c.JSON(http.StatusBadRequest, utils.H{
+			"message": "bad request",
+		})
+		return
+	}
+	if req.Code == "" || req.StartDate == "" {
+		c.JSON(http.StatusBadRequest, utils.H{
+			"message": "bad request",
+		})
+		return
+	}
+	data, err := service.AnalyzeTrendCode(ctx, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.H{
+			"message": fmt.Sprintf("internal server error: %v", err),
+		})
+		return
+	}
+	c.JSON(consts.StatusOK, data)
+	return
+}

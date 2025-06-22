@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/zhikongming/stock/biz/dal"
@@ -19,7 +20,17 @@ const (
 
 	KdjRsvPeriod = 9
 	KdjEmaPeriod = 3
+
+	MaxJobNum = 10
 )
+
+func GetAllCode(ctx context.Context) ([]*dal.StockCode, error) {
+	codeList, err := dal.GetAllStockCode(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return codeList, nil
+}
 
 func SyncStockCode(ctx context.Context, req *model.SyncStockCodeReq) error {
 	if len(req.Code) != 0 {
@@ -56,15 +67,17 @@ func syncAllStockCode(ctx context.Context, req *model.SyncStockCodeReq) error {
 	if err != nil {
 		return err
 	}
+	var wg sync.WaitGroup
+	jobs := make(chan struct{}, MaxJobNum)
 	for _, stockCode := range stockCodeList {
+		wg.Add(1)
+		jobs <- struct{}{}
 		tmpReq := model.SyncStockCodeReq{
 			Code: stockCode.CompanyCode,
 		}
-		err = SyncStockDailyPrice(ctx, &tmpReq)
-		if err != nil {
-			return err
-		}
+		go SyncStockDailyPriceWrap(ctx, &tmpReq, &wg, jobs)
 	}
+	wg.Wait()
 	return nil
 }
 
@@ -97,6 +110,68 @@ func SyncStockBasic(ctx context.Context, req *model.SyncStockCodeReq) error {
 
 	err = dal.CreateStockCode(ctx, stockCode)
 	return err
+}
+
+func SyncStockDailyPriceWrap(ctx context.Context, req *model.SyncStockCodeReq, wg *sync.WaitGroup, jobs chan struct{}) error {
+	defer wg.Done()
+	defer func() {
+		<-jobs
+	}()
+	return SyncStockDailyPrice(ctx, req)
+}
+
+func GetStockPrice(ctx context.Context, code string, startTime time.Time, endTime time.Time, kLineType model.KLineType) ([]*dal.StockPrice, error) {
+	// 只获取数据，不需同步数据
+	fmt.Printf("startTime = %v, endTime = %v\n", startTime, endTime)
+	client := NewEastMoneyClient()
+	stockDailyData, err := client.GetRemoteStockByKLineType(ctx, code, startTime, endTime, kLineType)
+	if err != nil {
+		return nil, err
+	}
+	stockPriceList := make([]*dal.StockPrice, 0)
+	for _, item := range stockDailyData.Item {
+		timestampIndex := stockDailyData.GetColumnIndexByKey("timestamp")
+		timestamp, _ := strconv.ParseInt(utils.ToString(item[timestampIndex]), 10, 64)
+		date := utils.TimestampToDateTime(timestamp / int64(time.Microsecond))
+		sp := &dal.StockPrice{
+			CompanyCode: code,
+			Date:        utils.ParseTime(date),
+			PriceHigh:   utils.Float64KeepDecimal(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("high")]), 2),
+			PriceLow:    utils.Float64KeepDecimal(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("low")]), 2),
+			PriceOpen:   utils.Float64KeepDecimal(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("open")]), 2),
+			PriceClose:  utils.Float64KeepDecimal(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("close")]), 2),
+			Amount:      int64(utils.ToFloat64(item[stockDailyData.GetColumnIndexByKey("amount")])),
+			BollingUp:   0,
+			BollingDown: 0,
+			BollingMid:  0,
+			Ma5:         0,
+			Ma10:        0,
+			Ma20:        0,
+			Ma30:        0,
+			Ma60:        0,
+			MacdDif:     0,
+			MacdDea:     0,
+			KdjK:        0,
+			KdjD:        0,
+			KdjJ:        0,
+		}
+		stockPriceList = append(stockPriceList, sp)
+	}
+
+	CalculateMa(stockPriceList)
+	CalculateBolling(stockPriceList)
+	CalculateMacd(stockPriceList)
+	CalculateKdj(stockPriceList)
+
+	ret := make([]*dal.StockPrice, 0)
+	for _, item := range stockPriceList {
+		if item.Date.Before(startTime) || item.Date.After(endTime) {
+			fmt.Printf("item.Date = %v\n", item.Date)
+			continue
+		}
+		ret = append(ret, item)
+	}
+	return ret, nil
 }
 
 func SyncStockDailyPrice(ctx context.Context, req *model.SyncStockCodeReq) error {

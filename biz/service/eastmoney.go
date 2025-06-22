@@ -20,6 +20,9 @@ const (
 	EastMoneyBasicPath         = "/securities/api/data/v1/get"
 	EastMoneyStockRelationPath = "/api/qt/stock/get"
 	EastMoneyStockDailyPath    = "/api/qt/stock/kline/get"
+
+	KLineTypeDay   = "101"
+	KLineType30Min = "30"
 )
 
 type EastMoneyClient struct {
@@ -126,13 +129,17 @@ func (c *EastMoneyClient) GetRemoteStockRelation(ctx context.Context, code strin
 }
 
 func (c *EastMoneyClient) GetRemoteStockDaily(ctx context.Context, code string, dateTime time.Time) (*model.StockDailyData, error) {
+	return c.GetRemoteStockBasic(ctx, code, dateTime, KLineTypeDay)
+}
+
+func (c *EastMoneyClient) GetRemoteStockBasic(ctx context.Context, code string, dateTime time.Time, kLintType string) (*model.StockDailyData, error) {
 	path := fmt.Sprintf("%s%s", EastMoneyDomain3, EastMoneyStockDailyPath)
 	params := map[string]string{
 		"secid":   c.GetEastMoneyId(code),
 		"end":     utils.FormatDate2(dateTime),
 		"fields1": "f1,f2,f3,f4,f5,f6",
 		"fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61",
-		"klt":     "101",
+		"klt":     kLintType,
 		"fqt":     "1",
 		"lmt":     "360",
 	}
@@ -165,7 +172,7 @@ func (c *EastMoneyClient) GetRemoteStockDaily(ctx context.Context, code string, 
 		if len(itemList) < 7 {
 			continue
 		}
-		timestamp := utils.ParseDate(itemList[0])
+		timestamp := ParseTimeByKLineType(itemList[0], kLintType)
 		open := itemList[1]
 		close := itemList[2]
 		high := itemList[3]
@@ -181,4 +188,23 @@ func (c *EastMoneyClient) GetRemoteStockDaily(ctx context.Context, code string, 
 		})
 	}
 	return data, nil
+}
+
+func ParseTimeByKLineType(date string, kLineType string) time.Time {
+	switch kLineType {
+	case KLineType30Min:
+		return utils.ParseShortTime(date)
+	}
+	return utils.ParseDate(date)
+}
+
+func (c *EastMoneyClient) GetRemoteStockByKLineType(ctx context.Context, code string, startTime time.Time, endTime time.Time, kLineType model.KLineType) (*model.StockDailyData, error) {
+	var localKLineType string
+	switch kLineType {
+	case model.KLineTypeDay:
+		localKLineType = KLineTypeDay
+	case model.KLineType30Min:
+		localKLineType = KLineType30Min
+	}
+	return c.GetRemoteStockBasic(ctx, code, endTime, localKLineType)
 }

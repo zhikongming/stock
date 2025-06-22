@@ -3,15 +3,100 @@
 package main
 
 import (
+	"context" // 静态资源中间件
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
+	"github.com/hertz-contrib/cors"
+	"github.com/zhikongming/stock/biz/config"
 	handler "github.com/zhikongming/stock/biz/handler"
+)
+
+const (
+	TemplateDir  = "templates"
+	NotFountHtml = "not_found.html"
 )
 
 // customizeRegister registers customize routers.
 func customizedRegister(r *server.Hertz) {
+	r.Use(cors.New(cors.Config{
+		// 允许所有来源（包括 'null' 和本地文件）
+		AllowOrigins: []string{"*"},
+
+		// 或指定允许的来源（推荐生产环境使用）
+		// AllowOrigins:  []string{"http://localhost:3000", "null"},
+
+		// 允许的 HTTP 方法
+		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
+
+		// 允许的请求头
+		AllowHeaders: []string{
+			"Origin", "Content-Type", "Accept", "Authorization",
+			"X-Requested-With", "X-CSRF-Token",
+		},
+	}))
 	r.GET("/ping", handler.Ping)
 
+	r.GET("/stock/code", handler.GetAllCode)
 	r.POST("/task/stock/code", handler.SyncStockCode)
 	r.POST("/analyze/stock/code", handler.AnalyzeStockCode)
 	r.POST("/filter/stock/code", handler.FilterStockCode)
+	r.POST("/analyze/trend/code", handler.AnalyzeTrendCode)
+}
+
+func registerPlatform(r *server.Hertz) {
+	r.GET("/*path", func(c context.Context, ctx *app.RequestContext) {
+		// 获取请求路径（如 "/user/profile"）
+		requestPath := string(ctx.Request.URI().Path())
+
+		// 添加 .html 扩展名（如 "/user/profile.html"）
+		htmlPath := addHtmlExtension(requestPath)
+
+		// 构建文件系统路径（如 "./templates/user/profile.html"）
+		filePath := filepath.Join(TemplateDir, htmlPath)
+
+		_, err := os.Stat(filePath)
+		if err != nil {
+			filePath = filepath.Join(TemplateDir, NotFountHtml)
+		}
+
+		// 返回 HTML 文件
+		if strings.HasSuffix(filePath, ".html") {
+			ctx.File(filePath)
+		} else {
+			data, _ := os.ReadFile(filePath)
+			ctx.String(200, replaceContent(string(data)))
+		}
+	})
+}
+
+func addHtmlExtension(path string) string {
+	// 处理根路径
+	if path == "/" {
+		return NotFountHtml
+	}
+
+	// 移除开头的斜杠
+	if strings.HasPrefix(path, "/") {
+		path = path[1:]
+	}
+
+	// 处理没有扩展名的情况
+	if !strings.Contains(path, ".") {
+		return path + ".html"
+	}
+
+	// 处理已有扩展名的情况
+	return path
+}
+
+func replaceContent(content string) string {
+	conf := config.GetConfig()
+	if conf.Replace == nil {
+		return content
+	}
+	return strings.Replace(content, conf.Replace.OriginDomain, conf.Replace.ReplacedDomain, -1)
 }
