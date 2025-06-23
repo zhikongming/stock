@@ -74,6 +74,13 @@ func analyzeMaPoint(ctx context.Context, stockPriceList []*dal.StockPrice) (*mod
 		return analyzeUpTrendResult, nil
 	}
 
+	resp.MaValue = &model.MaValue{
+		Ma5:  stockPriceList[length-1].Ma5,
+		Ma10: stockPriceList[length-1].Ma10,
+		Ma20: stockPriceList[length-1].Ma20,
+		Ma30: stockPriceList[length-1].Ma30,
+		Ma60: stockPriceList[length-1].Ma60,
+	}
 	return &resp, nil
 }
 
