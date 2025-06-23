@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票中枢区间划分</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script> -->
     <script src="./echarts.min.js"></script>
     <script src="./common.js"></script>
@@ -179,13 +180,14 @@
             gap: 20px;
             margin-top: 15px;
             flex-wrap: wrap;
+            padding-bottom: 10px;
         }
         
         .legend-item {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 0.9rem;
+            font-size: 1.0rem;
         }
         
         .legend-color {
@@ -194,6 +196,161 @@
             border-radius: 2px;
         }
         
+        /* 支持搜索的下拉框样式 */
+        .searchable-select {
+            position: relative;
+            width: 100%;
+        }
+        .select-header {
+            display: flex;
+            align-items: center;
+            background: rgba(25, 35, 60, 0.8);
+            border-radius: 10px;
+            border: 1px solid rgba(74, 107, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .select-header:hover {
+            border-color: #4facfe;
+        }
+        .select-header input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            padding-right: 30px;
+        }
+        .select-header .arrow {
+            position: absolute;
+            right: 15px;
+            transition: transform 0.3s;
+        }
+        .select-header.open .arrow {
+            transform: rotate(180deg);
+        }
+        .select-options {
+            position: absolute;
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(40, 50, 90, 0.95);
+            border-radius: 10px;
+            border: 1px solid rgba(74, 107, 255, 0.5);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            margin-top: 10px;
+            display: none;
+        }
+        .select-options.open {
+            display: block;
+        }
+        .search-input-container {
+            padding: 12px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.2);
+            position: sticky;
+            top: 0;
+            background: rgba(40, 50, 90, 0.95);
+            z-index: 10;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(74, 107, 255, 0.5);
+            background: rgba(25, 35, 60, 0.8);
+            color: #fff;
+            font-size: 1rem;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 8px rgba(79, 172, 254, 0.5);
+        }
+        .options-list {
+            list-style: none;
+            padding: 8px 0;
+        }
+        .option-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .option-item:hover {
+            background: rgba(74, 107, 255, 0.3);
+        }
+        .option-item.selected {
+            background: rgba(79, 172, 254, 0.2);
+            color: #4facfe;
+        }
+        .option-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(79, 172, 254, 0.2);
+            border-radius: 6px;
+        }
+        .no-results {
+            padding: 20px;
+            text-align: center;
+            color: #a0d2ff;
+            font-style: italic;
+        }
+        .result-display {
+            background: rgba(40, 50, 90, 0.6);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .result-display h3 {
+            color: #00f2fe;
+            margin-bottom: 15px;
+        }
+        .selected-value {
+            font-size: 1.4rem;
+            color: #4facfe;
+            font-weight: 600;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .code-block {
+            background: rgba(25, 35, 60, 0.8);
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        .code-block h3 {
+            color: #4facfe;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        pre {
+            background: rgba(15, 22, 37, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            color: #a0d2ff;
+            font-family: 'Courier New', monospace;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+        .highlight {
+            color: #4facfe;
+        }
+
         @media (max-width: 768px) {
             .controls {
                 flex-direction: column;
@@ -215,39 +372,31 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1 id="mainTitle">走势划分</h1>
-            <p class="subtitle">根据K线图画出笔和线段，构建中枢区间</p>
-        </header>
-        
-        <div class="chart-container">
-            <div id="chart"></div>
-        </div>
-        
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: #ef5350;"></div>
-                <span>上涨蜡烛</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: #26a69a;"></div>
-                <span>下跌蜡烛</span>
-            </div>
-        </div>
 
         <div class="controls">
             <div class="control-group">
                 <div class="form-group">
                     <label for="stockName">股票</label>
-                    <select id="stockName">
-                        <option value="SH600036">招商银行</option>
-                    </select>
+                    <div class="searchable-select" id="codeSelect">
+                        <div class="select-header" id="selectHeader">
+                            <input type="text" placeholder="搜索股票..." id="selectStock" readonly>
+                            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+                        </div>
+                        <div class="select-options" id="selectOptions">
+                            <div class="search-input-container">
+                                <input type="text" class="search-input" id="searchStock" placeholder="输入股票...">
+                            </div>
+                            <ul class="options-list" id="optionsList">
+                                <!-- 选项将通过JavaScript动态生成 -->
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="control-group">
                 <div class="form-group">
                     <label for="startDate">起始日期</label>
-                    <input type="string" id="startDate" value="2024-10-08">
+                    <input type="date" id="startDate" value="2024-10-08">
                 </div>
             </div>
             <div class="control-group">
@@ -260,6 +409,24 @@
             </div>
             <div class="control-group">
                 <button id="resetBtn">画图</button>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div id="chart"></div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <p id="mainTitle">走势划分</p>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ef5350;"></div>
+                <span>上涨蜡烛</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #26a69a;"></div>
+                <span>下跌蜡烛</span>
             </div>
         </div>
     </div>
@@ -301,6 +468,11 @@
         const chartDom = document.getElementById('chart');
         const resetBtn = document.getElementById('resetBtn');
         const mainTitle = document.getElementById('mainTitle');
+        const selectHeader = document.getElementById('selectHeader');
+        const selectStock = document.getElementById('selectStock');
+        const searchStock = document.getElementById('searchStock');
+        const selectOptions = document.getElementById('selectOptions');
+        const optionsList = document.getElementById('optionsList');
         
         // 初始化ECharts实例
         const chart = echarts.init(chartDom);
@@ -317,32 +489,34 @@
         let pivotLines = [];
         let divergencePoints = [];
         let categoryData = [];
+        let codeList = [];
+        let selectedCode = null;
         
         function generateCodeData() {
             let resp = getCodeData();
             resp.then(data => {
-                let codeData = data.code_data;
-                let codeSelect = document.getElementById("stockName");
-                codeSelect.innerHTML = '';
                 data.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item.company_code;    // 使用接口返回的ID作为value
-                    option.textContent = item.company_name + "(" + item.company_code + ")"; // 使用接口返回的name作为显示文本
-                    codeSelect.appendChild(option);
+                    codeList.push({
+                        "code": item.company_code,
+                        "name": item.company_name
+                    });
                 });
             });
         }
 
         // 生成模拟K线数据
         function generateCandleData() {
+            if (selectedCode === null) {
+                return;
+            }
             let codeSelect = document.getElementById("stockName");
             let startDate = document.getElementById('startDate');
             let lineType = document.getElementById('lineType');
 
             // 修改title
-            mainTitle.innerHTML = codeSelect.options[codeSelect.selectedIndex].textContent + " 走势划分";
+            mainTitle.innerHTML = selectedCode.name + "(" + selectedCode.code + ")" + " 走势划分";
 
-            let resp = getPriceData(codeSelect.value, startDate.value, lineType.value);
+            let resp = getPriceData(selectedCode.code, startDate.value, lineType.value);
             resp.then(data => {
                 // 生成K线数据
                 kData = [];
@@ -580,6 +754,86 @@
             chart.setOption(option);
         }
         
+        function renderOptions(filter = '') {
+            optionsList.innerHTML = '';
+            
+            const filteredStocks = codeList.filter(code => 
+                code.name.toLowerCase().includes(filter.toLowerCase()) || 
+                code.code.toLowerCase().includes(filter.toLowerCase())
+            );
+            
+            if (filteredStocks.length === 0) {
+                optionsList.innerHTML = '<div class="no-results">没有找到匹配的股票</div>';
+                return;
+            }
+            
+            filteredStocks.forEach(stock => {
+                const li = document.createElement('li');
+                li.className = 'option-item';
+                if (selectedCode && selectedCode.code === stock.code) {
+                    li.classList.add('selected');
+                }
+                li.dataset.value = stock.code;
+                
+                li.innerHTML = `
+                    <div>${stock.name}(${stock.code})</div>
+                `;
+                
+                li.addEventListener('click', () => {
+                    selectCodeAndName(stock);
+                });
+                
+                optionsList.appendChild(li);
+            });
+        }
+
+        function selectCodeAndName(stock) {
+            selectedCode = stock;
+            selectStock.value = stock.name + '(' + stock.code + ')';
+            closeDropdown();
+            renderOptions(searchStock.value);
+        }
+        
+        // 打开下拉框
+        function openDropdown() {
+            selectOptions.classList.add('open');
+            selectHeader.classList.add('open');
+            searchStock.focus();
+            renderOptions();
+        }
+        
+        // 关闭下拉框
+        function closeDropdown() {
+            selectOptions.classList.remove('open');
+            selectHeader.classList.remove('open');
+        }
+        
+        // 事件监听
+        selectHeader.addEventListener('click', (e) => {
+            if (selectOptions.classList.contains('open')) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+        
+        searchStock.addEventListener('input', (e) => {
+            renderOptions(e.target.value);
+        });
+        
+        searchStock.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeDropdown();
+            }
+        });
+        
+        // 点击外部关闭下拉框
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.searchable-select')) {
+                closeDropdown();
+            }
+        });
+
         // 窗口大小改变时调整图表大小
         window.addEventListener('resize', () => {
             chart.resize();
