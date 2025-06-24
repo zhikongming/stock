@@ -1,5 +1,6 @@
 const domain = "http://localhost:6789";
 const filterCodeUrl = "/filter/stock/code";
+const syncStockCodeUrl = "/task/stock/code";
 
 async function filterCode(endDate, macdFast, macdSlow, macdLength, selectedOptions, bollingPosition) {
     const url = domain + filterCodeUrl;
@@ -76,4 +77,20 @@ function getBollingPosition(s) {
         return "中轨";
     }
     return "暂无";
+}
+
+async function syncStockCode(code) {
+    const url = domain + syncStockCodeUrl;
+    let requestBody = {
+        "code": code,
+        "business_type": 2
+    };
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+    });
+    return response;
 }
