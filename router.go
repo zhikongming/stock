@@ -45,6 +45,8 @@ func customizedRegister(r *server.Hertz) {
 	r.POST("/analyze/stock/code", handler.AnalyzeStockCode)
 	r.POST("/filter/stock/code", handler.FilterStockCode)
 	r.POST("/analyze/trend/code", handler.AnalyzeTrendCode)
+	r.GET("/stock/report", handler.GetStockReport)
+	r.POST("/stock/report", handler.AddStockReport)
 }
 
 func registerPlatform(r *server.Hertz) {

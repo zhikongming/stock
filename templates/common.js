@@ -1,6 +1,9 @@
 const domain = "http://localhost:6789";
 const filterCodeUrl = "/filter/stock/code";
 const syncStockCodeUrl = "/task/stock/code";
+const getCodeDataUrl = "/stock/code";
+const getStockReportUrl = "/stock/report";
+const updateStockReportUrl = "/stock/report";
 
 async function filterCode(endDate, macdFast, macdSlow, macdLength, selectedOptions, bollingPosition) {
     const url = domain + filterCodeUrl;
@@ -93,4 +96,71 @@ async function syncStockCode(code) {
         body: JSON.stringify(requestBody)
     });
     return response;
+}
+
+async function getStockReport(code, year, reportType, disableMsg) {
+    const url = domain + getStockReportUrl;
+    const params = {
+        "code": code,
+        "year": year,
+        "report_type": reportType,
+        "disable_msg": disableMsg
+    };
+
+    const baseUrl = new URL(url);
+    Object.entries(params).forEach(([key, value]) => {
+        baseUrl.searchParams.append(key, value);
+    });
+    const response = await fetch(baseUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response;
+}
+
+async function updateStockReport(code, year, reportType, industryType, measurement, report) {
+    const url = domain + updateStockReportUrl;
+    let requestBody = {
+        "code": code,
+        "year": parseInt(year),
+        "report_type": parseInt(reportType),
+        "industry_type": parseInt(industryType),
+        "measurement": measurement,
+        "report": report
+    };
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+    })
+    return response;
+}
+
+function getReportTypeString(reportType) {
+    if (reportType == 1) {
+        return "一季报";
+    } else if (reportType == 2) {
+        return "中报";
+    }   else if (reportType == 3) {
+        return "三季报";
+    }   else if (reportType == 4) {
+        return "年报";
+    }
+    return "";
+}
+
+function getPeriodReportTypeString(reportType) {
+    if (reportType == 1) {
+        return "第一季度";
+    } else if (reportType == 2) {
+        return "第二季度";
+    } else if (reportType == 3) {
+        return "第三季度";
+    } else if (reportType == 4) {
+        return "第四季度";
+    }
 }
