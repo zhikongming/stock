@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票财报分析</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="./common.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2c3e50);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 20px;
+            background: rgba(40, 45, 70, 0.8);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-group {
+            flex: 1;
+            min-width: 300px;
+            padding: 15px;
+            background: rgba(30, 35, 60, 0.6);
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #4facfe;
+            padding-bottom: 8px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(20, 25, 40, 0.8);
+            color: #e0e0e0;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.4);
+        }
+        
+        button {
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            color: #1a1a2e;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 28px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            max-width: 200px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .info-panel {
+            background: rgba(40, 45, 70, 0.8);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .info-content {
+            line-height: 1.8;
+        }
+        
+        .info-content h3 {
+            color: #00f2fe;
+            margin: 15px 0 10px;
+        }
+        
+        .info-content ul {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .info-content li {
+            margin-bottom: 8px;
+        }
+        
+        .code-block {
+            background: rgba(20, 25, 40, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            padding-bottom: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.0rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+        }
+        
+        /* 支持搜索的下拉框样式 */
+        .searchable-select {
+            position: relative;
+            width: 100%;
+        }
+        .select-header {
+            display: flex;
+            align-items: center;
+            background: rgba(25, 35, 60, 0.8);
+            border-radius: 10px;
+            border: 1px solid rgba(74, 107, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .select-header:hover {
+            border-color: #4facfe;
+        }
+        .select-header input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            padding-right: 30px;
+        }
+        .select-header .arrow {
+            position: absolute;
+            right: 15px;
+            transition: transform 0.3s;
+        }
+        .select-header.open .arrow {
+            transform: rotate(180deg);
+        }
+        .select-options {
+            position: absolute;
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(40, 50, 90, 0.95);
+            border-radius: 10px;
+            border: 1px solid rgba(74, 107, 255, 0.5);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            margin-top: 10px;
+            display: none;
+        }
+        .select-options.open {
+            display: block;
+        }
+        .search-input-container {
+            padding: 12px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.2);
+            position: sticky;
+            top: 0;
+            background: rgba(40, 50, 90, 0.95);
+            z-index: 10;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(74, 107, 255, 0.5);
+            background: rgba(25, 35, 60, 0.8);
+            color: #fff;
+            font-size: 1rem;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 8px rgba(79, 172, 254, 0.5);
+        }
+        .options-list {
+            list-style: none;
+            padding: 8px 0;
+        }
+        .option-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .option-item:hover {
+            background: rgba(74, 107, 255, 0.3);
+        }
+        .option-item.selected {
+            background: rgba(79, 172, 254, 0.2);
+            color: #4facfe;
+        }
+        .option-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(79, 172, 254, 0.2);
+            border-radius: 6px;
+        }
+        .no-results {
+            padding: 20px;
+            text-align: center;
+            color: #a0d2ff;
+            font-style: italic;
+        }
+        .result-display {
+            background: rgba(40, 50, 90, 0.6);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .result-display h3 {
+            color: #00f2fe;
+            margin-bottom: 15px;
+        }
+        .selected-value {
+            font-size: 1.4rem;
+            color: #4facfe;
+            font-weight: 600;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .code-block {
+            background: rgba(25, 35, 60, 0.8);
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        .code-block h3 {
+            color: #4facfe;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .filters-container {
+            background: rgba(30, 40, 70, 0.7);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+            border: 1px solid rgba(74, 107, 255, 0.3);
+        }
+        .filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .filters-header h2 {
+            color: #4facfe;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .filters-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-section {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(40, 50, 90, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(74, 107, 255, 0.2);
+            margin-bottom: 15px;
+        }
+        .filter-section h3 {
+            color: #00f2fe;
+            margin-bottom: 18px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        .highlight {
+            color: #4facfe;
+        }
+
+        .results-container {
+            background: rgba(25, 35, 60, 0.8);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(74, 107, 255, 0.3);
+        }
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .results-header h2 {
+            color: #4facfe;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .results-info {
+            color: #a0d2ff;
+            font-size: 1rem;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .results-table th {
+            background: rgba(74, 107, 255, 0.3);
+            padding: 16px 20px;
+            text-align: left;
+            color: #4facfe;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        .results-table td {
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.1);
+        }
+        .results-table tbody tr {
+            transition: all 0.3s ease;
+            background: rgba(40, 50, 90, 0.4);
+        }
+        .results-table tbody tr:hover {
+            background: rgba(40, 50, 90, 0.7);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .half-filter-control{
+            width: 45%;
+        }
+        .table-title {
+            text-align: center;
+            color: #00f2fe;
+            font-size: 1.2rem;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        .report-message {
+            color: #00f2fe;
+            font-size: 1.1rem;
+        };
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+            
+            .control-group {
+                min-width: 100%;
+            }
+            
+            .results-table th, .results-table td {
+                padding: 12px 15px;
+            }
+
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <div class="form-group">
+                    <label for="stockName">股票</label>
+                    <div class="searchable-select" id="codeSelect">
+                        <div class="select-header" id="selectHeader">
+                            <input type="text" placeholder="搜索股票..." id="selectStock" readonly>
+                            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+                        </div>
+                        <div class="select-options" id="selectOptions">
+                            <div class="search-input-container">
+                                <input type="text" class="search-input" id="searchStock" placeholder="输入股票...">
+                            </div>
+                            <ul class="options-list" id="optionsList">
+                                <!-- 选项将通过JavaScript动态生成 -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="control-group">
+                <div class="form-group">
+                    <label for="year">年份</label>
+                    <input type="number" id="year" value="2024">
+                </div>
+            </div>
+            <div class="control-group">
+                <div class="form-group">
+                    <label for="reportType">财报类型</label>
+                    <select id="reportType">
+                        <option value="4">年报</option>
+                        <option value="3">三季度报</option>
+                        <option value="2">半年报</option>
+                        <option value="1">一季度报</option>
+                    </select>
+                </div>
+            </div>
+            <div class="control-group">
+                <button id="searchBtn">分析</button>
+            </div>
+        </div>
+
+        <div class="filters-container">
+            <h2><span class="current-name"></span><span class="current-year"></span>财报分析</h2>
+            <div class="filters-row">
+                <div class="filter-section" id="search_fail_text" style="display:none;"></div>
+            </div>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <h3>1. 股东分析</h3>
+                    <div class="filters-row">
+                        <div class="filter-section">
+                            <h4 class="table-title">股东人数</h4>
+                            <table class="results-table" id="shareholderTable">
+                                <thead>
+                                    <tr>
+                                        <th class="current-year"></th>
+                                        <th class="mom-year"></th>
+                                        <th class="yoy-year"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="shareholderBody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="filter-section">
+                            <h4 class="table-title">前十大股东</h4>
+                            <table class="results-table" id="topShareholderTable">
+                                <thead>
+                                    <tr>
+                                        <th>股东名称</th>
+                                        <th>期末持股数</th>
+                                        <th>占总股本比例</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="topShareholderBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="filters-row">
+                        <div class="filter-section report-message" id="shareholderResult"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <h3>2. 营收分析</h3>
+                    <div class="filters-row">
+                        <div class="filter-section">
+                            <h4 class="table-title">营收数据</h4>
+                            <table class="results-table" id="incomeTable">
+                                <thead>
+                                    <tr>
+                                        <th class="current-name"></th>
+                                        <th class="current-year"></th>
+                                        <th class="mom-year"></th>
+                                        <th>环比</th>
+                                        <th class="yoy-year"></th>
+                                        <th>同比</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="incomeBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="filters-row">
+                        <div class="filter-section">
+                            <h4 class="table-title">息差</h4>
+                            <table class="results-table" id="interestTable">
+                                <thead>
+                                    <tr>
+                                        <th class="current-name"></th>
+                                        <th class="current-year"></th>
+                                        <th class="current-period-year"></th>
+                                        <th class="mom-year"></th>
+                                        <th class="mom-period-year"></th>
+                                        <th class="yoy-year"></th>
+                                        <th class="yoy-period-year"></th>
+                                        <th>单季度同比</th>
+                                        <th>单季度环比</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="interestBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="filters-row">
+                        <div class="filter-section report-message" id="incomeResult"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <h3>3. 资产负债分析</h3>
+                    <div class="filters-row">
+                        <div class="filter-section">
+                            <h4 class="table-title">资产负债</h4>
+                            <table class="results-table" id="assetTable">
+                                <thead>
+                                    <tr>
+                                        <th class="current-name"></th>
+                                        <th class="current-year"></th>
+                                        <th class="mom-year"></th>
+                                        <th>上期财报对比</th>
+                                        <th class="yoy-year"></th>
+                                        <th>同比</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="assetBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="filters-row">
+                        <div class="filter-section report-message" id="assetResult"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <h3>4. 不良分析</h3>
+                    <div class="filters-row">
+                        <div class="filter-section">
+                            <h4 class="table-title">不良资产</h4>
+                            <table class="results-table" id="basAssetTable">
+                                <thead>
+                                    <tr>
+                                        <th class="current-name"></th>
+                                        <th class="current-year"></th>
+                                        <th class="mom-year"></th>
+                                        <th>上期财报对比</th>
+                                        <th class="yoy-year"></th>
+                                        <th>同比</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="badAssetBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="filters-row">
+                        <div class="filter-section">
+                            <h4 class="table-title">贷款详情</h4>
+                            <table class="results-table" id="badAssetDetailTable">
+                                <thead>
+                                    <tr>
+                                        <th class="current-name"></th>
+                                        <th>金额</th>
+                                        <th>占总额百分比</th>
+                                        <th>上期金额对比</th>
+                                        <th>上期占比对比</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="badAssetDetailBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="filter-section">
+                            <h4 class="table-title">贷款迁徙率</h4>
+                            <table class="results-table" id="migrationRateTable">
+                                <thead>
+                                    <tr>
+                                        <th class="current-name"></th>
+                                        <th>迁徙率</th>
+                                        <th>去年同期迁徙率</th>
+                                        <th>同比</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="migrationRateBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="filters-row">
+                        <div class="filter-section report-message" id="badAssetResult"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <h3>5. 资本充足率分析</h3>
+                    <div class="filters-row">
+                        <div class="filter-section">
+                            <h4 class="table-title">核心一级资本充足率</h4>
+                            <table class="results-table" id="adequacyRateTable">
+                                <thead>
+                                    <tr>
+                                        <th class="current-name"></th>
+                                        <th class="current-year"></th>
+                                        <th class="mom-year"></th>
+                                        <th>上期对比</th>
+                                        <th class="yoy-year"></th>
+                                        <th>同比</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adequacyRateBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="filters-row">
+                        <div class="filter-section report-message" id="adequacyRateResult"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function getCodeData() {
+            const response = await fetch(domain + getCodeDataUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            return response.json();
+        }
+    </script>
+
+    <script>
+        // 获取DOM元素
+        const searchBtn = document.getElementById('searchBtn');
+        const mainTitle = document.getElementById('mainTitle');
+        const selectHeader = document.getElementById('selectHeader');
+        const selectStock = document.getElementById('selectStock');
+        const searchStock = document.getElementById('searchStock');
+        const selectOptions = document.getElementById('selectOptions');
+        const optionsList = document.getElementById('optionsList');
+        const failMsg = "获取财报分析数据失败，请检查股票在该年份下是否支持财报分析。";
+        const searchFailText = document.getElementById('search_fail_text');
+        const shareholderBody = document.getElementById('shareholderBody');
+        const topShareholderBody = document.getElementById('topShareholderBody');
+        const shareholderResult = document.getElementById('shareholderResult');
+        const incomeBody = document.getElementById('incomeBody');
+        const interestBody = document.getElementById('interestBody');
+        const incomeResult = document.getElementById('incomeResult');
+        const assetBody = document.getElementById('assetBody');
+        const assetResult = document.getElementById('assetResult');
+        const badAssetBody = document.getElementById('badAssetBody');
+        const badAssetDetailBody = document.getElementById('badAssetDetailBody');
+        const migrationRateBody = document.getElementById('migrationRateBody');
+        const badAssetResult = document.getElementById('badAssetResult');
+        const adequacyRateBody = document.getElementById('adequacyRateBody');
+        const adequacyRateResult = document.getElementById('adequacyRateResult');
+
+        let codeList = [];
+        let selectedCode = null;
+        let curReportTitle = "";
+        let curPeriodReportTitle = "";
+        let momReportTitle = "";
+        let momPeriodReportTitle = "";
+        let yoyReportTitle = "";
+        let yoyPeriodReportTitle = "";
+        
+        function generateCodeData() {
+            let resp = getCodeData();
+            resp.then(data => {
+                data.forEach(item => {
+                    codeList.push({
+                        "code": item.company_code,
+                        "name": item.company_name
+                    });
+                });
+            });
+        }
+        
+        function renderOptions(filter = '') {
+            optionsList.innerHTML = '';
+            
+            const filteredStocks = codeList.filter(code => 
+                code.name.toLowerCase().includes(filter.toLowerCase()) || 
+                code.code.toLowerCase().includes(filter.toLowerCase())
+            );
+            
+            if (filteredStocks.length === 0) {
+                optionsList.innerHTML = '<div class="no-results">没有找到匹配的股票</div>';
+                return;
+            }
+            
+            filteredStocks.forEach(stock => {
+                const li = document.createElement('li');
+                li.className = 'option-item';
+                if (selectedCode && selectedCode.code === stock.code) {
+                    li.classList.add('selected');
+                }
+                li.dataset.value = stock.code;
+                
+                li.innerHTML = `
+                    <div>${stock.name}(${stock.code})</div>
+                `;
+                
+                li.addEventListener('click', () => {
+                    selectCodeAndName(stock);
+                });
+                
+                optionsList.appendChild(li);
+            });
+        }
+
+        function selectCodeAndName(stock) {
+            selectedCode = stock;
+            selectStock.value = stock.name + '(' + stock.code + ')';
+            closeDropdown();
+            renderOptions(searchStock.value);
+        }
+        
+        // 打开下拉框
+        function openDropdown() {
+            selectOptions.classList.add('open');
+            selectHeader.classList.add('open');
+            searchStock.focus();
+            renderOptions();
+        }
+        
+        // 关闭下拉框
+        function closeDropdown() {
+            selectOptions.classList.remove('open');
+            selectHeader.classList.remove('open');
+        }
+
+        // 事件监听
+        selectHeader.addEventListener('click', (e) => {
+            if (selectOptions.classList.contains('open')) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+        
+        searchStock.addEventListener('input', (e) => {
+            renderOptions(e.target.value);
+        });
+        
+        searchStock.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeDropdown();
+            }
+        });
+        
+        // 点击外部关闭下拉框
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.searchable-select')) {
+                closeDropdown();
+            }
+        });
+        
+        function generateShareholderMsg(resp) {
+            shareholderBody.innerHTML = '';
+            topShareholderBody.innerHTML = '';
+            report = resp.report;
+            preYOYReport = resp.pre_yoy_report
+            preMOMReport = resp.pre_mom_report
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${report.shareholder.shareholder_number} 户</td>
+                <td>${preMOMReport.shareholder.shareholder_number} 户</td>
+                <td>${preYOYReport.shareholder.shareholder_number} 户</td>
+            `;
+            shareholderBody.appendChild(row);
+
+            for (let i = 0; i < report.shareholder.shareholder_list.length; i++) {
+                const row = document.createElement('tr');
+                const item = report.shareholder.shareholder_list[i];
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.share} 股</td>
+                    <td>${item.ratio}%</td>
+                `;
+                topShareholderBody.appendChild(row);
+            }
+
+            shareholderResult.innerHTML = `${resp.message.shareholder_msg}`;
+        };
+
+        function getUnemptyValue(value, measurement) {
+            if (value == 0) {
+                return "";
+            } else {
+                return value + " " + measurement;
+            }
+        }
+
+        function getIncomeTd(name, curValue, yoyValue, momValue, measurement) {
+            let row = document.createElement('tr');
+            let rate = 0.0;
+            if (curValue > 0 && yoyValue > 0) {
+                rate = (curValue - yoyValue) / yoyValue * 100;
+                rate = rate.toFixed(2);
+                rate = rate + "%";
+            } else {
+                rate = "";
+            }
+            let lastRate = (curValue - momValue)/momValue * 100;
+            lastRate = lastRate.toFixed(2);
+            if (lastRate > 0) {
+                lastRate = lastRate + "%";
+            } else {
+                lastRate = "";
+            }
+            momValue = getUnemptyValue(momValue, measurement);
+            curValue = getUnemptyValue(curValue, measurement);
+            yoyValue = getUnemptyValue(yoyValue, measurement);
+            row.innerHTML = `
+                <td>${name}</td>
+                <td>${curValue}</td>
+                <td>${momValue}</td>
+                <td>${lastRate}</td>
+                <td>${yoyValue}</td>
+                <td>${rate}</td>
+            `;
+            return row;
+        }
+
+        function getDiffTd(name, curValue, yoyValue, momValue, measurement) {
+            let row = document.createElement('tr');
+            let yoyDiff = curValue - yoyValue;
+            yoyDiff = yoyDiff.toFixed(2);
+            let momDiff = curValue - momValue;
+            momDiff = momDiff.toFixed(2);
+            if (measurement != "%") {
+                measurement = " " + measurement;
+            }
+            row.innerHTML = `
+                <td>${name}</td>
+                <td>${curValue}${measurement}</td>
+                <td>${momValue}${measurement}</td>
+                <td>${momDiff}${measurement}</td>
+                <td>${yoyValue}${measurement}</td>
+                <td>${yoyDiff}${measurement}</td>
+            `;
+            return row;
+        }
+
+        function getBadAssetTd(name, value, rate, monValue, momRate, measurement) {
+            let row = document.createElement('tr');
+            if (monValue == 0) {
+                monValue = "";
+            } else {
+                monValue = monValue + " " + measurement;
+            }
+            if (momRate == 0) {
+                momRate = "";
+            } else {
+                momRate = momRate + "%";
+            }
+            row.innerHTML = `
+                <td>${name}</td>
+                <td>${value} ${measurement}</td>
+                <td>${rate}%</td>
+                <td>${monValue}</td>
+                <td>${momRate}</td>
+            `;
+            return row;
+        }
+
+        function getMigrationRateTd(name, rate, yoyRate) {
+            let row = document.createElement('tr');
+            let diff = rate - yoyRate;
+            diff = diff.toFixed(2);
+            row.innerHTML = `
+                <td>${name}</td>
+                <td>${rate}%</td>
+                <td>${yoyRate}%</td>
+                <td>${diff}%</td>
+            `;
+            return row;
+        }
+
+        function getInterestTd(name, curValue, curPerValue, yoyValue, yoyPerValue, momValue, momPerValue) {
+            let row = document.createElement('tr');
+            yoyRate = (curPerValue - yoyPerValue) * 100;
+            yoyRate = yoyRate.toFixed(2);
+            monRate = (curPerValue - momPerValue) * 100;
+            monRate = monRate.toFixed(2);
+            row.innerHTML = `
+                <td>${name}</td>
+                <td>${curValue}%</td>
+                <td>${curPerValue}%</td>
+                <td>${momValue}%</td>
+                <td>${momPerValue}%</td>
+                <td>${yoyValue}%</td>
+                <td>${yoyPerValue}%</td>
+                <td>${yoyRate} bps</td>
+                <td>${monRate} bps</td>
+            `;
+            return row;
+        }
+
+        function generateIncomeMsg(resp) {
+            incomeBody.innerHTML = '';
+            interestBody.innerHTML = '';
+            report = resp.report;
+            preYOYReport = resp.pre_yoy_report;
+            preMOMReport = resp.pre_mom_report;
+
+            incomeBody.appendChild(getIncomeTd('营业收入', report.income.total_income, preYOYReport.income.total_income, preMOMReport.income.total_income, resp.measurement));
+            incomeBody.appendChild(getIncomeTd('净利息收入', report.income.interest_income.total_income, preYOYReport.income.interest_income.total_income, preMOMReport.income.interest_income.total_income, resp.measurement));
+            incomeBody.appendChild(getIncomeTd('手续费收入', report.income.service_income, preYOYReport.income.service_income, preMOMReport.income.service_income, resp.measurement));
+            incomeBody.appendChild(getIncomeTd('其他非息收入', report.income.non_interest_income, preYOYReport.income.non_interest_income, preMOMReport.income.non_interest_income, resp.measurement));
+            incomeBody.appendChild(getIncomeTd('营业费用及其他', report.expense, preYOYReport.expense, preMOMReport.expense, resp.measurement));
+            incomeBody.appendChild(getIncomeTd('信用减值损失', report.impairment_loss, preYOYReport.impairment_loss, preMOMReport.impairment_loss, resp.measurement));
+            incomeBody.appendChild(getIncomeTd('归母净利润', report.retained_profits, preYOYReport.retained_profits, preMOMReport.retained_profits, resp.measurement));
+        
+            interestBody.appendChild(getInterestTd('净息差', 
+                report.income.interest_income.interest_rate, 
+                report.income.interest_income.interest_rate_period, 
+                preYOYReport.income.interest_income.interest_rate, 
+                preYOYReport.income.interest_income.interest_rate_period, 
+                preMOMReport.income.interest_income.interest_rate, 
+                preMOMReport.income.interest_income.interest_rate_period));
+            
+            interestBody.appendChild(getInterestTd('贷款和垫款平均收益率', 
+                report.income.interest_income.loan_rate, 
+                report.income.interest_income.loan_rate_period, 
+                preYOYReport.income.interest_income.loan_rate, 
+                preYOYReport.income.interest_income.loan_rate_period, 
+                preMOMReport.income.interest_income.loan_rate, 
+                preMOMReport.income.interest_income.loan_rate_period));
+
+            interestBody.appendChild(getInterestTd('客户存款平均成本率', 
+                report.income.interest_income.deposit_rate, 
+                report.income.interest_income.deposit_rate_period, 
+                preYOYReport.income.interest_income.deposit_rate, 
+                preYOYReport.income.interest_income.deposit_rate_period, 
+                preMOMReport.income.interest_income.deposit_rate, 
+                preMOMReport.income.interest_income.deposit_rate_period));
+
+            incomeResult.innerHTML = `${resp.message.income_msg}`;
+        };
+
+        function generateAssetMsg(resp) {
+            assetBody.innerHTML = '';
+            report = resp.report;
+            preYOYReport = resp.pre_yoy_report;
+            preMOMReport = resp.pre_mom_report;
+
+            assetBody.appendChild(getIncomeTd('总资产', report.asset.total_asset, preYOYReport.asset.total_asset, preMOMReport.asset.total_asset, resp.measurement));
+            assetBody.appendChild(getIncomeTd('&nbsp;&nbsp;&nbsp;&nbsp;贷款总额', report.asset.bank_loan.total_loan, preYOYReport.asset.bank_loan.total_loan, preMOMReport.asset.bank_loan.total_loan, resp.measurement));
+            assetBody.appendChild(getIncomeTd('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;对公贷款', report.asset.bank_loan.corporate_loan, preYOYReport.asset.bank_loan.corporate_loan, preMOMReport.asset.bank_loan.corporate_loan, resp.measurement));
+            assetBody.appendChild(getIncomeTd('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;零售贷款', report.asset.bank_loan.person_loan, preYOYReport.asset.bank_loan.person_loan, preMOMReport.asset.bank_loan.person_loan, resp.measurement));
+            assetBody.appendChild(getIncomeTd('总负债', report.asset.total_debt, preYOYReport.asset.total_debt, preMOMReport.asset.total_debt, resp.measurement));
+            assetBody.appendChild(getIncomeTd('&nbsp;&nbsp;&nbsp;&nbsp;存款总额', report.asset.bank_deposit.total_deposit, preYOYReport.asset.bank_deposit.total_deposit, preMOMReport.asset.bank_deposit.total_deposit, resp.measurement));
+            assetBody.appendChild(getIncomeTd('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;对公存款', report.asset.bank_deposit.corporate_deposit, preYOYReport.asset.bank_deposit.corporate_deposit, preMOMReport.asset.bank_deposit.corporate_deposit, resp.measurement));
+            assetBody.appendChild(getIncomeTd('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;零售存款', report.asset.bank_deposit.person_deposit, preYOYReport.asset.bank_deposit.person_deposit, preMOMReport.asset.bank_deposit.person_deposit, resp.measurement));
+        
+            assetResult.innerHTML = `${resp.message.asset_msg}`;
+        };
+
+        function generateBadAssetMsg(resp) {
+            badAssetBody.innerHTML = '';
+            badAssetDetailBody.innerHTML = '';
+            migrationRateBody.innerHTML = '';
+            report = resp.report;
+            preYOYReport = resp.pre_yoy_report;
+            preMOMReport = resp.pre_mom_report;
+
+            badAssetBody.appendChild(getDiffTd("不良余额",report.bad_debt_asset.total_balance, preYOYReport.bad_debt_asset.total_balance, preMOMReport.bad_debt_asset.total_balance, resp.measurement));
+            badAssetBody.appendChild(getDiffTd("不良率",report.bad_debt_asset.total_rate, preYOYReport.bad_debt_asset.total_rate, preMOMReport.bad_debt_asset.total_rate, "%"));
+            badAssetBody.appendChild(getDiffTd("新生成不良贷款",report.bad_debt_asset.new_balance, preYOYReport.bad_debt_asset.new_balance, preMOMReport.bad_debt_asset.new_balance, resp.measurement));
+            badAssetBody.appendChild(getDiffTd("新生成不良率",report.bad_debt_asset.new_rate, preYOYReport.bad_debt_asset.new_rate, preMOMReport.bad_debt_asset.new_rate,"%"));
+            badAssetBody.appendChild(getDiffTd("拨备覆盖率",report.bad_debt_asset.coverage_rate, preYOYReport.bad_debt_asset.coverage_rate, preMOMReport.bad_debt_asset.coverage_rate,"%"));
+       
+            badAssetDetailBody.appendChild(getBadAssetTd("正常类", report.bad_debt_asset.bad_debt.normal_balance, report.bad_debt_asset.bad_debt.normal_rate, preMOMReport.bad_debt_asset.bad_debt.normal_balance, preMOMReport.bad_debt_asset.bad_debt.normal_rate, resp.measurement));
+            badAssetDetailBody.appendChild(getBadAssetTd("关注类", report.bad_debt_asset.bad_debt.notice_balance, report.bad_debt_asset.bad_debt.notice_rate, preMOMReport.bad_debt_asset.bad_debt.notice_balance, preMOMReport.bad_debt_asset.bad_debt.notice_rate, resp.measurement));
+            badAssetDetailBody.appendChild(getBadAssetTd("次级类", report.bad_debt_asset.bad_debt.subordinate_balance, report.bad_debt_asset.bad_debt.subordinate_rate, preMOMReport.bad_debt_asset.bad_debt.subordinate_balance, preMOMReport.bad_debt_asset.bad_debt.subordinate_rate, resp.measurement));
+            badAssetDetailBody.appendChild(getBadAssetTd("可疑类", report.bad_debt_asset.bad_debt.suspicious_balance, report.bad_debt_asset.bad_debt.suspicious_rate, preMOMReport.bad_debt_asset.bad_debt.suspicious_balance, preMOMReport.bad_debt_asset.bad_debt.suspicious_rate, resp.measurement));
+            badAssetDetailBody.appendChild(getBadAssetTd("损失类", report.bad_debt_asset.bad_debt.loss_balance, report.bad_debt_asset.bad_debt.loss_rate, preMOMReport.bad_debt_asset.bad_debt.loss_balance, preMOMReport.bad_debt_asset.bad_debt.loss_rate, resp.measurement));
+        
+            migrationRateBody.appendChild(getMigrationRateTd("正常类", report.bad_debt_asset.migration_rate.normal_rate, preYOYReport.bad_debt_asset.migration_rate.normal_rate));
+            migrationRateBody.appendChild(getMigrationRateTd("关注类", report.bad_debt_asset.migration_rate.notice_rate, preYOYReport.bad_debt_asset.migration_rate.notice_rate));
+            migrationRateBody.appendChild(getMigrationRateTd("次级类", report.bad_debt_asset.migration_rate.subordinate_rate, preYOYReport.bad_debt_asset.migration_rate.subordinate_rate));
+            migrationRateBody.appendChild(getMigrationRateTd("可疑类", report.bad_debt_asset.migration_rate.suspicious_rate, preYOYReport.bad_debt_asset.migration_rate.suspicious_rate));
+        
+            badAssetResult.innerHTML = `${resp.message.bad_debt_msg}<p>&nbsp;</p><p>${resp.message.coverage_rate_msg}</p>`;
+        }
+
+        function generateAdequacyMsg(resp) {
+            adequacyRateBody.innerHTML = '';
+            report = resp.report;
+            preYOYReport = resp.pre_yoy_report;
+            preMOMReport = resp.pre_mom_report;
+            adequacyRateBody.appendChild(getDiffTd("核心一级资本充足率", report.adequacy_rate, preYOYReport.adequacy_rate, preMOMReport.adequacy_rate, "%"));
+        
+            adequacyRateResult.innerHTML = `${resp.message.adequacy_rate_msg}`;
+        }
+
+        function generateReportTitle(year, reportType) {
+            curReportTitle = `${year}年${getReportTypeString(reportType)}`;
+            curPeriodReportTitle = `${year}年${getPeriodReportTypeString(reportType)}`;
+            yoyReportTitle = `${year-1}年${getReportTypeString(reportType)}`;
+            yoyPeriodReportTitle = `${year-1}年${getPeriodReportTypeString(reportType)}`;
+            if (reportType == 1) {
+                year = year - 1;
+                reportType = 4;
+                momReportTitle = `${year}年${getReportTypeString(reportType)}`;
+                momPeriodReportTitle = `${year}年${getPeriodReportTypeString(reportType)}`;
+            } else {
+                reportType = reportType - 1;
+                momReportTitle = `${year}年${getReportTypeString(reportType)}`;
+                momPeriodReportTitle = `${year}年${getPeriodReportTypeString(reportType)}`;
+            }
+        }
+
+        function setAllHeader() {
+            const elements1 = document.querySelectorAll('.current-name');
+            elements1.forEach(element => {
+                element.innerHTML = selectedCode.name;
+            });
+            const elements2 = document.querySelectorAll('.current-year');
+            elements2.forEach(element => {
+                element.innerHTML = curReportTitle;
+            });
+            const elements3 = document.querySelectorAll('.mom-year');
+            elements3.forEach(element => {
+                element.innerHTML = momReportTitle;
+            });
+            const elements4 = document.querySelectorAll('.yoy-year');
+            elements4.forEach(element => {
+                element.innerHTML = yoyReportTitle;
+            });
+            const elements5 = document.querySelectorAll('.current-period-year');
+            elements5.forEach(element => {
+                element.innerHTML = curPeriodReportTitle;
+            });
+            const elements6 = document.querySelectorAll('.mom-period-year');
+            elements6.forEach(element => {
+                element.innerHTML = momPeriodReportTitle;
+            });
+            const elements7 = document.querySelectorAll('.yoy-period-year');
+            elements7.forEach(element => {
+                element.innerHTML = yoyPeriodReportTitle;
+            });
+        }
+
+        function generateStockReport() {
+            const year = document.getElementById('year').value;
+            const reportType = document.getElementById('reportType').value;
+            const code = selectedCode ? selectedCode.code : '';
+            generateReportTitle(year, reportType);
+            let resp = getStockReport(code, year, reportType, false);
+            resp.then(data => {
+                if (data.status != 200) {
+                    searchFailText.innerHTML = failMsg;
+                    searchFailText.style.display = 'block';
+                    return;
+                }
+                searchFailText.style.display = 'none';
+
+                const msg = data.json();
+                msg.then(rp => {
+                    setAllHeader();
+                    generateShareholderMsg(rp);
+                    generateIncomeMsg(rp);
+                    generateAssetMsg(rp);
+                    generateBadAssetMsg(rp);
+                    generateAdequacyMsg(rp);
+                });
+            });
+        }
+
+        searchBtn.addEventListener('click', () => {
+            generateStockReport();
+        });
+
+        generateCodeData();
+    </script>
+</body>
+</html>

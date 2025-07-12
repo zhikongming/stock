@@ -3,9 +3,9 @@ package dal
 import (
 	"fmt"
 
+	"github.com/zhikongming/stock/biz/config"
 	"gorm.io/gorm"
 
-	"github.com/zhikongming/stock/biz/model"
 	"gorm.io/driver/mysql"
 )
 
@@ -13,7 +13,7 @@ var (
 	db *gorm.DB
 )
 
-func InitMysql(conf *model.Config) {
+func InitMysql(conf *config.Config) {
 	// 初始化数据库连接
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		conf.DB.User,

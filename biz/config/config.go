@@ -4,12 +4,34 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/zhikongming/stock/biz/dal"
-	"github.com/zhikongming/stock/biz/model"
 	"gopkg.in/yaml.v3"
 )
 
-var conf *model.Config
+type DBConfig struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	DBName   string `yaml:"dbname"`
+}
+
+type ServerConfig struct {
+	Port int `yaml:"port"`
+}
+
+type ReplaceConfig struct {
+	OriginDomain   string `yaml:"origin_domain"`
+	ReplacedDomain string `yaml:"replaced_domain"`
+}
+
+type Config struct {
+	// 配置项
+	DB      *DBConfig      `yaml:"DB"`
+	Server  *ServerConfig  `yaml:"Server"`
+	Replace *ReplaceConfig `yaml:"Replace"`
+}
+
+var conf *Config
 
 func InitConfig() {
 	config_path := "./config.yaml"
@@ -21,11 +43,8 @@ func InitConfig() {
 	if err := yaml.Unmarshal(data, &conf); err != nil {
 		panic(fmt.Sprintf("解析配置文件失败: %v", err))
 	}
-
-	// 初始化配置
-	dal.InitMysql(conf)
 }
 
-func GetConfig() *model.Config {
+func GetConfig() *Config {
 	return conf
 }

@@ -81,3 +81,9 @@ func ToInt64(v interface{}) int64 {
 func Float64KeepDecimal(f float64, decimal int) float64 {
 	return math.Round(f*math.Pow10(decimal)) / math.Pow10(decimal)
 }
+
+func Float64Equal(f1, f2 float64, decimal int) bool {
+	f1 = Float64KeepDecimal(f1, decimal)
+	f2 = Float64KeepDecimal(f2, decimal)
+	return f1 == f2
+}

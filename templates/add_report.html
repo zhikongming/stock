@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票财报分析</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="./common.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2c3e50);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 20px;
+            background: rgba(40, 45, 70, 0.8);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-group {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px;
+            background: rgba(30, 35, 60, 0.6);
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #4facfe;
+            padding-bottom: 8px;
+
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(20, 25, 40, 0.8);
+            color: #e0e0e0;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.4);
+        }
+        
+        button {
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            color: #1a1a2e;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 0px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            max-width: 200px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .info-panel {
+            background: rgba(40, 45, 70, 0.8);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .info-content {
+            line-height: 1.8;
+        }
+        
+        .info-content h3 {
+            color: #00f2fe;
+            margin: 15px 0 10px;
+        }
+        
+        .info-content ul {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .info-content li {
+            margin-bottom: 8px;
+        }
+        
+        .code-block {
+            background: rgba(20, 25, 40, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            padding-bottom: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.0rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+        }
+        
+        /* 支持搜索的下拉框样式 */
+        .searchable-select {
+            position: relative;
+            width: 100%;
+        }
+        .select-header {
+            display: flex;
+            align-items: center;
+            background: rgba(25, 35, 60, 0.8);
+            border-radius: 10px;
+            border: 1px solid rgba(74, 107, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .select-header:hover {
+            border-color: #4facfe;
+        }
+        .select-header input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            padding-right: 30px;
+        }
+        .select-header .arrow {
+            position: absolute;
+            right: 15px;
+            transition: transform 0.3s;
+        }
+        .select-header.open .arrow {
+            transform: rotate(180deg);
+        }
+        .select-options {
+            position: absolute;
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(40, 50, 90, 0.95);
+            border-radius: 10px;
+            border: 1px solid rgba(74, 107, 255, 0.5);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            margin-top: 10px;
+            display: none;
+        }
+        .select-options.open {
+            display: block;
+        }
+        .search-input-container {
+            padding: 12px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.2);
+            position: sticky;
+            top: 0;
+            background: rgba(40, 50, 90, 0.95);
+            z-index: 10;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(74, 107, 255, 0.5);
+            background: rgba(25, 35, 60, 0.8);
+            color: #fff;
+            font-size: 1rem;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 8px rgba(79, 172, 254, 0.5);
+        }
+        .options-list {
+            list-style: none;
+            padding: 8px 0;
+        }
+        .option-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .option-item:hover {
+            background: rgba(74, 107, 255, 0.3);
+        }
+        .option-item.selected {
+            background: rgba(79, 172, 254, 0.2);
+            color: #4facfe;
+        }
+        .option-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(79, 172, 254, 0.2);
+            border-radius: 6px;
+        }
+        .no-results {
+            padding: 20px;
+            text-align: center;
+            color: #a0d2ff;
+            font-style: italic;
+        }
+        .result-display {
+            background: rgba(40, 50, 90, 0.6);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .result-display h3 {
+            color: #00f2fe;
+            margin-bottom: 15px;
+        }
+        .selected-value {
+            font-size: 1.4rem;
+            color: #4facfe;
+            font-weight: 600;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .code-block {
+            background: rgba(25, 35, 60, 0.8);
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        .code-block h3 {
+            color: #4facfe;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .filters-container {
+            background: rgba(30, 40, 70, 0.7);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+            border: 1px solid rgba(74, 107, 255, 0.3);
+        }
+        .filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .filters-header h2 {
+            color: #4facfe;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .filters-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-section {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(40, 50, 90, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(74, 107, 255, 0.2);
+            margin-bottom: 15px;
+        }
+        .filter-section h3 {
+            color: #00f2fe;
+            margin-bottom: 18px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        .highlight {
+            color: #4facfe;
+        }
+
+        .results-container {
+            background: rgba(25, 35, 60, 0.8);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(74, 107, 255, 0.3);
+        }
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .results-header h2 {
+            color: #4facfe;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .results-info {
+            color: #a0d2ff;
+            font-size: 1rem;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .results-table th {
+            background: rgba(74, 107, 255, 0.3);
+            padding: 16px 20px;
+            text-align: left;
+            color: #4facfe;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        .results-table td {
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.1);
+        }
+        .results-table tbody tr {
+            transition: all 0.3s ease;
+            background: rgba(40, 50, 90, 0.4);
+        }
+        .results-table tbody tr:hover {
+            background: rgba(40, 50, 90, 0.7);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .half-filter-control{
+            width: 45%;
+        }
+        .table-title {
+            text-align: center;
+            color: #00f2fe;
+            font-size: 1.2rem;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        .report-message {
+            color: #00f2fe;
+            font-size: 1.1rem;
+        };
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+            
+            .control-group {
+                min-width: 100%;
+            }
+            
+            .results-table th, .results-table td {
+                padding: 12px 15px;
+            }
+
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="filters-container">
+            <h2>财报数据录入</h2>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <h3>1. 基础数据</h3>
+                    <div class="controls">
+                        <div class="control-group">
+                            <div class="form-group">
+                                <label for="stockName">股票</label>
+                                <div class="searchable-select" id="codeSelect">
+                                    <div class="select-header" id="selectHeader">
+                                        <input type="text" placeholder="搜索股票..." id="selectStock" readonly>
+                                        <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+                                    </div>
+                                    <div class="select-options" id="selectOptions">
+                                        <div class="search-input-container">
+                                            <input type="text" class="search-input" id="searchStock" placeholder="输入股票...">
+                                        </div>
+                                        <ul class="options-list" id="optionsList">
+                                            <!-- 选项将通过JavaScript动态生成 -->
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <div class="form-group">
+                                <label for="year">年份</label>
+                                <input type="number" id="year" value="2024">
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <div class="form-group">
+                                <label for="reportType">财报类型</label>
+                                <select id="reportType">
+                                    <option value="4">年报</option>
+                                    <option value="3">三季度报</option>
+                                    <option value="2">半年报</option>
+                                    <option value="1">一季度报</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <div class="form-group">
+                                <label for="industryType">财报行业</label>
+                                <select id="industryType">
+                                    <option value="1">银行</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <div class="form-group">
+                                <label for="measurementType">货币单位</label>
+                                <select id="measurementType">
+                                    <option value="hundred_million">亿元</option>
+                                    <option value="million">百万元</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <h3>2. 股东数据</h3>
+                    <div class="controls">
+                        <div class="control-group" style="max-width:20%;">
+                            <div class="form-group">
+                                <label for="shareholderNumber">股东人数(户)</label>
+                                <input type="number" id="shareholderNumber" value="0" style="max-width: 90%;">
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <div class="form-group">
+                                <label for="shareholder_number">前十大股东</label>
+                                <div class="controls">
+                                    <div class="control-group">
+                                        <div class="form-group">
+                                            <label for="shareholder_number">股东股东名称</label>
+                                            <input type="text" name="shareholderNames" value="">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="text" name="shareholderNames" value="">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="text" name="shareholderNames" value="">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="text" name="shareholderNames" value="">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="text" name="shareholderNames" value="">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="text" name="shareholderNames" value="">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="text" name="shareholderNames" value="">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="text" name="shareholderNames" value="">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="text" name="shareholderNames" value="">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="text" name="shareholderNames" value="">
+                                        </div>
+                                    </div>
+                                    <div class="control-group">
+                                        <div class="form-group">
+                                            <label for="shareholder_number">期末持股数(股)</label>
+                                            <input type="number" name="shareholderShares" value="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderShares" value="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderShares" value="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderShares" value="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderShares" value="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderShares" value="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderShares" value="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderShares" value="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderShares" value="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderShares" value="0">
+                                        </div>
+                                    </div>
+                                    <div class="control-group">
+                                        <div class="form-group">
+                                            <label for="shareholder_number">占总股本比例(%)</label>
+                                            <input type="number" name="shareholderRatios" value="0" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderRatios" value="0" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderRatios" value="0" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderRatios" value="0" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderRatios" value="0" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderRatios" value="0" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderRatios" value="0" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderRatios" value="0" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderRatios" value="0" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="number" name="shareholderRatios" value="0" step="0.01">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <h3>3. 营收数据</h3>
+                    <div class="controls">
+                        <div class="control-group">
+                            <div class="form-group">
+                                <label for="totalIncome">营业收入<span class="measurement"></span></label>
+                                <input type="number" id="totalIncome" value="0" style="max-width: 20%;">
+                            </div>
+                            <div class="controls">
+                                <div class="control-group">
+                                    <div class="form-group">
+                                        <label for="interestTotalIncome">净利息总收入<span class="measurement"></span></label>
+                                        <input type="number" id="interestTotalIncome" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="serviceIncome">手续费收入<span class="measurement"></span></label>
+                                        <input type="number" id="serviceIncome" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="nonInterestIncome">其他非息收入<span class="measurement"></span></label>
+                                        <input type="number" id="nonInterestIncome" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="expense">营业费用及其他<span class="measurement"></span></label>
+                                        <input type="number" id="expense" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="impairmentLoss">信用减值损失<span class="measurement"></span></label>
+                                        <input type="number" id="impairmentLoss" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="retainedProfits">归母净利润<span class="measurement"></span></label>
+                                        <input type="number" id="retainedProfits" value="0">
+                                    </div>
+                                </div>
+                                <div class="control-group">
+                                    <div class="form-group">
+                                        <label for="rate">息差</label>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="controls">
+                                            <div class="control-group">
+                                                <div class="form-group">
+                                                    <label for="interestRate">当期净息差</label>
+                                                    <input type="number" id="interestRate" value="0" step="0.01" style="max-width:70%;"><span> %</span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="loanRate">当期贷款收益率</label>
+                                                    <input type="number" id="loanRate" value="0" step="0.01" style="max-width:70%;"><span> %</span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="depositRate">当期存款成本率</label>
+                                                    <input type="number" id="depositRate" value="0" step="0.01" style="max-width:70%;"><span> %</span>
+                                                </div>
+                                            </div>
+                                            <div class="control-group">
+                                                <div class="form-group">
+                                                    <label for="interestRatePeriod">单季度净息差</label>
+                                                    <input type="number" id="interestRatePeriod" value="0" step="0.01" style="max-width:70%;"><span> %</span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="loanRatePeriod">单季度贷款收益率</label>
+                                                    <input type="number" id="loanRatePeriod" value="0" step="0.01" style="max-width:70%;"><span> %</span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="depositRatePeriod">单季度存款成本率</label>
+                                                    <input type="number" id="depositRatePeriod" value="0" step="0.01" style="max-width:70%;"><span> %</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <h3>4. 资产负债</h3>
+                    <div class="controls">
+                        <div class="control-group">
+                            <div class="form-group">
+                                <label for="asset">资产</label>
+                            </div>
+                            <div class="form-group">
+                                <div class="control-group">
+                                    <div class="form-group">
+                                        <label for="totalAsset">总资产<span class="measurement"></span></label>
+                                        <input type="number" id="totalAsset" value="0" step="0.01" style="max-width:70%;">
+                                    </div>
+                                    <div class="form-group" style="padding-left: 20px;">
+                                        <label for="totalLoan">贷款总额<span class="measurement"></span></label>
+                                        <input type="number" id="totalLoan" value="0" step="0.01" style="max-width:70%;">
+                                    </div>
+                                    <div class="form-group" style="padding-left: 40px;">
+                                        <label for="personLoan">零售贷款<span class="measurement"></span></label>
+                                        <input type="number" id="personLoan" value="0" step="0.01" style="max-width:70%;">
+                                    </div>
+                                    <div class="form-group" style="padding-left: 40px;">
+                                        <label for="corporateLoan">对公贷款<span class="measurement"></span></label>
+                                        <input type="number" id="corporateLoan" value="0" step="0.01" style="max-width:70%;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <div class="form-group">
+                                <label for="debt">负债</label>
+                            </div>
+                            <div class="form-group">
+                                <div class="control-group">
+                                    <div class="form-group">
+                                        <label for="totalDebt">总负债<span class="measurement"></span></label>
+                                        <input type="number" id="totalDebt" value="0" step="0.01" style="max-width:70%;">
+                                    </div>
+                                    <div class="form-group" style="padding-left: 20px;">
+                                        <label for="totalDeposit">存款总额<span class="measurement"></span></label>
+                                        <input type="number" id="totalDeposit" value="0" step="0.01" style="max-width:70%;">
+                                    </div>
+                                    <div class="form-group" style="padding-left: 40px;">
+                                        <label for="personDeposit">零售存款<span class="measurement"></span></label>
+                                        <input type="number" id="personDeposit" value="0" step="0.01" style="max-width:70%;">
+                                    </div>
+                                    <div class="form-group" style="padding-left: 40px;">
+                                        <label for="corporateDeposit">对公存款<span class="measurement"></span></label>
+                                        <input type="number" id="corporateDeposit" value="0" step="0.01" style="max-width:70%;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <h3>5. 不良资产</h3>
+                    <div class="controls">
+                        <div class="control-group">
+                            <div class="form-group">
+                                <label for="badDebtAsset">资产分类</label>
+                            </div>
+                            <div class="form-group">
+                                <div class="controls">
+                                    <div class="control-group">
+                                        <div class="form-group">
+                                            <label for="badDebtBalance">不良余额<span class="measurement"></span></label>
+                                            <input type="number" id="badDebtBalance" value="0" step="0.01">
+                                        </div>
+                                        <p style="padding-bottom: 20px;border-top: 1px solid #00f2fe;"></p>
+                                        <div class="form-group">
+                                            <label for="normalBalance">正常类贷款<span class="measurement"></span></label>
+                                            <input type="number" id="normalBalance" value="0" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="noticeBalance">关注类贷款<span class="measurement"></span></label>
+                                            <input type="number" id="noticeBalance" value="0" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="subordinateBalance">次级类贷款<span class="measurement"></span></label>
+                                            <input type="number" id="subordinateBalance" value="0" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="suspiciousBalance">可疑类贷款<span class="measurement"></span></label>
+                                            <input type="number" id="suspiciousBalance" value="0" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="lossBalance">损失类贷款<span class="measurement"></span></label>
+                                            <input type="number" id="lossBalance" value="0" step="0.01">
+                                        </div>
+                                    </div>
+                                    <div class="control-group">
+                                        <div class="form-group">
+                                            <label for="badDebtRate">不良率</label>
+                                            <input type="number" id="badDebtRate" value="0" step="0.01" style="max-width:80%;"><span> %</span>
+                                        </div>
+                                        <p style="padding-bottom: 20px;border-top: 1px solid #00f2fe;"></p>
+                                        <div class="form-group">
+                                            <label for="normalRate">正常类占比</label>
+                                            <input type="number" id="normalRate" value="0" step="0.01" style="max-width:80%;"><span> %</span>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="noticeRate">关注类占比</label>
+                                            <input type="number" id="noticeRate" value="0" step="0.01" style="max-width:80%;"><span> %</span>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="subordinateRate">次级类占比</label>
+                                            <input type="number" id="subordinateRate" value="0" step="0.01" style="max-width:80%;"><span> %</span>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="suspiciousRate">可疑类占比</label>
+                                            <input type="number" id="suspiciousRate" value="0" step="0.01" style="max-width:80%;"><span> %</span>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="lossRate">损失类占比</label>
+                                            <input type="number" id="lossRate" value="0" step="0.01" style="max-width:80%;"><span> %</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <div class="form-group">
+                                <label for="migration">迁徙率指标</label>
+                            </div>
+                            <div class="form-group">
+                                <div class="control-group">
+                                    <div class="form-group">
+                                        <label for="normalMigrationRate">正常类贷款迁徙率</label>
+                                        <input type="number" id="normalMigrationRate" value="0" step="0.01" style="max-width:70%;"><span> %</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="noticeMigrationRate">关注类贷款迁徙率</label>
+                                        <input type="number" id="noticeMigrationRate" value="0" step="0.01" style="max-width:70%;"><span> %</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="subordinateMigrationRate">次级类贷款迁徙率</label>
+                                        <input type="number" id="subordinateMigrationRate" value="0" step="0.01" style="max-width:70%;"><span> %</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="suspiciousMigrationRate">可疑类贷款迁徙率</label>
+                                        <input type="number" id="suspiciousMigrationRate" value="0" step="0.01" style="max-width:70%;"><span> %</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="control-group" style="max-width:70%;">
+                            <div class="form-group">
+                                <label for="other">其他数据</label>
+                            </div>
+                            <div class="form-group">
+                                <div class="control-group">
+                                    <div class="form-group">
+                                        <label for="newBalance">新生成不良贷款<span class="measurement"></span></label>
+                                        <input type="number" id="newBalance" value="0" step="0.01" style="max-width:70%;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="newRate">新生成不良率</label>
+                                        <input type="number" id="newRate" value="0" step="0.01" style="max-width:70%;"><span> %</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="coverageRate">拨备覆盖率</label>
+                                        <input type="number" id="coverageRate" value="0" step="0.01" style="max-width:70%;"><span> %</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <h3>6. 资本充足率</h3>
+                    <div class="controls">
+                        <div class="control-group">
+                            <div class="form-group">
+                                <label for="adequacyRate">核心一级资本充足率</label>
+                                <input type="number" id="adequacyRate" value="0" step="0.01" style="max-width:15%;"><span> %</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <button id="searchBtn">提交</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function getCodeData() {
+            const response = await fetch(domain + getCodeDataUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            return response.json();
+        }
+    </script>
+
+    <script>
+        // 获取DOM元素
+        const searchBtn = document.getElementById('searchBtn');
+        const mainTitle = document.getElementById('mainTitle');
+        const selectHeader = document.getElementById('selectHeader');
+        const selectStock = document.getElementById('selectStock');
+        const searchStock = document.getElementById('searchStock');
+        const selectOptions = document.getElementById('selectOptions');
+        const optionsList = document.getElementById('optionsList');
+        const measurementType = document.getElementById('measurementType');
+        const year = document.getElementById('year');
+        const reportType = document.getElementById('reportType');
+        const shareholderNumber = document.getElementById('shareholderNumber');
+        const totalIncome = document.getElementById('totalIncome');
+        const interestTotalIncome = document.getElementById('interestTotalIncome');
+        const serviceIncome = document.getElementById('serviceIncome');
+        const nonInterestIncome = document.getElementById('nonInterestIncome');
+        const expense = document.getElementById('expense');
+        const impairmentLoss = document.getElementById('impairmentLoss');
+        const retainedProfits = document.getElementById('retainedProfits');
+        const interestRate = document.getElementById('interestRate');
+        const loanRate = document.getElementById('loanRate');
+        const depositRate = document.getElementById('depositRate');
+        const interestRatePeriod = document.getElementById('interestRatePeriod');
+        const loanRatePeriod = document.getElementById('loanRatePeriod');
+        const depositRatePeriod = document.getElementById('depositRatePeriod');
+        const totalAsset = document.getElementById('totalAsset');
+        const totalLoan = document.getElementById('totalLoan');
+        const personLoan = document.getElementById('personLoan');
+        const corporateLoan = document.getElementById('corporateLoan');
+        const totalDebt = document.getElementById('totalDebt');
+        const totalDeposit = document.getElementById('totalDeposit');
+        const personDeposit = document.getElementById('personDeposit');
+        const corporateDeposit = document.getElementById('corporateDeposit');
+        const normalBalance = document.getElementById('normalBalance');
+        const noticeBalance = document.getElementById('noticeBalance');
+        const subordinateBalance = document.getElementById('subordinateBalance');
+        const suspiciousBalance = document.getElementById('suspiciousBalance');
+        const lossBalance = document.getElementById('lossBalance');
+        const normalRate = document.getElementById('normalRate');
+        const noticeRate = document.getElementById('noticeRate');
+        const subordinateRate = document.getElementById('subordinateRate');
+        const suspiciousRate = document.getElementById('suspiciousRate');
+        const lossRate = document.getElementById('lossRate');
+        const normalMigrationRate = document.getElementById('normalMigrationRate');
+        const noticeMigrationRate = document.getElementById('noticeMigrationRate');
+        const subordinateMigrationRate = document.getElementById('subordinateMigrationRate');
+        const suspiciousMigrationRate = document.getElementById('suspiciousMigrationRate');
+        const newBalance = document.getElementById('newBalance');
+        const newRate = document.getElementById('newRate');
+        const coverageRate = document.getElementById('coverageRate');
+        const adequacyRate = document.getElementById('adequacyRate');
+        const badDebtBalance = document.getElementById('badDebtBalance');
+        const badDebtRate = document.getElementById('badDebtRate');
+
+        let codeList = [];
+        let selectedCode = null;
+        
+        function generateCodeData() {
+            let resp = getCodeData();
+            resp.then(data => {
+                data.forEach(item => {
+                    codeList.push({
+                        "code": item.company_code,
+                        "name": item.company_name
+                    });
+                });
+            });
+        }
+        
+        function renderOptions(filter = '') {
+            optionsList.innerHTML = '';
+            
+            const filteredStocks = codeList.filter(code => 
+                code.name.toLowerCase().includes(filter.toLowerCase()) || 
+                code.code.toLowerCase().includes(filter.toLowerCase())
+            );
+            
+            if (filteredStocks.length === 0) {
+                optionsList.innerHTML = '<div class="no-results">没有找到匹配的股票</div>';
+                return;
+            }
+            
+            filteredStocks.forEach(stock => {
+                const li = document.createElement('li');
+                li.className = 'option-item';
+                if (selectedCode && selectedCode.code === stock.code) {
+                    li.classList.add('selected');
+                }
+                li.dataset.value = stock.code;
+                
+                li.innerHTML = `
+                    <div>${stock.name}(${stock.code})</div>
+                `;
+                
+                li.addEventListener('click', () => {
+                    selectCodeAndName(stock);
+                });
+                
+                optionsList.appendChild(li);
+            });
+        }
+
+        function selectCodeAndName(stock) {
+            selectedCode = stock;
+            selectStock.value = stock.name + '(' + stock.code + ')';
+            closeDropdown();
+            renderOptions(searchStock.value);
+            fillStockReport();
+        }
+        
+        // 打开下拉框
+        function openDropdown() {
+            selectOptions.classList.add('open');
+            selectHeader.classList.add('open');
+            searchStock.focus();
+            renderOptions();
+        }
+        
+        // 关闭下拉框
+        function closeDropdown() {
+            selectOptions.classList.remove('open');
+            selectHeader.classList.remove('open');
+        }
+
+        // 事件监听
+        selectHeader.addEventListener('click', (e) => {
+            if (selectOptions.classList.contains('open')) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+        
+        searchStock.addEventListener('input', (e) => {
+            renderOptions(e.target.value);
+        });
+        
+        searchStock.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeDropdown();
+            }
+        });
+        
+        // 点击外部关闭下拉框
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.searchable-select')) {
+                closeDropdown();
+            }
+        });
+
+        function gnerateMeasurement() {
+            let measurementValue = measurementType.value;
+            if (measurementValue == "hundred_million") {
+                measurementValue = "(亿元)";
+            } else if (measurementValue == "million") {
+                measurementValue = "(百万元)";
+            }
+            const elements = document.querySelectorAll('.measurement');
+            elements.forEach(element => {
+                element.innerHTML = measurementValue;
+            });
+        }
+
+        function setValue(resp) {
+            if (resp == undefined) {
+                shareholderNumber.value = 0.0;
+                let shareholderNames = document.querySelectorAll('input[name="shareholderNames"]')
+                let shareholderShares = document.querySelectorAll('input[name="shareholderShares"]')
+                let shareholderRatios = document.querySelectorAll('input[name="shareholderRatios"]')
+                for (let i = 0; i < shareholderNames.length; i++) {
+                    shareholderNames[i].value = "";
+                    shareholderShares[i].value = 0;
+                    shareholderRatios[i].value = 0;
+                }
+                // 营收数据
+                totalIncome.value = 0;
+                interestTotalIncome.value = 0;
+                serviceIncome.value = 0;
+                nonInterestIncome.value = 0;
+                expense.value = 0;
+                impairmentLoss.value = 0;
+                retainedProfits.value = 0;
+                // 息差
+                interestRate.value = 0;
+                loanRate.value = 0;
+                depositRate.value = 0;
+                interestRatePeriod.value = 0;
+                loanRatePeriod.value = 0;
+                depositRatePeriod.value = 0;
+                // 资产负债
+                totalAsset.value = 0;
+                totalLoan.value = 0;
+                personLoan.value = 0;
+                corporateLoan.value = 0;
+                totalDebt.value = 0;
+                totalDeposit.value = 0;
+                personDeposit.value = 0;
+                corporateDeposit.value = 0;
+                // 不良资产
+                normalBalance.value = 0;
+                noticeBalance.value = 0;
+                subordinateBalance.value = 0;
+                suspiciousBalance.value = 0;
+                lossBalance.value = 0;
+                normalRate.value = 0;
+                noticeRate.value = 0;
+                subordinateRate.value = 0;
+                suspiciousRate.value = 0;
+                lossRate.value = 0;
+                badDebtBalance.value = 0;
+                badDebtRate.value = 0;
+                // 迁徙率
+                normalMigrationRate.value = 0;
+                noticeMigrationRate.value = 0;
+                subordinateMigrationRate.value = 0;
+                suspiciousMigrationRate.value = 0;
+                // 其他
+                newBalance.value = 0;
+                newRate.value = 0;
+                coverageRate.value = 0;
+                // 资本充足率
+                adequacyRate.value = 0;
+
+                return;
+            }
+            report = resp.report;
+            // 股东数据
+            shareholderNumber.value = report.shareholder.shareholder_number;
+            let shareholderNames = document.querySelectorAll('input[name="shareholderNames"]')
+            let shareholderShares = document.querySelectorAll('input[name="shareholderShares"]')
+            let shareholderRatios = document.querySelectorAll('input[name="shareholderRatios"]')
+            for (let i = 0; i < shareholderNames.length; i++) {
+                if (i >= report.shareholder.shareholder_list.length) {
+                    break;
+                }
+                shareholderNames[i].value = report.shareholder.shareholder_list[i].name;
+                shareholderShares[i].value = report.shareholder.shareholder_list[i].share;
+                shareholderRatios[i].value = report.shareholder.shareholder_list[i].ratio;
+            }
+            // 营收数据
+            totalIncome.value = report.income.total_income;
+            interestTotalIncome.value = report.income.interest_income.total_income;
+            serviceIncome.value = report.income.service_income;
+            nonInterestIncome.value = report.income.non_interest_income;
+            expense.value = report.expense;
+            impairmentLoss.value = report.impairment_loss;
+            retainedProfits.value = report.retained_profits;
+            // 息差
+            interestRate.value = report.income.interest_income.interest_rate;
+            loanRate.value = report.income.interest_income.loan_rate;
+            depositRate.value = report.income.interest_income.deposit_rate;
+            interestRatePeriod.value = report.income.interest_income.interest_rate_period;
+            loanRatePeriod.value = report.income.interest_income.loan_rate_period;
+            depositRatePeriod.value = report.income.interest_income.deposit_rate_period;
+            // 资产负债
+            totalAsset.value = report.asset.total_asset;
+            totalLoan.value = report.asset.bank_loan.total_loan;
+            personLoan.value = report.asset.bank_loan.person_loan;
+            corporateLoan.value = report.asset.bank_loan.corporate_loan;
+            totalDebt.value = report.asset.total_debt;
+            totalDeposit.value = report.asset.bank_deposit.total_deposit;
+            personDeposit.value = report.asset.bank_deposit.person_deposit;
+            corporateDeposit.value = report.asset.bank_deposit.corporate_deposit;
+            // 不良资产
+            normalBalance.value = report.bad_debt_asset.bad_debt.normal_balance;
+            noticeBalance.value = report.bad_debt_asset.bad_debt.notice_balance;
+            subordinateBalance.value = report.bad_debt_asset.bad_debt.subordinate_balance;
+            suspiciousBalance.value = report.bad_debt_asset.bad_debt.suspicious_balance;
+            lossBalance.value = report.bad_debt_asset.bad_debt.loss_balance;
+            normalRate.value = report.bad_debt_asset.bad_debt.normal_rate;
+            noticeRate.value = report.bad_debt_asset.bad_debt.notice_rate;
+            subordinateRate.value = report.bad_debt_asset.bad_debt.subordinate_rate;
+            suspiciousRate.value = report.bad_debt_asset.bad_debt.suspicious_rate;
+            lossRate.value = report.bad_debt_asset.bad_debt.loss_rate;
+            badDebtBalance.value = report.bad_debt_asset.total_balance;
+            badDebtRate.value = report.bad_debt_asset.total_rate;
+            // 迁徙率
+            normalMigrationRate.value = report.bad_debt_asset.migration_rate.normal_rate;
+            noticeMigrationRate.value = report.bad_debt_asset.migration_rate.notice_rate;
+            subordinateMigrationRate.value = report.bad_debt_asset.migration_rate.subordinate_rate;
+            suspiciousMigrationRate.value = report.bad_debt_asset.migration_rate.suspicious_rate;
+            // 其他
+            newBalance.value = report.bad_debt_asset.new_balance;
+            newRate.value = report.bad_debt_asset.new_rate;
+            coverageRate.value = report.bad_debt_asset.coverage_rate;
+            // 资本充足率
+            adequacyRate.value = report.adequacy_rate;
+        }
+
+        function saveStockReport() {
+            // 股东数据
+            let shareholderNames = document.querySelectorAll('input[name="shareholderNames"]')
+            let shareholderShares = document.querySelectorAll('input[name="shareholderShares"]')
+            let shareholderRatios = document.querySelectorAll('input[name="shareholderRatios"]')
+            let shareholderList = [];
+            for (let i = 0; i < shareholderNames.length; i++) {
+                shareholderList.push({
+                    "name": shareholderNames[i].value,
+                    "share": parseInt(shareholderShares[i].value),
+                    "ratio": parseFloat(shareholderRatios[i].value)
+                });
+            }
+            let report = {
+                "shareholder": {
+                    "shareholder_number": parseInt(shareholderNumber.value),
+                    "shareholder_list": shareholderList
+                },
+                "income": {
+                    "total_income": parseFloat(totalIncome.value),
+                    "interest_income": {
+                        "total_income": parseFloat(interestTotalIncome.value),
+                        "interest_rate": parseFloat(interestRate.value),
+                        "loan_rate": parseFloat(loanRate.value),
+                        "deposit_rate": parseFloat(depositRate.value),
+                        "interest_rate_period": parseFloat(interestRatePeriod.value),
+                        "loan_rate_period": parseFloat(loanRatePeriod.value),
+                        "deposit_rate_period": parseFloat(depositRatePeriod.value)
+                    },
+                    "service_income": parseFloat(serviceIncome.value),
+                    "non_interest_income": parseFloat(nonInterestIncome.value)
+                },
+                "expense": parseFloat(expense.value),
+                "impairment_loss": parseFloat(impairmentLoss.value),
+                "retained_profits": parseFloat(retainedProfits.value),
+                "asset": {
+                    "total_asset": parseFloat(totalAsset.value),
+                    "bank_loan": {
+                        "total_loan": parseFloat(totalLoan.value),
+                        "person_loan": parseFloat(personLoan.value),
+                        "corporate_loan": parseFloat(corporateLoan.value)
+                    },
+                    "total_debt": parseFloat(totalDebt.value),
+                    "bank_deposit": {
+                        "total_deposit": parseFloat(totalDeposit.value),
+                        "person_deposit": parseFloat(personDeposit.value),
+                        "corporate_deposit": parseFloat(corporateDeposit.value)
+                    }
+                },
+                "bad_debt_asset": {
+                    "total_balance": parseFloat(badDebtBalance.value),
+                    "total_rate": parseFloat(badDebtRate.value),
+                    "bad_debt": {
+                        "normal_balance": parseFloat(normalBalance.value),
+                        "notice_balance": parseFloat(noticeBalance.value),
+                        "subordinate_balance": parseFloat(subordinateBalance.value),
+                        "suspicious_balance": parseFloat(suspiciousBalance.value),
+                        "loss_balance": parseFloat(lossBalance.value),
+                        "normal_rate": parseFloat(normalRate.value),
+                        "notice_rate": parseFloat(noticeRate.value),
+                        "subordinate_rate": parseFloat(subordinateRate.value),
+                        "suspicious_rate": parseFloat(suspiciousRate.value),
+                        "loss_rate": parseFloat(lossRate.value)
+                    },
+                    "migration_rate": {
+                        "normal_rate": parseFloat(normalMigrationRate.value),
+                        "notice_rate": parseFloat(noticeMigrationRate.value),
+                        "subordinate_rate": parseFloat(subordinateMigrationRate.value),
+                        "suspicious_rate": parseFloat(suspiciousMigrationRate.value)
+                    },
+                    "new_balance": parseFloat(newBalance.value),
+                    "new_rate": parseFloat(newRate.value),
+                    "coverage_rate": parseFloat(coverageRate.value)
+                },
+                "adequacy_rate": parseFloat(adequacyRate.value)
+            };
+            const yr = year.value;
+            const reportTp = reportType.value;
+            const code = selectedCode? selectedCode.code : '';
+            const industryType = document.getElementById('industryType').value;
+            const mt = measurementType.value;
+            let resp = updateStockReport(code, yr, reportTp, industryType, mt, report);
+            resp.then(data => {
+                if (data.status!= 200) {
+                    data.json().then(rp => {
+                        alert("保存失败, 失败原因： " + rp.message);
+                    })
+                    return;
+                };
+                alert("保存成功");
+            })
+        }
+
+        function fillStockReport() {
+            const year = document.getElementById('year').value;
+            const reportType = document.getElementById('reportType').value;
+            const code = selectedCode ? selectedCode.code : '';
+            if (code == '') {
+                return;
+            }
+            let resp = getStockReport(code, year, reportType, true);
+            resp.then(data => {
+                if (data.status != 200) {
+                    setValue();
+                    return;
+                };
+                const result = data.json();
+                result.then(rp => {
+                    setValue(rp);
+                });
+            });
+        }
+
+        searchBtn.addEventListener('click', () => {
+            saveStockReport();
+        });
+        measurementType.addEventListener('change', () => {
+            gnerateMeasurement();
+        });
+        selectStock.addEventListener('change', () => {
+            fillStockReport();
+        });
+        year.addEventListener('change', () => {
+            fillStockReport();
+        });
+        reportType.addEventListener('change', () => {
+            fillStockReport();
+        });
+
+        generateCodeData();
+        gnerateMeasurement();
+    </script>
+</body>
+</html>
