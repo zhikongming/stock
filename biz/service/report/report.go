@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/zhikongming/stock/biz/dal"
 	"github.com/zhikongming/stock/biz/model"
@@ -115,5 +116,54 @@ func GetBankReport(ctx context.Context, rp *dal.StockReport, disableMsg bool) (*
 	resp.Message = msg
 	resp.PreMOMReport = report.GetPreMOMReport()
 	resp.PreYOYReport = report.GetPreYOYReport()
+	return resp, nil
+}
+
+func GetBankTrackData(ctx context.Context, req *model.GetBankTrackDataReq) (*model.GetBankTrackDataResp, error) {
+	resp := &model.GetBankTrackDataResp{
+		DateList:   make([]*model.ReportTime, 0),
+		ReportList: make([]*model.BankTrackData, 0),
+	}
+	// 从数据库获取数据
+	reports, err := dal.GetAllReports(ctx, req.Code)
+	if err != nil {
+		return nil, err
+	}
+	sort.Sort(dal.StockReportSorter(reports))
+	// 解析数据
+	reportList := make([]*model.BankReport, 0)
+	for _, rp := range reports {
+		report := &model.BankReport{}
+		err = json.Unmarshal([]byte(rp.Report), report)
+		if err != nil {
+			return nil, err
+		}
+		reportList = append(reportList, report)
+	}
+	// 计算数据
+	for idx := 0; idx < len(reportList); idx++ {
+		resp.DateList = append(resp.DateList, &model.ReportTime{
+			Year:       reports[idx].Year,
+			ReportType: reports[idx].ReportType,
+		})
+		resp.ReportList = append(resp.ReportList, &model.BankTrackData{
+			ShareholderNumber:  reportList[idx].Shareholder.ShareholderNumber,
+			InterestRate:       reportList[idx].Income.InterestIncome.InterestRate,
+			InterestRatePeriod: reportList[idx].Income.InterestIncome.InterestRatePeriod,
+			ImpairmentLoss:     reportList[idx].ImpairmentLoss,
+			TotalBalance:       reportList[idx].BadDebtAsset.TotalBalance,
+			TotalRate:          reportList[idx].BadDebtAsset.TotalRate,
+			NewBalance:         reportList[idx].BadDebtAsset.NewBalance,
+			NewRate:            reportList[idx].BadDebtAsset.NewRate,
+			CoverageRate:       reportList[idx].BadDebtAsset.CoverageRate,
+			AdequacyRate:       reportList[idx].AdequacyRate,
+		})
+		if resp.Measurement == "" {
+			base := &model.StockReportBase{
+				Measurement: model.MeasurementType(reports[idx].Measurement),
+			}
+			resp.Measurement = base.GetMeasurement()
+		}
+	}
 	return resp, nil
 }

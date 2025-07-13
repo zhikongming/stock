@@ -16,6 +16,26 @@ type StockReport struct {
 	IndustryType int    `json:"industry_type"`
 }
 
+type StockReportSorter []*StockReport
+
+func (s StockReportSorter) Len() int {
+	return len(s)
+}
+
+func (s StockReportSorter) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s StockReportSorter) Less(i, j int) bool {
+	if s[i].Year < s[j].Year {
+		return true
+	} else if s[i].Year > s[j].Year {
+		return false
+	} else {
+		return s[i].ReportType < s[j].ReportType
+	}
+}
+
 func (StockReport) TableName() string {
 	return "stock_report"
 }
@@ -63,4 +83,13 @@ func CreateStockReport(ctx context.Context, report *StockReport) error {
 		return err
 	}
 	return nil
+}
+
+func GetAllReports(ctx context.Context, companyCode string) ([]*StockReport, error) {
+	var reports []*StockReport
+	err := db.WithContext(ctx).Where("company_code =?", companyCode).Find(&reports).Error
+	if err != nil {
+		return nil, err
+	}
+	return reports, nil
 }
