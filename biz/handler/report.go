@@ -49,3 +49,21 @@ func AddStockReport(ctx context.Context, c *app.RequestContext) {
 		"message": "success",
 	})
 }
+
+func GetBankTrackData(ctx context.Context, c *app.RequestContext) {
+	var req model.GetBankTrackDataReq
+	if c.BindQuery(&req) != nil {
+		c.JSON(http.StatusBadRequest, utils.H{
+			"message": "bad request",
+		})
+		return
+	}
+	data, err := report.GetBankTrackData(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.H{
+			"message": fmt.Sprintf("%v", err),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}

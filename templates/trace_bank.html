@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票中枢区间划分</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script> -->
     <script src="./echarts.min.js"></script>
     <script src="./common.js"></script>
     <style>
@@ -347,6 +346,54 @@
             line-height: 1.5;
             font-size: 14px;
         }
+        .filters-container {
+            background: rgba(30, 40, 70, 0.7);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+            border: 1px solid rgba(74, 107, 255, 0.3);
+        }
+        .filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .filters-header h2 {
+            color: #4facfe;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .filters-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-section {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(40, 50, 90, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(74, 107, 255, 0.2);
+            margin-bottom: 15px;
+        }
+        .filter-section h3 {
+            color: #00f2fe;
+            margin-bottom: 18px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        .chart {
+            height: 400px;
+        }
         .highlight {
             color: #4facfe;
         }
@@ -374,7 +421,7 @@
     <div class="container">
 
         <div class="controls">
-            <div class="control-group">
+            <div class="control-group" style="max-width: 20%;">
                 <div class="form-group">
                     <label for="stockName">股票</label>
                     <div class="searchable-select" id="codeSelect">
@@ -393,72 +440,95 @@
                     </div>
                 </div>
             </div>
-            <div class="control-group">
-                <div class="form-group">
-                    <label for="startDate">起始日期</label>
-                    <input type="date" id="startDate" value="2024-10-08">
-                </div>
-            </div>
-            <div class="control-group">
-                <div class="form-group">
-                    <label for="lineType">K线图类型</label>
-                    <select id="lineType">
-                        <option value="0">日K线图</option>
-                    </select>
-                </div>
-            </div>
-            <div class="control-group">
-                <button id="resetBtn">画图</button>
-            </div>
         </div>
 
-        <div class="chart-container">
-            <div id="chart"></div>
-        </div>
-
-        <div class="legend">
-            <div class="legend-item">
-                <p id="mainTitle">走势划分</p>
+        <div class="filters-container">
+            <div class="filters-row">
+                <div class="filter-section">
+                    <div id="chart-shareholder" class="chart"></div>
+                </div>
+                <div class="filter-section">
+                    <div id="chart-impairment-loss" class="chart"></div>
+                </div>
             </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: #ef5350;"></div>
-                <span>上涨蜡烛</span>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <div id="chart-interest-rate" class="chart"></div>
+                </div>
+                <div class="filter-section">
+                    <div id="chart-interest-rate-period" class="chart"></div>
+                </div>
             </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: #26a69a;"></div>
-                <span>下跌蜡烛</span>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <div id="chart-total-balance" class="chart"></div>
+                </div>
+                <div class="filter-section">
+                    <div id="chart-total-rate" class="chart"></div>
+                </div>
+            </div>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <div id="chart-new-balance" class="chart"></div>
+                </div>
+                <div class="filter-section">
+                    <div id="chart-new-rate" class="chart"></div>
+                </div>
+            </div>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <div id="chart-coverage-rate" class="chart"></div>
+                </div>
+                <div class="filter-section">
+                    <div id="chart-adequacy-rate" class="chart"></div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         // 获取DOM元素
-        const chartDom = document.getElementById('chart');
-        const resetBtn = document.getElementById('resetBtn');
-        const mainTitle = document.getElementById('mainTitle');
         const selectHeader = document.getElementById('selectHeader');
         const selectStock = document.getElementById('selectStock');
         const searchStock = document.getElementById('searchStock');
         const selectOptions = document.getElementById('selectOptions');
         const optionsList = document.getElementById('optionsList');
-        
+        const chartShareholderNode = document.getElementById('chart-shareholder');
+        const chartInterestRateNode = document.getElementById('chart-interest-rate');
+        const chartInterestRatePeriodNode = document.getElementById('chart-interest-rate-period');
+        const chartImpairmentLossNode = document.getElementById('chart-impairment-loss');
+        const chartTotalBalanceNode = document.getElementById('chart-total-balance');
+        const chartTotalRateNode = document.getElementById('chart-total-rate');
+        const chartNewBalanceNode = document.getElementById('chart-new-balance');
+        const chartNewRateNode = document.getElementById('chart-new-rate');
+        const chartCoverageRateNode = document.getElementById('chart-coverage-rate');
+        const chartAdequacyRateNode = document.getElementById('chart-adequacy-rate');
+
         // 初始化ECharts实例
-        const chart = echarts.init(chartDom);
-        
-        // 颜色配置
-        let upColor = '#ef5350';
-        let downColor = '#26a69a';
-        let upBorderColor = '#ef5350';
-        let downBorderColor = '#26a69a';
-        
-        // 存储所有斜线
-        let trendLines = [];
-        let kData = [];
-        let pivotLines = [];
-        let divergencePoints = [];
-        let categoryData = [];
+        const chartShareholder = echarts.init(chartShareholderNode);
+        const chartInterestRate = echarts.init(chartInterestRateNode);
+        const chartInterestRatePeriod = echarts.init(chartInterestRatePeriodNode);
+        const chartImpairmentLoss = echarts.init(chartImpairmentLossNode);
+        const chartTotalBalance = echarts.init(chartTotalBalanceNode);
+        const chartTotalRate = echarts.init(chartTotalRateNode);
+        const chartNewBalance = echarts.init(chartNewBalanceNode);
+        const chartNewRate = echarts.init(chartNewRateNode);
+        const chartCoverageRate = echarts.init(chartCoverageRateNode);
+        const chartAdequacyRate = echarts.init(chartAdequacyRateNode);
+
         let codeList = [];
         let selectedCode = null;
+        let measurement = "";
+        let shareholderNumberList = [];
+        let interestRateList = [];
+        let interestRatePeriodList = [];
+        let impairmentLossList = [];
+        let totalBalanceList = [];
+        let totalRateList = [];
+        let newBalanceList = [];
+        let newRateList = [];
+        let coverageRateList = [];
+        let adequacyRateList = [];
         
         function generateCodeData() {
             let resp = getCodeData();
@@ -478,248 +548,145 @@
                 return;
             }
             let codeSelect = document.getElementById("stockName");
-            let startDate = document.getElementById('startDate');
-            let lineType = document.getElementById('lineType');
 
-            // 修改title
-            mainTitle.innerHTML = selectedCode.name + "(" + selectedCode.code + ")" + " 走势划分";
-
-            let resp = getPriceData(selectedCode.code, startDate.value, lineType.value);
+            let resp = getBankTraceData(selectedCode.code);
             resp.then(data => {
-                // 生成K线数据
-                kData = [];
-                categoryData = [];
-                for (let i = 0; i < data.price_data.length; i++) {
-                    let item = data.price_data[i];
-                    kData.push([
-                        new Date(item.date).getTime(), // 时间戳（毫秒）
-                        item.price_open,
-                        item.price_close,
-                        item.price_low,
-                        item.price_high,
-                        item.amount,
-                    ]);
-                    categoryData[i] = i;
+                if (data.status != 200) {
+                    return;
                 }
-                
-                // 生成趋势数据
-                trendLines = [];
-                for (let i = 0; i < data.trend_fractal.length; i++) {
-                    let item = data.trend_fractal[i];
-                    trendLines.push({
-                        name: i,
-                        lineStyle: { color: '#4dabf7', width: 2, type: 'solid' },
-                        data: [
-                            [{ coord: [new Date(item.start_date).getTime(), item.price_start] }, 
-                            { coord: [new Date(item.end_date).getTime(), item.price_end] }]
-                        ]
-                    });
-                }
+                shareholderNumberList = [];
+                interestRateList = [];
+                interestRatePeriodList = [];
+                impairmentLossList = [];
+                totalBalanceList = [];
+                totalRateList = [];
+                newBalanceList = [];
+                newRateList = [];
+                coverageRateList = [];
+                adequacyRateList = [];
+                measurement = "";
+                let d = data.json();
+                d.then(data => {
+                    let dateList = data.date_list;
+                    measurement = data.measurement;
+                    let reportList = data.report_list;
+                    for (let i = 0; i < dateList.length; i++) {
+                        let date = dateList[i].year + "." + getReportTypeString2(dateList[i].report_type);
+                        shareholderNumberList.push({
+                            "date": date,
+                            "value": reportList[i].shareholder_number
+                        });
+                        interestRateList.push({
+                            "date": date,
+                            "value": reportList[i].interest_rate
+                        });
+                        interestRatePeriodList.push({
+                            "date": date,
+                            "value": reportList[i].interest_rate_period
+                        });
+                        impairmentLossList.push({
+                            "date": date,
+                            "value": reportList[i].impairment_loss
+                        });
+                        totalBalanceList.push({
+                            "date": date,
+                            "value": reportList[i].total_balance
+                        });
+                        totalRateList.push({
+                            "date": date,
+                            "value": reportList[i].total_rate
+                        });
+                        newBalanceList.push({
+                            "date": date,
+                            "value": reportList[i].new_balance
+                        });
+                        newRateList.push({
+                            "date": date,
+                            "value": reportList[i].new_rate
+                        });
+                        coverageRateList.push({
+                            "date": date,
+                            "value": reportList[i].coverage_rate
+                        });
+                        adequacyRateList.push({
+                            "date": date,
+                            "value": reportList[i].adequacy_rate
+                        });
+                    }
 
-                // 生成中枢数据
-                pivotLines = [];
-                for (let i = 0; i < data.pivot_data.length; i++) {
-                    let item = data.pivot_data[i];
-                    pivotLines.push({
-                        name: "中枢区间 " + i + " 底部",
-                        lineStyle: { color: '#4dabf7', width: 2, type:'solid' },
-                        data: [
-                            [{ coord: [new Date(item.start_date).getTime(), item.price_low] },
-                            { coord: [new Date(item.end_date).getTime(), item.price_low] }]
-                        ]
-                    })
-                    pivotLines.push({
-                        name: "中枢区间 " + i + " 顶部",
-                        lineStyle: { color: '#4dabf7', width: 2, type:'solid' },
-                        data: [
-                            [{ coord: [new Date(item.start_date).getTime(), item.price_high] },
-                            { coord: [new Date(item.end_date).getTime(), item.price_high] }]
-                        ]
-                    })
-                }
-
-                // 生成背驰点数据
-                divergencePoints = [];
-                for (let i = 0; i < data.divergence_point_data.length; i++) {
-                    let item = data.divergence_point_data[i];
-                    divergencePoints.push({
-                        coord: [new Date(item.date).getTime(), item.price],
-                        name: '最低点',
-                        label: {
-                            formatter: `${item.point_type}`
-                        }
-                    })
-                }
-
-                renderChart();
+                    renderChart();
+                });
             });
         }
-        
-        // 渲染图表函数
-        function renderChart() {
-            if (kData.length === 0) {
-                return;
-            }
-            let lineType = document.getElementById('lineType');
+
+        function renderSingleChart(dataList, dataProperty, chartNode, mea) {
             let option = {
-                backgroundColor: '#1e233c',
-                animation: true,
-                legend: {
-                    data: ['K线数据', ...trendLines.map(line => line.name)],
-                    textStyle: { color: '#d9d9d9' },
-                    bottom: 0
-                },
-                tooltip: {
-                    trigger: 'axis',
-                    axisPointer: {
-                        type: 'cross',
-                        label: {
-                            backgroundColor: '#6a7985'
-                        }
-                    },
-                    formatter: function(params) {
-                        const date = new Date(params[0].value[0]);
-                        let dateStr = `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-                        if (lineType.value == "1") {
-                            dateStr = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
-                        }
-                        let tooltip = `<div style="margin-bottom:5px;font-weight:bold">${dateStr}</div>`;
-                        
-                        params.forEach(item => {
-                            if (item.seriesType === 'candlestick') {
-                                tooltip += `
-                                <div>开盘: ${item.value[1].toFixed(2)}</div>
-                                <div>收盘: ${item.value[2].toFixed(2)}</div>
-                                <div>最低: ${item.value[3].toFixed(2)}</div>
-                                <div>最高: ${item.value[4].toFixed(2)}</div>`;
-                            }
-                        });
-                        
-                        return tooltip;
+                title: {
+                    text: dataProperty.title + "(" + mea + ")",  // 图表标题
+                    left: 'center',        // 标题居中
+                    textStyle: {
+                        color: 'white',
+                        fontSize: 20,
+                        fontWeight: 'bolder',
+                        fontFamily: 'Arial, sans-serif',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.2)' // 可选文字阴影
                     }
                 },
-                grid: {
-                    left: '10%',
-                    right: '10%',
-                    bottom: '15%',
-                    top: '5%',
-                    containLabel: true
+                tooltip: {                // 提示框
+                    trigger: 'axis'       // 触发方式：坐标轴
+                },
+                legend: {                 // 图例
+                    data: [dataProperty.legend],     // 系列名称
+                    bottom: 10,            // 图例位置（底部）
+                    textStyle: {
+                        color: 'white',
+                        fontSize: 15,
+                        fontWeight: 'bolder',
+                        fontFamily: 'Arial, sans-serif',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.2)' // 可选文字阴影
+                    }
                 },
                 xAxis: {
-                    type: 'time',
-                    scale: true,
-                    axisLine: { lineStyle: { color: '#8392A5' } },
-                    axisLabel: { color: '#d9d9d9' },
-                    splitLine: { show: false }
+                    type: 'category',    // 类目轴（离散数据）
+                    data: [...dataList.map(item => item.date)]  // X轴数据
                 },
                 yAxis: {
-                    scale: true,
-                    axisLine: { lineStyle: { color: '#8392A5' } },
-                    axisLabel: { color: '#d9d9d9' },
-                    splitLine: { lineStyle: { color: 'rgba(131, 146, 165, 0.2)' } }
+                    type: 'value'         // 数值轴
                 },
-                dataZoom: [
-                    {
-                        type: 'inside',
-                        start: 0,
-                        end: 100
+                series: [{
+                    name: dataProperty.serieName,
+                    type: 'line',         // 折线图类型
+                    data: [...dataList.map(item => item.value)],  // Y轴数据
+                    smooth: true,          // 平滑曲线
+                    areaStyle: {           // 填充区域
+                        color: 'rgba(64, 158, 255, 0.2)'
                     },
-                    {
-                        show: true,
-                        type: 'slider',
-                        bottom: 25,
-                        start: 0,
-                        end: 100,
-                        backgroundColor: 'rgba(30, 35, 60, 0.8)',
-                        dataBackground: {
-                            lineStyle: { color: 'rgba(79, 172, 254, 0.3)' },
-                            areaStyle: { color: 'rgba(79, 172, 254, 0.1)' }
-                        },
-                        fillerColor: 'rgba(79, 172, 254, 0.2)',
-                        borderColor: 'rgba(79, 172, 254, 0.5)',
-                        handleStyle: {
-                            color: '#4facfe',
-                            borderColor: '#4facfe'
-                        },
-                        textStyle: { color: '#d9d9d9' }
-                    }
-                ],
-                series: [
-                    {
-                        name: 'K线数据',
-                        type: 'candlestick',
-                        data: kData,
-                        itemStyle: {
-                            color: upColor,
-                            color0: downColor,
-                            borderColor: upBorderColor,
-                            borderColor0: downBorderColor
-                        },
-                        markPoint: {
-                            data: divergencePoints,
-                            label: {
-                                color: '#fff',
-                                fontSize: 12,
-                                backgroundColor: 'rgba(0,0,0,0.7)',
-                                borderRadius: 4,
-                            },
-                            symbol: "triangle",
-                            symbolSize: 25,
-                        },
-                        markLine: {
-                            symbol: ['none', 'none'],
-                            lineStyle: {
-                                width: 1,
-                                type: 'solid'
-                            },
-                            data: [],
-                            label: {
-                                show: false
-                            }
-                        }
+                    lineStyle: {           // 线条样式
+                        width: 3,
+                        color: '#1890FF'
                     },
-                    ...trendLines.map(line => {
-                        return {
-                            name: line.name,
-                            type: 'line',
-                            markLine: {
-                                symbol: ['none', 'none'],
-                                lineStyle: line.lineStyle,
-                                data: line.data,
-                                label: {
-                                    show: true,
-                                    position: 'end',
-                                    formatter: line.name,
-                                    color: line.lineStyle.color
-                                }
-                            },
-                            data: []
-                        };
-                    }),
-                    ...pivotLines.map(line => {
-                        return {
-                            name: line.name,
-                            type: 'line',
-                            markLine: {
-                                symbol: ['none', 'none'],
-                                lineStyle: line.lineStyle,
-                                data: line.data,
-                                label: {
-                                    show: true,
-                                    position: 'end',
-                                    formatter: line.name,
-                                    color: line.lineStyle.color
-                                }
-                            }
-                        }
-                    })
-                ]
+                    symbol: 'circle',     // 数据点形状
+                    symbolSize: 10
+                }]
             };
 
             // 清理原先的图表数据
-            chart.setOption({}, true);
+            chartNode.setOption({}, true);
+            chartNode.setOption(option);
+        }
 
-            chart.setOption(option);
+        // 渲染图表函数
+        function renderChart() {
+            renderSingleChart(shareholderNumberList, ChartPropertyMap["shareholderNumber"], chartShareholder, "户");
+            renderSingleChart(interestRateList, ChartPropertyMap["interestRate"], chartInterestRate, "%");
+            renderSingleChart(interestRatePeriodList, ChartPropertyMap["interestRatePeriod"], chartInterestRatePeriod, "%");
+            renderSingleChart(impairmentLossList, ChartPropertyMap["impairmentLoss"], chartImpairmentLoss, measurement);
+            renderSingleChart(totalBalanceList, ChartPropertyMap["totalBalance"], chartTotalBalance, measurement);
+            renderSingleChart(totalRateList, ChartPropertyMap["totalRate"], chartTotalRate, "%");
+            renderSingleChart(newBalanceList, ChartPropertyMap["newBalance"], chartNewBalance, measurement);
+            renderSingleChart(newRateList, ChartPropertyMap["newRate"], chartNewRate, "%");
+            renderSingleChart(coverageRateList, ChartPropertyMap["coverageRate"], chartCoverageRate, "%");
+            renderSingleChart(adequacyRateList, ChartPropertyMap["adequacyRate"], chartAdequacyRate, "%");
         }
         
         function renderOptions(filter = '') {
@@ -760,6 +727,7 @@
             selectStock.value = stock.name + '(' + stock.code + ')';
             closeDropdown();
             renderOptions(searchStock.value);
+            generateCandleData();
         }
         
         // 打开下拉框
@@ -804,18 +772,11 @@
 
         // 窗口大小改变时调整图表大小
         window.addEventListener('resize', () => {
-            chart.resize();
-        });
-        
-        resetBtn.addEventListener('click', () => {
-            generateCandleData();
+            chartShareholder.resize();
         });
 
         generateCandleData();
         generateCodeData();
-
-        // 初始渲染
-        renderChart();
     </script>
 </body>
 </html>

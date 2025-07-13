@@ -146,6 +146,34 @@ type AddStockReportResp struct {
 	IncomeMsg      string `json:"income_msg"`
 }
 
+type GetBankTrackDataReq struct {
+	Code string `json:"code" query:"code"`
+}
+
+type ReportTime struct {
+	Year       int `json:"year"`
+	ReportType int `json:"report_type"`
+}
+
+type BankTrackData struct {
+	ShareholderNumber  int     `json:"shareholder_number"`
+	InterestRate       float64 `json:"interest_rate"`        // 合并净息差
+	InterestRatePeriod float64 `json:"interest_rate_period"` // 单季度净息差
+	ImpairmentLoss     float64 `json:"impairment_loss"`      // 合并信用减值损失
+	TotalBalance       float64 `json:"total_balance"`        // 不良余额
+	TotalRate          float64 `json:"total_rate"`           // 不良率，(次级类贷款余额 + 可疑类贷款余额 + 损失类贷款余额) / 总贷款余额 × 100%
+	NewBalance         float64 `json:"new_balance"`          // 新生成不良余额
+	NewRate            float64 `json:"new_rate"`             // 新生成不良率
+	CoverageRate       float64 `json:"coverage_rate"`        // 拨备覆盖率
+	AdequacyRate       float64 `json:"adequacy_rate"`        // 核心一级资本充足率
+}
+
+type GetBankTrackDataResp struct {
+	DateList    []*ReportTime    `json:"date_list"`
+	ReportList  []*BankTrackData `json:"report_list"`
+	Measurement string           `json:"measurement"`
+}
+
 func (r *BankReport) Parse(base *StockReportBase) error {
 	if err := r.Shareholder.Parse(base); err != nil {
 		return err

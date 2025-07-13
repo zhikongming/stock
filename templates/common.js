@@ -4,6 +4,88 @@ const syncStockCodeUrl = "/task/stock/code";
 const getCodeDataUrl = "/stock/code";
 const getStockReportUrl = "/stock/report";
 const updateStockReportUrl = "/stock/report";
+const getPriceDataUrl = "/analyze/trend/code";
+const getDataBankUrl = "/data/bank";
+
+const ChartPropertyMap = {
+    "shareholderNumber": {
+        "title": "股东人数变化趋势",
+        "legend": "股东人数",
+        "serieName": "股东人数"
+    },
+    "interestRate": {
+        "title": "财报当期净息差变化趋势",
+        "legend": "净息差",
+        "serieName": "净息差"
+    },
+    "interestRatePeriod": {
+        "title": "单季度净息差变化趋势",
+        "legend": "净息差",
+        "serieName": "净息差"
+    },
+    "impairmentLoss": {
+        "title": "当期信用减值损失",
+        "legend": "信用减值损失",
+        "serieName": "信用减值损失"
+    },
+    "totalBalance": {
+        "title": "当期不良余额",
+        "legend": "不良余额",
+        "serieName": "不良余额"
+    },
+    "totalRate": {
+        "title": "当期不良率",
+        "legend": "不良率",
+        "serieName": "不良率"
+    },
+    "newBalance": {
+        "title": "当期新增不良余额",
+        "legend": "新增不良",
+        "serieName": "新增不良"
+    },
+    "newRate": {
+        "title": "当期新增不良率",
+        "legend": "新增不良率",
+        "serieName": "新增不良率"
+    },
+    "coverageRate": {
+        "title": "当期拨备覆盖率",
+        "legend": "拨备覆盖率",
+        "serieName": "拨备覆盖率"
+    },
+    "adequacyRate": {
+        "title": "当期核心一级资本充足率",
+        "legend": "核心一级资本充足率",
+        "serieName": "核心一级资本充足率"
+    }
+}
+
+async function getPriceData(code, start_date, line_type) {
+    let line_type_int = parseInt(line_type);
+    const requestBody = {
+        "code": code,
+        "start_date": start_date,
+        "k_line_type": line_type_int,
+    };
+    const response = await fetch(domain + getPriceDataUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+    });
+    return response.json();
+}
+
+async function getCodeData() {
+    const response = await fetch(domain + getCodeDataUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
 
 async function filterCode(endDate, macdFast, macdSlow, macdLength, selectedOptions, bollingPosition) {
     const url = domain + filterCodeUrl;
@@ -153,6 +235,19 @@ function getReportTypeString(reportType) {
     return "";
 }
 
+function getReportTypeString2(reportType) {
+    if (reportType == 1) {
+        return "Q1";
+    } else if (reportType == 2) {
+        return "Q2";
+    }   else if (reportType == 3) {
+        return "Q3";
+    }   else if (reportType == 4) {
+        return "Q4";
+    }
+    return "";
+}
+
 function getPeriodReportTypeString(reportType) {
     if (reportType == 1) {
         return "第一季度";
@@ -163,4 +258,23 @@ function getPeriodReportTypeString(reportType) {
     } else if (reportType == 4) {
         return "第四季度";
     }
+}
+
+async function getBankTraceData(code) {
+    const url = domain + getDataBankUrl;
+    const params = {
+        "code": code
+    };
+
+    const baseUrl = new URL(url);
+    Object.entries(params).forEach(([key, value]) => {
+        baseUrl.searchParams.append(key, value);
+    });
+    const response = await fetch(baseUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response;
 }
