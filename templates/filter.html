@@ -353,6 +353,19 @@
         .selected-tag i:hover {
             color: #ff6b6b;
         }
+        .search-container {
+            position: relative; /* 定位基准 */
+            display: inline-block;
+        }
+
+        .search-container .fas {
+            position: absolute;
+            left: 12px; /* 调整水平位置 */
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999; /* 图标颜色 */
+            pointer-events: none; /* 防止图标阻挡输入 */
+        }
         @media (max-width: 1100px) {
             .filters-row {
                 flex-direction: column;
@@ -490,8 +503,16 @@
         
         <div class="results-container">
             <div class="results-header">
-                <h2><i class="fas fa-table"></i> 筛选结果</h2>
-                <div class="results-info">找到 <span id="resultsCount">0</span> 只符合条件的股票</div>
+                <h2><i class="fas fa-table"></i> 筛选结果<div class="results-info">     (找到 <span id="resultsCount">0</span> 只符合条件的股票)</div></h2>
+                <div class="results-info">
+                    <div class="filter-controls">
+                        <div class="filter-control">
+                            <div class="param-group search-container">
+                                <input type="text" name="searchFilter" placeholder="搜索..." id="search-input" style="padding-left: 35px;"><i class="fas fa-search"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div id="resultsContent">
@@ -528,6 +549,8 @@
     <script>
         // 新增：存储按选择顺序排列的选项
         let selectedOptions = [];
+        let searchInput = document.getElementById('search-input');
+        let remoteResults = [];
         
         // 设置当前日期
         document.addEventListener('DOMContentLoaded', function() {
@@ -647,7 +670,6 @@
         function searchStocks() {
             // 显示加载指示器
             document.getElementById('loadingIndicator').style.display = 'flex';
-            document.getElementById('noResults').style.display = 'none';
             document.getElementById('resultsTable').style.display = 'none';
             
             // 获取筛选条件值
@@ -658,78 +680,116 @@
             const bollingPosition = document.getElementById('bollingPosition').value;
 
             let resp = filterCode(endDate, macdFast, macdSlow, macdLength, selectedOptions, bollingPosition);
-            displayResults(resp);
+            resp.then(data => {
+                remoteResults = data;
+                displayResults(data);
+            });
         }
         
         // 显示结果
-        function displayResults(results) {
+        function displayResults(data) {
             // 隐藏加载指示器
             document.getElementById('loadingIndicator').style.display = 'none';
-            results.then(data => {
-                // 填充表格
-                const tbody = document.getElementById('resultsBody');
-                tbody.innerHTML = '';
+            // 填充表格
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
 
-                if (data.length === 0) {
-                    document.getElementById('noResults').style.display = 'block';
-                    document.getElementById('resultsCount').textContent = '0';
-                    document.getElementById('resultsTable').style.display = 'none';
-                    return;
+            if (data.length === 0) {
+                document.getElementById('noResults').style.display = 'block';
+                document.getElementById('resultsCount').textContent = '0';
+                document.getElementById('resultsTable').style.display = 'none';
+                return;
+            } else {
+                document.getElementById('noResults').style.display = 'none';
+            }
+            // 更新结果计数
+            document.getElementById('resultsCount').textContent = data.length;
+            for (let i = 0; i < data.length; i++) {
+                const stock = data[i];
+                const result = stock.result;
+                const row = document.createElement('tr');
+                let macdValue = "<p>建议: " + getSuggestOperation(result.macd.suggest_operation)  + "</p>";
+                if (result.macd.suggest_operation !== "none") {
+                    macdValue += "<p>原因: "+ result.macd.suggest_reason +"</p>";
+                    macdValue += "<p>时间区间: "+ result.macd.suggest_range +"</p>";
+                    macdValue += "<p>macd最新dif值: "+ result.macd.macd_value.last_dif +"</p>";
+                    macdValue += "<p>macd最新dea值: "+ result.macd.macd_value.last_dea +"</p>";
+                    macdValue += "<p>macd长度: "+ result.macd.macd_value.length +"</p>";
                 }
-
-                // 更新结果计数
-                document.getElementById('resultsCount').textContent = data.length;
-
-                for (let i = 0; i < data.length; i++) {
-                    const stock = data[i];
-                    const result = stock.result;
-                    const row = document.createElement('tr');
-
-                    let macdValue = "<p>建议: " + getSuggestOperation(result.macd.suggest_operation)  + "</p>";
-                    if (result.macd.suggest_operation !== "none") {
-                        macdValue += "<p>原因: "+ result.macd.suggest_reason +"</p>";
-                        macdValue += "<p>时间区间: "+ result.macd.suggest_range +"</p>";
-                        macdValue += "<p>macd最新dif值: "+ result.macd.macd_value.last_dif +"</p>";
-                        macdValue += "<p>macd最新dea值: "+ result.macd.macd_value.last_dea +"</p>";
-                        macdValue += "<p>macd长度: "+ result.macd.macd_value.length +"</p>";
-                    }
-
-                    let maValue = "<p>建议: " + getSuggestOperation(result.ma.suggest_operation)  + "</p>";
-                    if (result.ma.suggest_operation!== "none") {
-                        maValue += "<p>原因: "+ result.ma.suggest_reason +"</p>";
-                        maValue += "<p>五日均线值: "+ result.ma.ma_value.ma5 +"</p>";
-                        maValue += "<p>十日均线值: "+ result.ma.ma_value.ma10 +"</p>";
-                        maValue += "<p>二十日均线值: "+ result.ma.ma_value.ma20 +"</p>";
-                        maValue += "<p>三十日均线值: "+ result.ma.ma_value.ma30 +"</p>";
-                        maValue += "<p>六十日均线值: "+ result.ma.ma_value.ma60 +"</p>";
-                    }
-
-                    let bollingValue = "<p>建议: " + getSuggestOperation(result.bolling.suggest_operation)  + "</p>";
-                    if (result.bolling.suggest_operation!== "none") {
-                        bollingValue += "<p>原因: "+ result.bolling.suggest_reason +"</p>";
-                        bollingValue += "<p>最新收盘价: "+ result.bolling.bolling_value.last_price +"</p>";
-                        bollingValue += "<p>最新上轨: "+ result.bolling.bolling_value.last_bolling_up +"</p>";
-                        bollingValue += "<p>最新中轨: "+ result.bolling.bolling_value.last_bolling_mid +"</p>";
-                        bollingValue += "<p>最新下轨: "+ result.bolling.bolling_value.last_bolling_down +"</p>";
-                        bollingValue += "<p>最接近位置: "+ getBollingPosition(result.bolling.bolling_value.closed_position) +"</p>";
-                    }
-
-                    row.innerHTML = `
-                        <td><span class="stock-symbol">${stock.code}</span></td>
-                        <td><span class="stock-name">${stock.company_name}</span></td>
-                        <td>${stock.last_date}</td>
-                        <td>${macdValue}</td>
-                        <td>${maValue}</td>
-                        <td>${bollingValue}</td>
-                    `;
-                    
-                    tbody.appendChild(row);
+                let maValue = "<p>建议: " + getSuggestOperation(result.ma.suggest_operation)  + "</p>";
+                if (result.ma.suggest_operation!== "none") {
+                    maValue += "<p>原因: "+ result.ma.suggest_reason +"</p>";
+                    maValue += "<p>五日均线值: "+ result.ma.ma_value.ma5 +"</p>";
+                    maValue += "<p>十日均线值: "+ result.ma.ma_value.ma10 +"</p>";
+                    maValue += "<p>二十日均线值: "+ result.ma.ma_value.ma20 +"</p>";
+                    maValue += "<p>三十日均线值: "+ result.ma.ma_value.ma30 +"</p>";
+                    maValue += "<p>六十日均线值: "+ result.ma.ma_value.ma60 +"</p>";
                 }
-            });
+                let bollingValue = "<p>建议: " + getSuggestOperation(result.bolling.suggest_operation)  + "</p>";
+                if (result.bolling.suggest_operation!== "none") {
+                    bollingValue += "<p>原因: "+ result.bolling.suggest_reason +"</p>";
+                    bollingValue += "<p>最新收盘价: "+ result.bolling.bolling_value.last_price +"</p>";
+                    bollingValue += "<p>最新上轨: "+ result.bolling.bolling_value.last_bolling_up +"</p>";
+                    bollingValue += "<p>最新中轨: "+ result.bolling.bolling_value.last_bolling_mid +"</p>";
+                    bollingValue += "<p>最新下轨: "+ result.bolling.bolling_value.last_bolling_down +"</p>";
+                    bollingValue += "<p>最接近位置: "+ getBollingPosition(result.bolling.bolling_value.closed_position) +"</p>";
+                }
+                row.innerHTML = `
+                    <td><span class="stock-symbol">${stock.code}</span></td>
+                    <td><span class="stock-name">${stock.company_name}</span></td>
+                    <td>${stock.last_date}</td>
+                    <td>${macdValue}</td>
+                    <td>${maValue}</td>
+                    <td>${bollingValue}</td>
+                `;
+                
+                tbody.appendChild(row);
+            }
             
             // 显示结果表格
             document.getElementById('resultsTable').style.display = 'table';
         }
+        
+        function filterResults(inputValue) {
+            let filteredData = [];
+            for (let i = 0; i < remoteResults.length; i++) {
+                let item = remoteResults[i];
+                if (item["code"].toLowerCase().includes(inputValue) || item["company_name"].toLowerCase().includes(inputValue)) {
+                    filteredData.push(item);
+                    continue;
+                }
+                if (item.result.macd.suggest_operation !== "none") {
+                    let suggestPperation = getSuggestOperation(item.result.macd.suggest_operation)
+                    if (suggestPperation.toLowerCase().includes(inputValue) || item.result.macd.suggest_reason.toLowerCase().includes(inputValue)) {
+                        filteredData.push(item);
+                        continue;
+                    }
+                }
+                if (item.result.ma.suggest_operation!== "none") {
+                    let suggestPperation = getSuggestOperation(item.result.ma.suggest_operation)
+                    if (suggestPperation.toLowerCase().includes(inputValue) || item.result.ma.suggest_reason.toLowerCase().includes(inputValue)) {
+                        filteredData.push(item);
+                        continue;
+                    }
+                }
+                if (item.result.bolling.suggest_operation!== "none") {
+                    let suggestPperation = getSuggestOperation(item.result.bolling.suggest_operation)
+                    if (suggestPperation.toLowerCase().includes(inputValue) || item.result.bolling.suggest_reason.toLowerCase().includes(inputValue)) {
+                        filteredData.push(item);
+                        continue;
+                    }
+                }
+            }
+            displayResults(filteredData);
+        }
+
+        searchInput.addEventListener('blur', function() {
+            let inputValue = this.value.trim().toLowerCase();
+            if (inputValue === '' && remoteResults.length == 0) {
+                return;
+            }
+            filterResults(inputValue);
+        });
     </script>
 </body>
 </html>
