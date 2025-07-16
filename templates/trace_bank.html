@@ -419,9 +419,17 @@
 </head>
 <body>
     <div class="container">
-
         <div class="controls">
             <div class="control-group" style="max-width: 20%;">
+                <div class="form-group">
+                    <label for="stockType">跟踪类型</label>
+                    <select id="stockType" class="form-control">
+                        <option value="stock">个股</option>
+                        <option value="industry">行业</option>
+                    </select>
+                </div>
+            </div>
+            <div class="control-group" style="max-width: 20%;" id="stockNameGroup">
                 <div class="form-group">
                     <label for="stockName">股票</label>
                     <div class="searchable-select" id="codeSelect">
@@ -440,9 +448,18 @@
                     </div>
                 </div>
             </div>
+            <div class="control-group" style="max-width: 20%;" id="stockIndustryGroup">
+                <div class="form-group">
+                    <label for="stockIndustry">行业名称</label>
+                    <select id="stockIndustry" class="form-control">
+                        <option value=""> - </option>
+                        <option value="1">银行</option>
+                    </select>
+                </div>
+            </div>
         </div>
 
-        <div class="filters-container">
+        <div class="filters-container" id="stock-container">
             <div class="filters-row">
                 <div class="filter-section">
                     <div id="chart-shareholder" class="chart"></div>
@@ -484,6 +501,40 @@
                 </div>
             </div>
         </div>
+        <div class="filters-container" id="industry-container">
+            <div class="filters-row">
+                <div class="filter-section">
+                    <div id="chart-shareholder-industry" class="chart"></div>
+                </div>
+                <div class="filter-section">
+                    <div id="chart-impairment-loss-industry" class="chart"></div>
+                </div>
+            </div>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <div id="chart-interest-rate-industry" class="chart"></div>
+                </div>
+                <div class="filter-section">
+                    <div id="chart-interest-rate-period-industry" class="chart"></div>
+                </div>
+            </div>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <div id="chart-total-balance-industry" class="chart"></div>
+                </div>
+                <div class="filter-section">
+                    <div id="chart-total-rate-industry" class="chart"></div>
+                </div>
+            </div>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <div id="chart-coverage-rate-industry" class="chart"></div>
+                </div>
+                <div class="filter-section">
+                    <div id="chart-adequacy-rate-industry" class="chart"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -493,6 +544,13 @@
         const searchStock = document.getElementById('searchStock');
         const selectOptions = document.getElementById('selectOptions');
         const optionsList = document.getElementById('optionsList');
+        const stockIndustry = document.getElementById('stockIndustry');
+        const stockType = document.getElementById('stockType');
+        const stockNameGroup = document.getElementById('stockNameGroup');
+        const stockIndustryGroup = document.getElementById('stockIndustryGroup');
+        const stockContainer = document.getElementById('stock-container');
+        const industryContainer = document.getElementById('industry-container');
+
         const chartShareholderNode = document.getElementById('chart-shareholder');
         const chartInterestRateNode = document.getElementById('chart-interest-rate');
         const chartInterestRatePeriodNode = document.getElementById('chart-interest-rate-period');
@@ -503,6 +561,14 @@
         const chartNewRateNode = document.getElementById('chart-new-rate');
         const chartCoverageRateNode = document.getElementById('chart-coverage-rate');
         const chartAdequacyRateNode = document.getElementById('chart-adequacy-rate');
+        const chartShareholderIndustryNode = document.getElementById('chart-shareholder-industry');
+        const chartImpairmentLossIndustryNode = document.getElementById('chart-impairment-loss-industry');
+        const chartInterestRateIndustryNode = document.getElementById('chart-interest-rate-industry');
+        const chartInterestRatePeriodIndustryNode = document.getElementById('chart-interest-rate-period-industry');
+        const chartTotalBalanceIndustryNode = document.getElementById('chart-total-balance-industry');
+        const chartTotalRateIndustryNode = document.getElementById('chart-total-rate-industry');
+        const chartCoverageRateIndustryNode = document.getElementById('chart-coverage-rate-industry');
+        const chartAdequacyRateIndustryNode = document.getElementById('chart-adequacy-rate-industry');
 
         // 初始化ECharts实例
         const chartShareholder = echarts.init(chartShareholderNode);
@@ -515,20 +581,36 @@
         const chartNewRate = echarts.init(chartNewRateNode);
         const chartCoverageRate = echarts.init(chartCoverageRateNode);
         const chartAdequacyRate = echarts.init(chartAdequacyRateNode);
+        const chartShareholderIndustry = echarts.init(chartShareholderIndustryNode);
+        const chartImpairmentLossIndustry = echarts.init(chartImpairmentLossIndustryNode);
+        const chartInterestRateIndustry = echarts.init(chartInterestRateIndustryNode);
+        const chartInterestRatePeriodIndustry = echarts.init(chartInterestRatePeriodIndustryNode);
+        const chartTotalBalanceIndustry = echarts.init(chartTotalBalanceIndustryNode);
+        const chartTotalRateIndustry = echarts.init(chartTotalRateIndustryNode);
+        const chartCoverageRateIndustry = echarts.init(chartCoverageRateIndustryNode);
+        const chartAdequacyRateIndustry = echarts.init(chartAdequacyRateIndustryNode);
 
         let codeList = [];
         let selectedCode = null;
         let measurement = "";
         let shareholderNumberList = [];
+        let industryShareholderNumberMap = {};
         let interestRateList = [];
+        let industryInterestRateMap = {};
         let interestRatePeriodList = [];
+        let industryInterestRatePeriodMap = {};
         let impairmentLossList = [];
+        let industryImpairmentLossMap = {};
         let totalBalanceList = [];
+        let industryTotalBalanceMap = {};
         let totalRateList = [];
+        let industryTotalRateMap = {};
         let newBalanceList = [];
         let newRateList = [];
         let coverageRateList = [];
         let adequacyRateList = [];
+        let industryCoverageRateMap = {};
+        let industryAdequacyRateMap = {};
         
         function generateCodeData() {
             let resp = getCodeData();
@@ -619,6 +701,69 @@
             });
         }
 
+        function generateCandleIndustryData() {
+            if (stockIndustry.value === "") {
+                return;
+            }
+            let resp = getIndustryTraceData(stockIndustry.value);
+            resp.then(data => {
+                if (data.status != 200) {
+                    return;
+                }
+                let d = data.json();
+                d.then(data => {
+                    let dateList = data.date_list;
+                    measurement = data.measurement;
+                    for (const [codeName, item] of Object.entries(data.report_map)) {
+                        industryShareholderNumberMap[codeName] = [];
+                        industryImpairmentLossMap[codeName] = [];
+                        industryInterestRateMap[codeName] = [];
+                        industryInterestRatePeriodMap[codeName] = [];
+                        industryTotalBalanceMap[codeName] = [];
+                        industryTotalRateMap[codeName] = [];
+                        industryCoverageRateMap[codeName] = [];
+                        industryAdequacyRateMap[codeName] = [];
+                        for (let i = 0; i < dateList.length; i++) {
+                            let date = dateList[i].year + "." + getReportTypeString2(dateList[i].report_type);
+                            industryShareholderNumberMap[codeName].push({
+                                "date": date,
+                                "value": item[i].shareholder_number
+                            });
+                            industryImpairmentLossMap[codeName].push({
+                                "date": date,
+                                "value": item[i].impairment_loss
+                            });
+                            industryInterestRateMap[codeName].push({
+                                "date": date,
+                                "value": item[i].interest_rate
+                            });
+                            industryInterestRatePeriodMap[codeName].push({
+                                "date": date,
+                                "value": item[i].interest_rate_period
+                            });
+                            industryTotalBalanceMap[codeName].push({
+                                "date": date,
+                                "value": item[i].total_balance
+                            });
+                            industryTotalRateMap[codeName].push({
+                                "date": date,
+                                "value": item[i].total_rate
+                            });
+                            industryCoverageRateMap[codeName].push({
+                                "date": date,
+                                "value": item[i].coverage_rate
+                            });
+                            industryAdequacyRateMap[codeName].push({
+                                "date": date,
+                                "value": item[i].adequacy_rate
+                            });
+                        };
+                    }
+                    renderIndustryChart();
+                });
+            });
+        }
+
         function renderSingleChart(dataList, dataProperty, chartNode, mea) {
             let option = {
                 title: {
@@ -689,6 +834,85 @@
             renderSingleChart(adequacyRateList, ChartPropertyMap["adequacyRate"], chartAdequacyRate, "%");
         }
         
+        function renderMultiChart(dataMap, title2, chartNode, mea) {
+            if (dataMap.size == 0) {
+                return;
+            }
+            let codeNameList = [];
+            let dataList = [];
+            for (const [codeName, item] of Object.entries(dataMap)) {
+                codeNameList.push(codeName);
+                dataList.push(item);
+            }
+            let option = {
+                title: {
+                    text: title2 + "(" + mea + ")",  // 图表标题
+                    left: 'center',        // 标题居中
+                    textStyle: {
+                        color: 'white',
+                        fontSize: 20,
+                        fontWeight: 'bolder',
+                        fontFamily: 'Arial, sans-serif',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.2)' // 可选文字阴影
+                    }
+                },
+                tooltip: {                // 提示框
+                    trigger: 'axis'       // 触发方式：坐标轴
+                },
+                legend: {                 // 图例
+                    data: codeNameList,     // 系列名称
+                    bottom: 10,            // 图例位置（底部）
+                    textStyle: {
+                        color: 'white',
+                        fontSize: 15,
+                        fontWeight: 'bolder',
+                        fontFamily: 'Arial, sans-serif',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.2)' // 可选文字阴影
+                    }
+                },
+                xAxis: {
+                    type: 'category',    // 类目轴（离散数据）
+                    data: [...dataList[0].map(item => item.date)]  // X轴数据
+                },
+                yAxis: {
+                    type: 'value'         // 数值轴
+                },
+                series: []
+            };
+            for (let i = 0; i < dataList.length; i++) {
+                option.series.push({
+                    name: codeNameList[i],
+                    type: 'line',         // 折线图类型
+                    data: [...dataList[i].map(item => item.value)],  // Y轴数据
+                    smooth: true,          // 平滑曲线
+                    areaStyle: {           // 填充区域
+                        color: 'rgba(64, 158, 255, 0.2)'
+                    },
+                    lineStyle: {           // 线条样式
+                        width: 3,
+                        color: '#1890FF'
+                    },
+                    symbol: 'circle',     // 数据点形状
+                    symbolSize: 10
+                });
+            }
+
+            // 清理原先的图表数据
+            chartNode.setOption({}, true);
+            chartNode.setOption(option);
+        }
+
+        function renderIndustryChart() {
+            renderMultiChart(industryShareholderNumberMap, ChartPropertyMap["shareholderNumber"]["title"], chartShareholderIndustry, "户");
+            renderMultiChart(industryImpairmentLossMap, ChartPropertyMap["impairmentLoss"]["title"], chartImpairmentLossIndustry, measurement);
+            renderMultiChart(industryInterestRateMap, ChartPropertyMap["interestRate"]["title"], chartInterestRateIndustry, "%");
+            renderMultiChart(industryInterestRatePeriodMap, ChartPropertyMap["interestRatePeriod"]["title"], chartInterestRatePeriodIndustry, "%");
+            renderMultiChart(industryTotalBalanceMap, ChartPropertyMap["totalBalance"]["title"], chartTotalBalanceIndustry, measurement);
+            renderMultiChart(industryTotalRateMap, ChartPropertyMap["totalRate"]["title"], chartTotalRateIndustry, "%");
+            renderMultiChart(industryCoverageRateMap, ChartPropertyMap["coverageRate"]["title"], chartCoverageRateIndustry, "%");
+            renderMultiChart(industryAdequacyRateMap, ChartPropertyMap["adequacyRate"]["title"], chartAdequacyRateIndustry, "%");
+        }
+
         function renderOptions(filter = '') {
             optionsList.innerHTML = '';
             
@@ -744,6 +968,14 @@
             selectHeader.classList.remove('open');
         }
         
+        function initContainer() {
+            stockNameGroup.style.display = 'block';
+            stockContainer.style.display = 'block';
+
+            stockIndustryGroup.style.display = 'none';
+            industryContainer.style.display = 'none';
+        }
+
         // 事件监听
         selectHeader.addEventListener('click', (e) => {
             if (selectOptions.classList.contains('open')) {
@@ -775,8 +1007,27 @@
             chartShareholder.resize();
         });
 
+        stockType.addEventListener('change', (e) => {
+            if (e.target.value === 'stock') {
+                stockNameGroup.style.display = 'block';
+                stockIndustryGroup.style.display = 'none';
+                stockContainer.style.display = 'block';
+                industryContainer.style.display = 'none';
+            } else {
+                stockNameGroup.style.display = 'none';
+                stockIndustryGroup.style.display = 'block';
+                stockContainer.style.display = 'none';
+                industryContainer.style.display = 'block';
+            }
+        });
+
+        stockIndustry.addEventListener('change', (e) => {
+            generateCandleIndustryData();
+        });
+
         generateCandleData();
         generateCodeData();
+        initContainer();
     </script>
 </body>
 </html>

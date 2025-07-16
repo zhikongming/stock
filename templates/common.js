@@ -6,6 +6,7 @@ const getStockReportUrl = "/stock/report";
 const updateStockReportUrl = "/stock/report";
 const getPriceDataUrl = "/analyze/trend/code";
 const getDataBankUrl = "/data/bank";
+const getDataIndustryUrl = "/industry/bank";
 
 const ChartPropertyMap = {
     "shareholderNumber": {
@@ -264,6 +265,25 @@ async function getBankTraceData(code) {
     const url = domain + getDataBankUrl;
     const params = {
         "code": code
+    };
+
+    const baseUrl = new URL(url);
+    Object.entries(params).forEach(([key, value]) => {
+        baseUrl.searchParams.append(key, value);
+    });
+    const response = await fetch(baseUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response;
+}
+
+async function getIndustryTraceData(industryType) {
+    const url = domain + getDataIndustryUrl;
+    const params = {
+        "industry_type": industryType
     };
 
     const baseUrl = new URL(url);

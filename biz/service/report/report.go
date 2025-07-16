@@ -167,3 +167,96 @@ func GetBankTrackData(ctx context.Context, req *model.GetBankTrackDataReq) (*mod
 	}
 	return resp, nil
 }
+
+func GetIndustryTrackData(ctx context.Context, req *model.GetIndustryTrackDataReq) (*model.GetIndustryTrackDataResp, error) {
+	resp := &model.GetIndustryTrackDataResp{
+		DateList:   make([]*model.ReportTime, 0),
+		ReportList: make(map[string][]*model.BankTrackData, 0),
+	}
+	// 从数据库获取数据
+	allReports, err := dal.GetReportsByIndustry(ctx, int(req.IndustryType))
+	if err != nil {
+		return nil, err
+	}
+	reportMap := make(map[string][]*dal.StockReport)
+	for _, rp := range allReports {
+		if _, ok := reportMap[rp.CompanyCode]; !ok {
+			reportMap[rp.CompanyCode] = make([]*dal.StockReport, 0)
+		}
+		reportMap[rp.CompanyCode] = append(reportMap[rp.CompanyCode], rp)
+	}
+	// 获取所有的代码信息
+	companyMap := make(map[string]*dal.StockCode)
+	stockCodeList, err := dal.GetAllStockCode(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, code := range stockCodeList {
+		companyMap[code.CompanyCode] = code
+	}
+
+	dateList := make([]*model.ReportTime, 0)
+	dateMap := make(map[string]struct{})
+	for _, reports := range reportMap {
+		for idx := 0; idx < len(reports); idx++ {
+			dateKey := fmt.Sprintf("%d_%d", reports[idx].Year, reports[idx].ReportType)
+			if _, ok := dateMap[dateKey]; !ok {
+				dateMap[dateKey] = struct{}{}
+				dateList = append(dateList, &model.ReportTime{
+					Year:       reports[idx].Year,
+					ReportType: reports[idx].ReportType,
+				})
+			}
+		}
+	}
+	dateSorter := model.ReportTimeSorter(dateList)
+	sort.Sort(dateSorter)
+	resp.DateList = dateList
+
+	for code, reports := range reportMap {
+		stockName := companyMap[code].CompanyName
+		sort.Sort(dal.StockReportSorter(reports))
+		// 解析数据
+		reportList := make([]*model.BankReport, 0)
+		for _, rp := range reports {
+			report := &model.BankReport{}
+			err = json.Unmarshal([]byte(rp.Report), report)
+			if err != nil {
+				return nil, err
+			}
+			reportList = append(reportList, report)
+		}
+		// 计算数据
+
+		for idx := 0; idx < len(reportList); idx++ {
+			if _, ok := resp.ReportList[stockName]; !ok {
+				resp.ReportList[stockName] = make([]*model.BankTrackData, len(dateList))
+			}
+			targetIdx := dateSorter.GetIndex(reports[idx].Year, reports[idx].ReportType)
+			resp.ReportList[stockName][targetIdx] = &model.BankTrackData{
+				ShareholderNumber:  reportList[idx].Shareholder.ShareholderNumber,
+				InterestRate:       reportList[idx].Income.InterestIncome.InterestRate,
+				InterestRatePeriod: reportList[idx].Income.InterestIncome.InterestRatePeriod,
+				ImpairmentLoss:     reportList[idx].ImpairmentLoss,
+				TotalBalance:       reportList[idx].BadDebtAsset.TotalBalance,
+				TotalRate:          reportList[idx].BadDebtAsset.TotalRate,
+				NewBalance:         reportList[idx].BadDebtAsset.NewBalance,
+				NewRate:            reportList[idx].BadDebtAsset.NewRate,
+				CoverageRate:       reportList[idx].BadDebtAsset.CoverageRate,
+				AdequacyRate:       reportList[idx].AdequacyRate,
+			}
+			if resp.Measurement == "" {
+				base := &model.StockReportBase{
+					Measurement: model.MeasurementType(reports[idx].Measurement),
+				}
+				resp.Measurement = base.GetMeasurement()
+			}
+		}
+		for idx, _ := range resp.ReportList[stockName] {
+			if resp.ReportList[stockName][idx] == nil {
+				resp.ReportList[stockName][idx] = &model.BankTrackData{}
+			}
+		}
+	}
+	return resp, nil
+}

@@ -69,9 +69,9 @@ type BankLoan struct {
 }
 
 type BankDeposit struct {
-	TotalDeposit     float64 `json:"total_deposit"`     // 存款总额
-	CorporateDeposit float64 `json:"corporate_deposit"` // 对公存款
-	PersonDeposit    float64 `json:"person_deposit"`    // 零售存款
+	TotalDeposit     float64 `json:"total_deposit"`     // 存款总额：吸收存款科目，而不是客户存款本金科目，“吸收存款”这个总负债科目，其金额就是“客户存款本金”科目余额与“应付利息”科目余额之和。
+	CorporateDeposit float64 `json:"corporate_deposit"` // 对公存款：存款本金科目
+	PersonDeposit    float64 `json:"person_deposit"`    // 零售存款：存款本金科目
 }
 
 type BankAsset struct {
@@ -150,9 +150,42 @@ type GetBankTrackDataReq struct {
 	Code string `json:"code" query:"code"`
 }
 
+type GetIndustryTrackDataReq struct {
+	IndustryType IndustryType `json:"industry_type" query:"industry_type"`
+}
+
 type ReportTime struct {
 	Year       int `json:"year"`
 	ReportType int `json:"report_type"`
+}
+
+type ReportTimeSorter []*ReportTime
+
+func (s ReportTimeSorter) Len() int {
+	return len(s)
+}
+
+func (s ReportTimeSorter) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s ReportTimeSorter) GetIndex(year int, reportType int) int {
+	for idx, rt := range s {
+		if rt.Year == year && rt.ReportType == reportType {
+			return idx
+		}
+	}
+	return -1
+}
+
+func (s ReportTimeSorter) Less(i, j int) bool {
+	if s[i].Year < s[j].Year {
+		return true
+	} else if s[i].Year > s[j].Year {
+		return false
+	} else {
+		return s[i].ReportType < s[j].ReportType
+	}
 }
 
 type BankTrackData struct {
@@ -172,6 +205,12 @@ type GetBankTrackDataResp struct {
 	DateList    []*ReportTime    `json:"date_list"`
 	ReportList  []*BankTrackData `json:"report_list"`
 	Measurement string           `json:"measurement"`
+}
+
+type GetIndustryTrackDataResp struct {
+	DateList    []*ReportTime               `json:"date_list"`
+	ReportList  map[string][]*BankTrackData `json:"report_map"`
+	Measurement string                      `json:"measurement"`
 }
 
 func (r *BankReport) Parse(base *StockReportBase) error {

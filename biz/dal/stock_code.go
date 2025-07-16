@@ -48,3 +48,13 @@ func GetAllStockCode(ctx context.Context) ([]*StockCode, error) {
 	}
 	return stockCodeList, nil
 }
+
+func GetStockCodeByIndustry(ctx context.Context, industryType int) ([]*StockCode, error) {
+	db := GetDB()
+	var stockCodeList []*StockCode
+	err := db.WithContext(ctx).Where("business_type = ?", industryType).Find(&stockCodeList).Error
+	if err != nil {
+		return nil, err
+	}
+	return stockCodeList, nil
+}
