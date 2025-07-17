@@ -93,3 +93,20 @@ func GetAllReports(ctx context.Context, companyCode string) ([]*StockReport, err
 	}
 	return reports, nil
 }
+
+func GetReportsByIndustry(ctx context.Context, industryType int) ([]*StockReport, error) {
+	stockList, err := GetStockCodeByIndustry(ctx, industryType)
+	if err != nil {
+		return nil, err
+	}
+	stockCodeList := make([]string, 0)
+	for _, stock := range stockList {
+		stockCodeList = append(stockCodeList, stock.CompanyCode)
+	}
+	var reports []*StockReport
+	err = db.WithContext(ctx).Where("company_code in ?", stockCodeList).Find(&reports).Error
+	if err != nil {
+		return nil, err
+	}
+	return reports, nil
+}

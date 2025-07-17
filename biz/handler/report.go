@@ -67,3 +67,21 @@ func GetBankTrackData(ctx context.Context, c *app.RequestContext) {
 	}
 	c.JSON(http.StatusOK, data)
 }
+
+func GetIndustryTrackData(ctx context.Context, c *app.RequestContext) {
+	var req model.GetIndustryTrackDataReq
+	if c.BindQuery(&req) != nil {
+		c.JSON(http.StatusBadRequest, utils.H{
+			"message": "bad request",
+		})
+		return
+	}
+	data, err := report.GetIndustryTrackData(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.H{
+			"message": fmt.Sprintf("%v", err),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
