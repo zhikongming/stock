@@ -13,8 +13,8 @@ import (
 const (
 	StableBadDebtRate   = 0.05
 	StableMigrationRate = 0.1
-	StableAdequacyRate  = 11.0
-	MinAdequacyRate     = 9.0
+	StableAdequacyRate  = 9.0
+	MinAdequacyRate     = 7.75
 )
 
 func (s *BankReport) GetPreReport(ctx context.Context, base *StockReportBase) error {
