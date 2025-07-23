@@ -69,7 +69,7 @@ type BankLoan struct {
 }
 
 type BankDeposit struct {
-	TotalDeposit     float64 `json:"total_deposit"`     // 存款总额：吸收存款科目，而不是客户存款本金科目，“吸收存款”这个总负债科目，其金额就是“客户存款本金”科目余额与“应付利息”科目余额之和。
+	TotalDeposit     float64 `json:"total_deposit"`     // 存款总额：(合并资产负债表)吸收存款科目，而不是客户存款本金科目，“吸收存款”这个总负债科目，其金额就是“客户存款本金”科目余额与“应付利息”科目余额之和。
 	CorporateDeposit float64 `json:"corporate_deposit"` // 对公存款：存款本金科目
 	PersonDeposit    float64 `json:"person_deposit"`    // 零售存款：存款本金科目
 }
@@ -336,9 +336,6 @@ func (s *BankAsset) Parse(base *StockReportBase) error {
 func (s *BankLoan) Parse(base *StockReportBase) error {
 	if s == nil {
 		return nil
-	}
-	if s.TotalLoan < s.CorporateLoan+s.PersonLoan {
-		return fmt.Errorf("贷款数据录入异常, 贷款总额小于对公贷款,零售贷款的和")
 	}
 	return nil
 }
