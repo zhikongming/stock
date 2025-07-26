@@ -692,6 +692,15 @@
                     </div>
                 </div>
             </div>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <h3>6. 财报评价总结</h3>
+                    <div class="filters-row">
+                        <div class="filter-section report-message" id="comment">
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -732,6 +741,7 @@
         const badAssetResult = document.getElementById('badAssetResult');
         const adequacyRateBody = document.getElementById('adequacyRateBody');
         const adequacyRateResult = document.getElementById('adequacyRateResult');
+        const comment = document.getElementById('comment');
 
         let codeList = [];
         let selectedCode = null;
@@ -1074,6 +1084,10 @@
             adequacyRateResult.innerHTML = `${resp.message.adequacy_rate_msg}`;
         }
 
+        function generateCommentMsg(resp) {
+            comment.innerHTML = `${resp.comment}`;
+        }
+
         function generateReportTitle(year, reportType) {
             curReportTitle = `${year}年${getReportTypeString(reportType)}`;
             curPeriodReportTitle = `${year}年${getPeriodReportTypeString(reportType)}`;
@@ -1144,6 +1158,7 @@
                     generateAssetMsg(rp);
                     generateBadAssetMsg(rp);
                     generateAdequacyMsg(rp);
+                    generateCommentMsg(rp);
                 });
             });
         }

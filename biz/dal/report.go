@@ -14,6 +14,7 @@ type StockReport struct {
 	Report       string `gorm:"column:report"`
 	Measurement  string `json:"measurement"`
 	IndustryType int    `json:"industry_type"`
+	Comment      string `json:"comment"`
 }
 
 type StockReportSorter []*StockReport
@@ -70,7 +71,13 @@ func GetStockMonthOnMonthReport(ctx context.Context, companyCode string, year in
 }
 
 func UpdateStockReport(ctx context.Context, report *StockReport) error {
-	err := db.WithContext(ctx).Model(&StockReport{}).Where("company_code =? AND year =? AND report_type =?", report.CompanyCode, report.Year, report.ReportType).Update("report", report.Report).Error
+	err := db.WithContext(ctx).Model(&StockReport{}).Where("company_code =? AND year =? AND report_type =?", report.CompanyCode, report.Year, report.ReportType).Updates(
+		map[string]interface{}{
+			"report":      report.Report,
+			"comment":     report.Comment,
+			"measurement": report.Measurement,
+		},
+	).Error
 	if err != nil {
 		return err
 	}
