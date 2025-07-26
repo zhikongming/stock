@@ -24,6 +24,16 @@ const ChartPropertyMap = {
         "legend": "净息差",
         "serieName": "净息差"
     },
+    "ldRate": {
+        "title": "财报当期贷款收益率&存款成本率变化趋势",
+        "legend": "贷款收益率&存款成本率",
+        "serieName": "贷款收益率&存款成本率"
+    },
+    "ldRatePeriod": {
+        "title": "单季度贷款收益率&存款成本率变化趋势",
+        "legend": "贷款收益率&存款成本率",
+        "serieName": "贷款收益率&存款成本率"
+    },
     "impairmentLoss": {
         "title": "当期信用减值损失",
         "legend": "信用减值损失",
@@ -203,7 +213,7 @@ async function getStockReport(code, year, reportType, disableMsg) {
     return response;
 }
 
-async function updateStockReport(code, year, reportType, industryType, measurement, report) {
+async function updateStockReport(code, year, reportType, industryType, measurement, report, comment) {
     const url = domain + updateStockReportUrl;
     let requestBody = {
         "code": code,
@@ -211,7 +221,8 @@ async function updateStockReport(code, year, reportType, industryType, measureme
         "report_type": parseInt(reportType),
         "industry_type": parseInt(industryType),
         "measurement": measurement,
-        "report": report
+        "report": report,
+        "comment": comment,
     };
     const response = await fetch(url, {
         method: 'POST',
@@ -297,4 +308,12 @@ async function getIndustryTraceData(industryType) {
         }
     });
     return response;
+}
+
+function getLoanRateTitle(name) {
+    return name + "-贷款收益率";
+}
+
+function getDepositRateTitle(name) {
+    return name + "-存款成本率";
 }

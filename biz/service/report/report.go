@@ -49,6 +49,7 @@ func AddBankReport(ctx context.Context, req *model.AddStockReportReq) error {
 
 	if rp != nil {
 		rp.Report = report.ToString()
+		rp.Comment = req.Comment
 		err = dal.UpdateStockReport(ctx, rp)
 		if err != nil {
 			return err
@@ -62,6 +63,7 @@ func AddBankReport(ctx context.Context, req *model.AddStockReportReq) error {
 			Report:       report.ToString(),
 			Measurement:  string(req.Measurement),
 			IndustryType: int(req.IndustryType),
+			Comment:      req.Comment,
 		})
 		if err != nil {
 			return err
@@ -106,6 +108,7 @@ func GetBankReport(ctx context.Context, rp *dal.StockReport, disableMsg bool) (*
 		Measurement: model.MeasurementType(rp.Measurement),
 	}
 	resp.Measurement = base.GetMeasurement()
+	resp.Comment = rp.Comment
 	if disableMsg {
 		return resp, nil
 	}
@@ -244,6 +247,10 @@ func GetIndustryTrackData(ctx context.Context, req *model.GetIndustryTrackDataRe
 				NewRate:            reportList[idx].BadDebtAsset.NewRate,
 				CoverageRate:       reportList[idx].BadDebtAsset.CoverageRate,
 				AdequacyRate:       reportList[idx].AdequacyRate,
+				LoanRate:           reportList[idx].Income.InterestIncome.LoanRate,
+				LoanRatePeriod:     reportList[idx].Income.InterestIncome.LoanRatePeriod,
+				DepositRate:        reportList[idx].Income.InterestIncome.DepositRate,
+				DepositRatePeriod:  reportList[idx].Income.InterestIncome.DepositRatePeriod,
 			}
 			if resp.Measurement == "" {
 				base := &model.StockReportBase{

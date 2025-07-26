@@ -520,6 +520,16 @@
             </div>
             <div class="filters-row">
                 <div class="filter-section">
+                    <div id="chart-ld-rate-industry" class="chart"></div>
+                </div>
+            </div>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <div id="chart-ld-rate-period-industry" class="chart"></div>
+                </div>
+            </div>
+            <div class="filters-row">
+                <div class="filter-section">
                     <div id="chart-total-balance-industry" class="chart"></div>
                 </div>
                 <div class="filter-section">
@@ -565,6 +575,8 @@
         const chartImpairmentLossIndustryNode = document.getElementById('chart-impairment-loss-industry');
         const chartInterestRateIndustryNode = document.getElementById('chart-interest-rate-industry');
         const chartInterestRatePeriodIndustryNode = document.getElementById('chart-interest-rate-period-industry');
+        const chartLdRateIndustryNode = document.getElementById('chart-ld-rate-industry');
+        const chartLdRatePeriodIndustryNode = document.getElementById('chart-ld-rate-period-industry');
         const chartTotalBalanceIndustryNode = document.getElementById('chart-total-balance-industry');
         const chartTotalRateIndustryNode = document.getElementById('chart-total-rate-industry');
         const chartCoverageRateIndustryNode = document.getElementById('chart-coverage-rate-industry');
@@ -585,6 +597,8 @@
         const chartImpairmentLossIndustry = echarts.init(chartImpairmentLossIndustryNode);
         const chartInterestRateIndustry = echarts.init(chartInterestRateIndustryNode);
         const chartInterestRatePeriodIndustry = echarts.init(chartInterestRatePeriodIndustryNode);
+        const chartLdRateIndustry = echarts.init(chartLdRateIndustryNode);
+        const chartLdRatePeriodIndustry = echarts.init(chartLdRatePeriodIndustryNode);
         const chartTotalBalanceIndustry = echarts.init(chartTotalBalanceIndustryNode);
         const chartTotalRateIndustry = echarts.init(chartTotalRateIndustryNode);
         const chartCoverageRateIndustry = echarts.init(chartCoverageRateIndustryNode);
@@ -611,6 +625,8 @@
         let adequacyRateList = [];
         let industryCoverageRateMap = {};
         let industryAdequacyRateMap = {};
+        let industryLdRateMap = {};
+        let industryLdRatePeriodMap = {};
         
         function generateCodeData() {
             let resp = getCodeData();
@@ -723,6 +739,12 @@
                         industryTotalRateMap[codeName] = [];
                         industryCoverageRateMap[codeName] = [];
                         industryAdequacyRateMap[codeName] = [];
+                        let loanRateTitle = getLoanRateTitle(codeName);
+                        let depositRateTitle = getDepositRateTitle(codeName);
+                        industryLdRateMap[loanRateTitle] = [];
+                        industryLdRateMap[depositRateTitle] = [];
+                        industryLdRatePeriodMap[loanRateTitle] = [];
+                        industryLdRatePeriodMap[depositRateTitle] = [];
                         for (let i = 0; i < dateList.length; i++) {
                             let date = dateList[i].year + "." + getReportTypeString2(dateList[i].report_type);
                             industryShareholderNumberMap[codeName].push({
@@ -740,6 +762,22 @@
                             industryInterestRatePeriodMap[codeName].push({
                                 "date": date,
                                 "value": item[i].interest_rate_period
+                            });
+                            industryLdRateMap[loanRateTitle].push({
+                                "date": date,
+                                "value": item[i].loan_rate
+                            });
+                            industryLdRateMap[depositRateTitle].push({
+                                "date": date,
+                                "value": item[i].deposit_rate
+                            });
+                            industryLdRatePeriodMap[loanRateTitle].push({
+                                "date": date,
+                                "value": item[i].loan_rate_period
+                            });
+                            industryLdRatePeriodMap[depositRateTitle].push({
+                                "date": date,
+                                "value": item[i].deposit_rate_period
                             });
                             industryTotalBalanceMap[codeName].push({
                                 "date": date,
@@ -907,6 +945,8 @@
             renderMultiChart(industryImpairmentLossMap, ChartPropertyMap["impairmentLoss"]["title"], chartImpairmentLossIndustry, measurement);
             renderMultiChart(industryInterestRateMap, ChartPropertyMap["interestRate"]["title"], chartInterestRateIndustry, "%");
             renderMultiChart(industryInterestRatePeriodMap, ChartPropertyMap["interestRatePeriod"]["title"], chartInterestRatePeriodIndustry, "%");
+            renderMultiChart(industryLdRateMap, ChartPropertyMap["ldRate"]["title"], chartLdRateIndustry, "%");
+            renderMultiChart(industryLdRatePeriodMap, ChartPropertyMap["ldRatePeriod"]["title"], chartLdRatePeriodIndustry, "%");
             renderMultiChart(industryTotalBalanceMap, ChartPropertyMap["totalBalance"]["title"], chartTotalBalanceIndustry, measurement);
             renderMultiChart(industryTotalRateMap, ChartPropertyMap["totalRate"]["title"], chartTotalRateIndustry, "%");
             renderMultiChart(industryCoverageRateMap, ChartPropertyMap["coverageRate"]["title"], chartCoverageRateIndustry, "%");

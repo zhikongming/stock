@@ -79,7 +79,7 @@
             font-weight: 500;
         }
         
-        input, select, button {
+        input, select, button, textarea {
             width: 100%;
             padding: 12px;
             border-radius: 8px;
@@ -431,7 +431,6 @@
             color: #00f2fe;
             font-size: 1.1rem;
         };
-
         @media (max-width: 768px) {
             .controls {
                 flex-direction: column;
@@ -876,6 +875,14 @@
                             </div>
                         </div>
                     </div>
+                    <h3>7. 评论总结</h3>
+                    <div class="controls">
+                        <div class="control-group">
+                            <div class="form-group">
+                                <textarea rows="5" id="comment" placeholder="请输入您对财报的评价..."></textarea>
+                            </div>
+                        </div>
+                    </div>
                     <div style="text-align: right;">
                         <button id="searchBtn">提交</button>
                     </div>
@@ -950,6 +957,7 @@
         const adequacyRate = document.getElementById('adequacyRate');
         const badDebtBalance = document.getElementById('badDebtBalance');
         const badDebtRate = document.getElementById('badDebtRate');
+        const comment = document.getElementById('comment');
 
         let codeList = [];
         let selectedCode = null;
@@ -1119,6 +1127,8 @@
                 coverageRate.value = 0;
                 // 资本充足率
                 adequacyRate.value = 0;
+                // 评价总结
+                comment.value = "";
 
                 return;
             }
@@ -1184,6 +1194,8 @@
             coverageRate.value = report.bad_debt_asset.coverage_rate;
             // 资本充足率
             adequacyRate.value = report.adequacy_rate;
+            // 评价总结
+            comment.value = resp.comment;
         }
 
         function saveStockReport() {
@@ -1267,7 +1279,8 @@
             const code = selectedCode? selectedCode.code : '';
             const industryType = document.getElementById('industryType').value;
             const mt = measurementType.value;
-            let resp = updateStockReport(code, yr, reportTp, industryType, mt, report);
+            const commentValue = comment.value;
+            let resp = updateStockReport(code, yr, reportTp, industryType, mt, report, commentValue);
             resp.then(data => {
                 if (data.status!= 200) {
                     data.json().then(rp => {

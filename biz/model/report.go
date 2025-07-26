@@ -36,6 +36,7 @@ type StockReportBase struct {
 	Year        int             `json:"year"`
 	ReportType  ReportType      `json:"report_type"`
 	Measurement MeasurementType `json:"measurement"`
+	Comment     string          `json:"comment"`
 }
 
 type GetStockReportReq struct {
@@ -199,6 +200,10 @@ type BankTrackData struct {
 	NewRate            float64 `json:"new_rate"`             // 新生成不良率
 	CoverageRate       float64 `json:"coverage_rate"`        // 拨备覆盖率
 	AdequacyRate       float64 `json:"adequacy_rate"`        // 核心一级资本充足率
+	LoanRate           float64 `json:"loan_rate"`            // 贷款收益率
+	LoanRatePeriod     float64 `json:"loan_rate_period"`     // 单季度贷款收益率
+	DepositRate        float64 `json:"deposit_rate"`         // 存款成本率
+	DepositRatePeriod  float64 `json:"deposit_rate_period"`  // 单季度存款成本率
 }
 
 type GetBankTrackDataResp struct {
@@ -465,6 +470,7 @@ type GetStockReportResp struct {
 	PreMOMReport interface{} `json:"pre_mom_report"`
 	Message      interface{} `json:"message"`
 	Measurement  string      `json:"measurement"`
+	Comment      string      `json:"comment"`
 }
 
 type BankMessage struct {
