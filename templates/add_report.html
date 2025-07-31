@@ -866,12 +866,30 @@
                             </div>
                         </div>
                     </div>
-                    <h3>6. 资本充足率</h3>
+                    <h3>6. 其他数据</h3>
                     <div class="controls">
                         <div class="control-group">
                             <div class="form-group">
                                 <label for="adequacyRate">核心一级资本充足率</label>
-                                <input type="number" id="adequacyRate" value="0" step="0.01" style="max-width:15%;"><span> %</span>
+                                <input type="number" id="adequacyRate" value="0" step="0.01" style="max-width:90%;"><span> %</span>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <div class="form-group">
+                                <label for="roe">ROE(净资产回报率)</label>
+                                <input type="number" id="roe" value="0" step="0.01" style="max-width:90%;"><span> %</span>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <div class="form-group">
+                                <label for="roe">ROA(资产回报率)</label>
+                                <input type="number" id="roa" value="0" step="0.01" style="max-width:90%;"><span> %</span>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <div class="form-group">
+                                <label for="rorwa">RORWA(风险加权资产收益率)</label>
+                                <input type="number" id="rorwa" value="0" step="0.01" style="max-width:90%;"><span> %</span>
                             </div>
                         </div>
                     </div>
@@ -958,6 +976,9 @@
         const badDebtBalance = document.getElementById('badDebtBalance');
         const badDebtRate = document.getElementById('badDebtRate');
         const comment = document.getElementById('comment');
+        const roe = document.getElementById('roe');
+        const roa = document.getElementById('roa');
+        const rorwa = document.getElementById('rorwa');
 
         let codeList = [];
         let selectedCode = null;
@@ -1127,6 +1148,9 @@
                 coverageRate.value = 0;
                 // 资本充足率
                 adequacyRate.value = 0;
+                roe.value = 0;
+                roa.value = 0;
+                rorwa.value = 0;
                 // 评价总结
                 comment.value = "";
 
@@ -1194,6 +1218,9 @@
             coverageRate.value = report.bad_debt_asset.coverage_rate;
             // 资本充足率
             adequacyRate.value = report.adequacy_rate;
+            roe.value = report.roe;
+            roa.value = report.roa;
+            rorwa.value = report.rorwa;
             // 评价总结
             comment.value = resp.comment;
         }
@@ -1272,7 +1299,10 @@
                     "new_rate": parseFloat(newRate.value),
                     "coverage_rate": parseFloat(coverageRate.value)
                 },
-                "adequacy_rate": parseFloat(adequacyRate.value)
+                "adequacy_rate": parseFloat(adequacyRate.value),
+                "roe": parseFloat(roe.value),
+                "roa": parseFloat(roa.value),
+                "rorwa": parseFloat(rorwa.value)
             };
             const yr = year.value;
             const reportTp = reportType.value;

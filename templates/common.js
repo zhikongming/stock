@@ -68,6 +68,21 @@ const ChartPropertyMap = {
         "title": "当期核心一级资本充足率",
         "legend": "核心一级资本充足率",
         "serieName": "核心一级资本充足率"
+    },
+    "roe": {
+        "title": "当期ROE",
+        "legend": "ROE",
+        "serieName": "ROE"
+    },
+    "roa": {
+        "title": "当期ROA",
+        "legend": "ROA",
+        "serieName": "ROA"
+    },
+    "rorwa": {
+        "title": "当期RORWA",
+        "legend": "RORWA",
+        "serieName": "RORWA"
     }
 }
 

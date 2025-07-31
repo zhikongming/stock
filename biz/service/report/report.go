@@ -160,6 +160,9 @@ func GetBankTrackData(ctx context.Context, req *model.GetBankTrackDataReq) (*mod
 			NewRate:            reportList[idx].BadDebtAsset.NewRate,
 			CoverageRate:       reportList[idx].BadDebtAsset.CoverageRate,
 			AdequacyRate:       reportList[idx].AdequacyRate,
+			ROE:                reportList[idx].ROE,
+			ROA:                reportList[idx].ROA,
+			RORWA:              reportList[idx].RORWA,
 		})
 		if resp.Measurement == "" {
 			base := &model.StockReportBase{
@@ -251,6 +254,9 @@ func GetIndustryTrackData(ctx context.Context, req *model.GetIndustryTrackDataRe
 				LoanRatePeriod:     reportList[idx].Income.InterestIncome.LoanRatePeriod,
 				DepositRate:        reportList[idx].Income.InterestIncome.DepositRate,
 				DepositRatePeriod:  reportList[idx].Income.InterestIncome.DepositRatePeriod,
+				ROE:                reportList[idx].ROE,
+				ROA:                reportList[idx].ROA,
+				RORWA:              reportList[idx].RORWA,
 			}
 			if resp.Measurement == "" {
 				base := &model.StockReportBase{
