@@ -544,6 +544,19 @@
                     <div id="chart-adequacy-rate-industry" class="chart"></div>
                 </div>
             </div>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <div id="chart-roe-industry" class="chart"></div>
+                </div>
+                <div class="filter-section">
+                    <div id="chart-roa-industry" class="chart"></div>
+                </div>
+            </div>
+            <div class="filters-row">
+                <div class="filter-section">
+                    <div id="chart-rorwa-industry" class="chart"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -581,6 +594,9 @@
         const chartTotalRateIndustryNode = document.getElementById('chart-total-rate-industry');
         const chartCoverageRateIndustryNode = document.getElementById('chart-coverage-rate-industry');
         const chartAdequacyRateIndustryNode = document.getElementById('chart-adequacy-rate-industry');
+        const chartROEIndustryNode = document.getElementById('chart-roe-industry');
+        const chartROAIndustryNode = document.getElementById('chart-roa-industry');
+        const chartRORWAIndustryNode = document.getElementById('chart-rorwa-industry');
 
         // 初始化ECharts实例
         const chartShareholder = echarts.init(chartShareholderNode);
@@ -603,6 +619,9 @@
         const chartTotalRateIndustry = echarts.init(chartTotalRateIndustryNode);
         const chartCoverageRateIndustry = echarts.init(chartCoverageRateIndustryNode);
         const chartAdequacyRateIndustry = echarts.init(chartAdequacyRateIndustryNode);
+        const chartROEIndustry = echarts.init(chartROEIndustryNode);
+        const chartROAIndustry = echarts.init(chartROAIndustryNode);
+        const chartRORWAIndustry = echarts.init(chartRORWAIndustryNode);
 
         let codeList = [];
         let selectedCode = null;
@@ -627,7 +646,10 @@
         let industryAdequacyRateMap = {};
         let industryLdRateMap = {};
         let industryLdRatePeriodMap = {};
-        
+        let industryROEMap = {};
+        let industryROAMap = {};
+        let industryRORWAMap = {};
+
         function generateCodeData() {
             let resp = getCodeData();
             resp.then(data => {
@@ -739,6 +761,9 @@
                         industryTotalRateMap[codeName] = [];
                         industryCoverageRateMap[codeName] = [];
                         industryAdequacyRateMap[codeName] = [];
+                        industryROEMap[codeName] = [];
+                        industryROAMap[codeName] = [];
+                        industryRORWAMap[codeName] = [];
                         let loanRateTitle = getLoanRateTitle(codeName);
                         let depositRateTitle = getDepositRateTitle(codeName);
                         industryLdRateMap[loanRateTitle] = [];
@@ -794,6 +819,18 @@
                             industryAdequacyRateMap[codeName].push({
                                 "date": date,
                                 "value": item[i].adequacy_rate
+                            });
+                            industryROEMap[codeName].push({
+                                "date": date,
+                                "value": item[i].roe
+                            });
+                            industryROAMap[codeName].push({
+                                "date": date,
+                                "value": item[i].roa
+                            });
+                            industryRORWAMap[codeName].push({
+                                "date": date,
+                                "value": item[i].rorwa
                             });
                         };
                     }
@@ -951,6 +988,9 @@
             renderMultiChart(industryTotalRateMap, ChartPropertyMap["totalRate"]["title"], chartTotalRateIndustry, "%");
             renderMultiChart(industryCoverageRateMap, ChartPropertyMap["coverageRate"]["title"], chartCoverageRateIndustry, "%");
             renderMultiChart(industryAdequacyRateMap, ChartPropertyMap["adequacyRate"]["title"], chartAdequacyRateIndustry, "%");
+            renderMultiChart(industryROEMap, ChartPropertyMap["roe"]["title"], chartROEIndustry, "%");
+            renderMultiChart(industryROAMap, ChartPropertyMap["roa"]["title"], chartROAIndustry, "%");
+            renderMultiChart(industryRORWAMap, ChartPropertyMap["rorwa"]["title"], chartRORWAIndustry, "%");
         }
 
         function renderOptions(filter = '') {

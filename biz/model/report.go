@@ -131,7 +131,10 @@ type BankReport struct {
 	RetainedProfits float64          `json:"retained_profits"` // 归属于本行股东的净利润
 	Asset           *BankAsset       `json:"asset"`            // 资产负债表
 	BadDebtAsset    *BadDebtAsset    `json:"bad_debt_asset"`   // 不良资产 - 贷款质量分析
-	AdequacyRate    float64          `json:"adequacy_rate"`
+	AdequacyRate    float64          `json:"adequacy_rate"`    // 核心一级资本充足率
+	ROE             float64          `json:"roe"`              // 净资产收益率
+	ROA             float64          `json:"roa"`              // 总资产回报率
+	RORWA           float64          `json:"rorwa"`            // 风险加权资产收益率
 	preYOYReport    *BankReport      `json:"-"`
 	preMOMReport    *BankReport      `json:"-"`
 }
@@ -204,6 +207,9 @@ type BankTrackData struct {
 	LoanRatePeriod     float64 `json:"loan_rate_period"`     // 单季度贷款收益率
 	DepositRate        float64 `json:"deposit_rate"`         // 存款成本率
 	DepositRatePeriod  float64 `json:"deposit_rate_period"`  // 单季度存款成本率
+	ROE                float64 `json:"roe"`                  // 净资产收益率
+	ROA                float64 `json:"roa"`                  // 总资产回报率
+	RORWA              float64 `json:"rorwa"`                // 风险加权资产收益率
 }
 
 type GetBankTrackDataResp struct {
