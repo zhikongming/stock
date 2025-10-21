@@ -12,4 +12,7 @@ type RemoteClient interface {
 	GetRemoteStockRelation(ctx context.Context, code string) ([]*model.StockRelationItem, error)
 	GetRemoteStockDaily(ctx context.Context, code string, dateTime time.Time) (*model.StockDailyData, error)
 	GetRemoteStockByKLineType(ctx context.Context, code string, startTime time.Time, endTime time.Time, kLineType model.KLineType) (*model.StockDailyData, error)
+
+	GetRemoteStockIndustry(ctx context.Context) ([]*model.IndustryItem, error)
+	GetRemoteStockIndustryDetail(ctx context.Context, code string) ([]*model.StockItem, error)
 }

@@ -34,3 +34,32 @@ type EMStockDailyData struct {
 	PreKPrice float64  `json:"preKPrice"`
 	Klines    []string `json:"klines"`
 }
+
+type EMGetRemoteStockIndustryResp struct {
+	Data *EMStockIndustryItem `json:"data"`
+}
+
+type EMStockIndustryItem struct {
+	Total int                               `json:"total"`
+	Diff  map[string]map[string]interface{} `json:"diff"`
+}
+
+type IndustryItem struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
+type StockItem struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
+type WrapStockItem struct {
+	IndustryCode string
+	Err          error
+	StockItem    []*StockItem
+}
+
+type WrapIndustryStockPriceItem struct {
+	Err error
+}

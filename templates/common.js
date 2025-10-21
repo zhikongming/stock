@@ -7,6 +7,8 @@ const updateStockReportUrl = "/stock/report";
 const getPriceDataUrl = "/analyze/trend/code";
 const getDataBankUrl = "/data/bank";
 const getDataIndustryUrl = "/industry/bank";
+const getIndustryTrendUrl = "/industry/trend"
+const getIndustryBasicUrl = "/industry/basic"
 
 const ChartPropertyMap = {
     "shareholderNumber": {
@@ -105,6 +107,33 @@ async function getPriceData(code, start_date, line_type) {
 
 async function getCodeData() {
     const response = await fetch(domain + getCodeDataUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
+
+async function getIndustryBasicData() {
+    const response = await fetch(domain + getIndustryBasicUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
+
+async function getIndustryTrendData(industry, stock, days) {
+    const url = domain + getIndustryTrendUrl;
+    const urlObj = new URL(url);
+    urlObj.searchParams.set("days", days);
+    if (industry != "") {
+        urlObj.searchParams.set("industry_code", industry);
+    }
+
+    const response = await fetch(urlObj.toString(), {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json'

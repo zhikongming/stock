@@ -101,3 +101,11 @@ func (c *XueqiuClient) GetRemoteStockDaily(ctx context.Context, code string, dat
 func (c *XueqiuClient) GetRemoteStockByKLineType(ctx context.Context, code string, startTime time.Time, endTime time.Time, kLineType model.KLineType) (*model.StockDailyData, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+
+func (c *XueqiuClient) GetRemoteStockIndustry(ctx context.Context) ([]*model.IndustryItem, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (c *XueqiuClient) GetRemoteStockIndustryDetail(ctx context.Context, code string) ([]*model.StockItem, error) {
+	return nil, fmt.Errorf("not implemented")
+}

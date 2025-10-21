@@ -33,6 +33,19 @@ var (
 		"SZ": "0",
 		"BJ": "0",
 	}
+	CodeToPrefixMap = map[string]string{
+		"60":  "SH",
+		"900": "SH",
+		"688": "SH",
+		"689": "SH",
+		"00":  "SZ",
+		"30":  "SZ",
+		"200": "SZ",
+		"8":   "BJ",
+		"43":  "BJ",
+		"920": "BJ",
+	}
+	IgnoreCode = "20"
 )
 
 func GetMALineString(lineType MALineType) string {

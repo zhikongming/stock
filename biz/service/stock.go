@@ -21,7 +21,8 @@ const (
 	KdjRsvPeriod = 9
 	KdjEmaPeriod = 3
 
-	MaxJobNum = 10
+	MaxJobNum   = 10
+	MaxDBJobNum = 100
 )
 
 func GetAllCode(ctx context.Context) ([]*dal.StockCode, error) {
@@ -166,7 +167,6 @@ func GetStockPrice(ctx context.Context, code string, startTime time.Time, endTim
 	ret := make([]*dal.StockPrice, 0)
 	for _, item := range stockPriceList {
 		if item.Date.Before(startTime) || item.Date.After(endTime) {
-			fmt.Printf("item.Date = %v\n", item.Date)
 			continue
 		}
 		ret = append(ret, item)
@@ -212,6 +212,7 @@ func SyncStockDailyPrice(ctx context.Context, req *model.SyncStockCodeReq) error
 			KdjK:        0,
 			KdjD:        0,
 			KdjJ:        0,
+			UpdateTime:  dateTime,
 		})
 	}
 
@@ -446,4 +447,144 @@ func CalculateKdj(dailyData []*dal.StockPrice) {
 		dailyData[i].KdjD = utils.Float64KeepDecimal(D[i], 2)
 		dailyData[i].KdjJ = utils.Float64KeepDecimal(J[i], 2)
 	}
+}
+
+func SyncStockIndustry(ctx context.Context, req *model.SyncStockIndustryReq) error {
+	err := syncStockIndustry(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = syncStockIndustryRelation(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func syncStockIndustry(ctx context.Context) error {
+	client := NewEastMoneyClient()
+	// 采集板块的数据，以及板块内股票的归属数据
+	remoteIndustryList, err := client.GetRemoteStockIndustry(ctx)
+	if err != nil {
+		return err
+	}
+	localIndustryList, err := dal.GetAllStockIndustry(ctx)
+	if err != nil {
+		return err
+	}
+	// 对比本地数据和远程数据，更新本地数据
+	localMap := make(map[string]struct{})
+	for _, localIndustry := range localIndustryList {
+		localMap[localIndustry.Name] = struct{}{}
+	}
+	for _, remoteIndustry := range remoteIndustryList {
+		if _, found := localMap[remoteIndustry.Name]; !found {
+			d := &dal.StockIndustry{
+				Code: remoteIndustry.Code,
+				Name: remoteIndustry.Name,
+			}
+			if err := dal.AddStockIndustry(ctx, d); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func syncStockIndustryRelation(ctx context.Context) error {
+	localIndustryList, err := dal.GetAllStockIndustry(ctx)
+	if err != nil {
+		return err
+	}
+
+	dataCh := make(chan *model.WrapStockItem, len(localIndustryList))
+	wg := sync.WaitGroup{}
+	for _, localIndustry := range localIndustryList {
+		wg.Add(1)
+		go func(industry *dal.StockIndustry) {
+			defer wg.Done()
+			client := NewEastMoneyClient()
+			remoteIndustryStockList, err := client.GetRemoteStockIndustryDetail(ctx, industry.Code)
+			if err != nil {
+				d := &model.WrapStockItem{
+					IndustryCode: industry.Code,
+					Err:          err,
+				}
+				dataCh <- d
+				return
+			}
+			d := &model.WrapStockItem{
+				IndustryCode: industry.Code,
+				StockItem:    remoteIndustryStockList,
+			}
+			dataCh <- d
+		}(localIndustry)
+	}
+	wg.Wait()
+	close(dataCh)
+
+	mp := make(map[string][]*model.StockItem)
+	for d := range dataCh {
+		if d.Err != nil {
+			return d.Err
+		}
+		mp[d.IndustryCode] = d.StockItem
+	}
+
+	localStockIndustryRelationList, err := dal.GetAllStockIndustryRelation(ctx)
+	if err != nil {
+		return err
+	}
+	addList, deleteList := getDiffIndustryCode(localStockIndustryRelationList, mp)
+	for _, r := range addList {
+		if err := dal.AddStockIndustryRelation(ctx, r); err != nil {
+			return err
+		}
+	}
+	for _, r := range deleteList {
+		if err := dal.DeleteStockIndustryRelation(ctx, r); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func getDiffIndustryCode(local []*dal.StockIndustryRelation, remote map[string][]*model.StockItem) ([]*dal.StockIndustryRelation, []*dal.StockIndustryRelation) {
+	addList := make([]*dal.StockIndustryRelation, 0)
+	// 对比本地数据和远程数据，更新本地数据
+	localMap := make(map[string]struct{})
+	for _, val := range local {
+		tmpKey := fmt.Sprintf("%s/%s", val.IndustryCode, val.CompanyCode)
+		localMap[tmpKey] = struct{}{}
+	}
+	for industryCode, stockList := range remote {
+		for _, stock := range stockList {
+			tmpKey := fmt.Sprintf("%s/%s", industryCode, stock.Code)
+			if _, found := localMap[tmpKey]; !found {
+				addList = append(addList, &dal.StockIndustryRelation{
+					IndustryCode: industryCode,
+					CompanyCode:  stock.Code,
+				})
+			}
+		}
+	}
+
+	deleteList := make([]*dal.StockIndustryRelation, 0)
+	remoteMap := make(map[string]struct{})
+	for industryCode, stockList := range remote {
+		for _, stock := range stockList {
+			tmpKey := fmt.Sprintf("%s/%s", industryCode, stock.Code)
+			remoteMap[tmpKey] = struct{}{}
+		}
+	}
+	for _, val := range local {
+		tmpKey := fmt.Sprintf("%s/%s", val.IndustryCode, val.CompanyCode)
+		if _, found := remoteMap[tmpKey]; !found {
+			deleteList = append(deleteList, val)
+		}
+	}
+	return addList, deleteList
 }

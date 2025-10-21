@@ -20,6 +20,7 @@ const (
 	EastMoneyBasicPath         = "/securities/api/data/v1/get"
 	EastMoneyStockRelationPath = "/api/qt/stock/get"
 	EastMoneyStockDailyPath    = "/api/qt/stock/kline/get"
+	EastMoneyIndustryPath      = "/api/qt/clist/get"
 
 	KLineTypeDay   = "101"
 	KLineType30Min = "30"
@@ -36,6 +37,15 @@ func (c *EastMoneyClient) GetEastMoneyCode(code string) string {
 	for _, pref := range utils.StockPrefixList {
 		if strings.HasPrefix(code, pref) {
 			return fmt.Sprintf("%s.%s", code[len(pref):], pref)
+		}
+	}
+	return code
+}
+
+func (c *EastMoneyClient) GetFullStockCode(code string) string {
+	for matchPrefix, codePrefix := range utils.CodeToPrefixMap {
+		if strings.HasPrefix(code, matchPrefix) {
+			return fmt.Sprintf("%s%s", codePrefix, code)
 		}
 	}
 	return code
@@ -143,7 +153,9 @@ func (c *EastMoneyClient) GetRemoteStockBasic(ctx context.Context, code string, 
 		"fqt":     "1",
 		"lmt":     "360",
 	}
-	headers := map[string]string{}
+	headers := map[string]string{
+		"Cookie": "nid=0443b0a56be4891ed303783a0aa5f1e5;",
+	}
 	resp, err := DoGet(ctx, path, params, headers)
 	if err != nil {
 		return nil, err
@@ -207,4 +219,86 @@ func (c *EastMoneyClient) GetRemoteStockByKLineType(ctx context.Context, code st
 		localKLineType = KLineType30Min
 	}
 	return c.GetRemoteStockBasic(ctx, code, endTime, localKLineType)
+}
+
+func (c *EastMoneyClient) GetRemoteStockIndustry(ctx context.Context) ([]*model.IndustryItem, error) {
+	path := fmt.Sprintf("%s%s", EastMoneyDomain2, EastMoneyIndustryPath)
+	params := map[string]string{
+		"fs":     "m:90+t:2+f:!50",
+		"fields": "f12,f14",
+		"fid":    "f13",
+		"pn":     "1",
+		"pz":     "200",
+	}
+	headers := map[string]string{}
+	resp, err := DoGet(ctx, path, params, headers)
+	if err != nil {
+		return nil, err
+	}
+
+	var ret model.EMGetRemoteStockIndustryResp
+	err = json.Unmarshal(resp, &ret)
+	if err != nil {
+		log.Printf("json unmarshal failed: %v", err)
+		return nil, err
+	}
+
+	data := make([]*model.IndustryItem, 0)
+	if ret.Data != nil && ret.Data.Total > 0 {
+		for _, item := range ret.Data.Diff {
+			d := &model.IndustryItem{}
+			if code, ok := item["f12"]; ok {
+				d.Code = fmt.Sprintf("%v", code)
+			}
+			if name, ok := item["f14"]; ok {
+				d.Name = fmt.Sprintf("%v", name)
+			}
+			data = append(data, d)
+		}
+	}
+
+	return data, nil
+}
+
+func (c *EastMoneyClient) GetRemoteStockIndustryDetail(ctx context.Context, code string) ([]*model.StockItem, error) {
+	path := fmt.Sprintf("%s%s", EastMoneyDomain2, EastMoneyIndustryPath)
+	params := map[string]string{
+		"fs":     fmt.Sprintf("b:%s", code),
+		"fields": "f12,f14",
+		"pn":     "1",
+		"pz":     "1000",
+	}
+	headers := map[string]string{}
+	resp, err := DoGet(ctx, path, params, headers)
+	if err != nil {
+		return nil, err
+	}
+
+	var ret model.EMGetRemoteStockIndustryResp
+	err = json.Unmarshal(resp, &ret)
+	if err != nil {
+		log.Printf("json unmarshal failed: %v", err)
+		return nil, err
+	}
+
+	data := make([]*model.StockItem, 0)
+	if ret.Data != nil && ret.Data.Total > 0 {
+		for _, item := range ret.Data.Diff {
+			d := &model.StockItem{}
+			if code, ok := item["f12"]; ok {
+				codeStr := fmt.Sprintf("%v", code)
+				// 200开头的属于港股，忽略板块走势内
+				if strings.HasPrefix(codeStr, utils.IgnoreCode) {
+					continue
+				}
+				d.Code = c.GetFullStockCode(codeStr)
+			}
+			if name, ok := item["f14"]; ok {
+				d.Name = fmt.Sprintf("%v", name)
+			}
+			data = append(data, d)
+		}
+	}
+
+	return data, nil
 }

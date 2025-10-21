@@ -42,6 +42,7 @@ func customizedRegister(r *server.Hertz) {
 
 	r.GET("/stock/code", handler.GetAllCode)
 	r.POST("/task/stock/code", handler.SyncStockCode)
+	r.POST("/task/stock/industry", handler.SyncStockIndustry)
 	r.POST("/analyze/stock/code", handler.AnalyzeStockCode)
 	r.POST("/filter/stock/code", handler.FilterStockCode)
 	r.POST("/analyze/trend/code", handler.AnalyzeTrendCode)
@@ -49,6 +50,8 @@ func customizedRegister(r *server.Hertz) {
 	r.POST("/stock/report", handler.AddStockReport)
 	r.GET("/data/bank", handler.GetBankTrackData)
 	r.GET("/industry/bank", handler.GetIndustryTrackData)
+	r.GET("/industry/basic", handler.GetIndustryBasicData)
+	r.GET("/industry/trend", handler.GetIndustryTrendData)
 }
 
 func registerPlatform(r *server.Hertz) {

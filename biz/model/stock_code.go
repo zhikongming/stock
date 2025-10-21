@@ -45,6 +45,9 @@ type SyncStockCodeReq struct {
 	BusinessType int    `json:"business_type"`
 }
 
+type SyncStockIndustryReq struct {
+}
+
 type AnalyzeStockCodeReq struct {
 	Code     string        `json:"code"`
 	Date     string        `json:"date,omitempty"`

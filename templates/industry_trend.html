@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>财报跟踪</title>
+    <title>板块跟踪</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="./echarts.min.js"></script>
     <script src="./common.js"></script>
@@ -56,7 +56,7 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
             overflow: hidden;
             margin-bottom: 30px;
-            height: 600px;
+            height: 1000px;
         }
         
         #chart {
@@ -398,6 +398,46 @@
             color: #4facfe;
         }
 
+        .results-table th {
+            background: rgba(74, 107, 255, 0.3);
+            padding: 16px 20px;
+            text-align: left;
+            color: #4facfe;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        .results-table td {
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.1);
+        }
+        .results-table tbody tr {
+            transition: all 0.3s ease;
+            background: rgba(40, 50, 90, 0.4);
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .results-table tbody tr:hover {
+            background: rgba(40, 50, 90, 0.7);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .table-title {
+            text-align: center;
+            color: #00f2fe;
+            font-size: 1.2rem;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.2);
+            padding-bottom: 10px;
+        }
+
         @media (max-width: 768px) {
             .controls {
                 flex-direction: column;
@@ -414,32 +454,27 @@
             .chart-container {
                 height: 450px;
             }
+
+            .results-table th, .results-table td {
+                padding: 12px 15px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="controls">
-            <div class="control-group" style="max-width: 20%;">
+            <div class="control-group" style="max-width: 20%;" id="industryGroup">
                 <div class="form-group">
-                    <label for="stockType">跟踪类型</label>
-                    <select id="stockType" class="form-control">
-                        <option value="stock">个股</option>
-                        <option value="industry">行业</option>
-                    </select>
-                </div>
-            </div>
-            <div class="control-group" style="max-width: 20%;" id="stockNameGroup">
-                <div class="form-group">
-                    <label for="stockName">股票</label>
+                    <label for="stockIndustry">板块</label>
                     <div class="searchable-select" id="codeSelect">
                         <div class="select-header" id="selectHeader">
-                            <input type="text" placeholder="搜索股票..." id="selectStock" readonly>
+                            <input type="text" placeholder="搜索板块..." id="selectIndustry" readonly>
                             <span class="arrow"><i class="fas fa-chevron-down"></i></span>
                         </div>
                         <div class="select-options" id="selectOptions">
                             <div class="search-input-container">
-                                <input type="text" class="search-input" id="searchStock" placeholder="输入股票...">
+                                <input type="text" class="search-input" id="searchIndustry" placeholder="输入板块...">
                             </div>
                             <ul class="options-list" id="optionsList">
                                 <!-- 选项将通过JavaScript动态生成 -->
@@ -448,301 +483,158 @@
                     </div>
                 </div>
             </div>
-            <div class="control-group" style="max-width: 20%;" id="stockIndustryGroup">
+            <div class="control-group" style="max-width: 20%; display: none;" id="stockGroup">
                 <div class="form-group">
-                    <label for="stockIndustry">行业名称</label>
-                    <select id="stockIndustry" class="form-control">
-                        <option value=""> - </option>
-                        <option value="1">银行</option>
-                    </select>
+                    <label>个股</label>
+                    <div class="searchable-select" id="codeSelect">
+                        <div class="select-header" id="selectStockHeader">
+                            <input type="text" placeholder="搜索个股..." id="selectStock" readonly>
+                            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+                        </div>
+                        <div class="select-options" id="selectStockOptions">
+                            <div class="search-input-container">
+                                <input type="text" class="search-input" id="searchStock" placeholder="输入个股...">
+                            </div>
+                            <ul class="options-list" id="stockOptionsList">
+                                <!-- 选项将通过JavaScript动态生成 -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="control-group" style="max-width: 20%;" id="daysGroup">
+                <div class="form-group">
+                    <label>查询天数</label>
+                    <input type="number" id="days" placeholder="输入查询天数..." value="30">
+                </div>
+            </div>
+            <div class="control-group">
+                <button id="searchBtn">查询</button>
+            </div>
+        </div>
+
+        <div class="filters-container">
+            <div class="filters-row">
+                <div class="filter-section">
+                    <h4 class="table-title">价格数据</h4>
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>代码</th>
+                                <th>名称</th>
+                                <th>开始日期</th>
+                                <th>结束日期</th>
+                                <th>最新相对价格(以第一天价格为基准)</th>
+                                <th>详情</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableResult"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <div class="filters-container" id="stock-container">
+        <!-- <div class="filters-container" id="industry-container">
             <div class="filters-row">
                 <div class="filter-section">
-                    <div id="chart-shareholder" class="chart"></div>
-                </div>
-                <div class="filter-section">
-                    <div id="chart-impairment-loss" class="chart"></div>
+                    <div id="chart-industry" class="chart"></div>
                 </div>
             </div>
-            <div class="filters-row">
-                <div class="filter-section">
-                    <div id="chart-interest-rate" class="chart"></div>
-                </div>
-                <div class="filter-section">
-                    <div id="chart-interest-rate-period" class="chart"></div>
-                </div>
-            </div>
-            <div class="filters-row">
-                <div class="filter-section">
-                    <div id="chart-total-balance" class="chart"></div>
-                </div>
-                <div class="filter-section">
-                    <div id="chart-total-rate" class="chart"></div>
-                </div>
-            </div>
-            <div class="filters-row">
-                <div class="filter-section">
-                    <div id="chart-new-balance" class="chart"></div>
-                </div>
-                <div class="filter-section">
-                    <div id="chart-new-rate" class="chart"></div>
-                </div>
-            </div>
-            <div class="filters-row">
-                <div class="filter-section">
-                    <div id="chart-coverage-rate" class="chart"></div>
-                </div>
-                <div class="filter-section">
-                    <div id="chart-adequacy-rate" class="chart"></div>
-                </div>
-            </div>
-        </div>
-        <div class="filters-container" id="industry-container">
-            <div class="filters-row">
-                <div class="filter-section">
-                    <div id="chart-shareholder-industry" class="chart"></div>
-                </div>
-                <div class="filter-section">
-                    <div id="chart-impairment-loss-industry" class="chart"></div>
-                </div>
-            </div>
-            <div class="filters-row">
-                <div class="filter-section">
-                    <div id="chart-interest-rate-industry" class="chart"></div>
-                </div>
-                <div class="filter-section">
-                    <div id="chart-interest-rate-period-industry" class="chart"></div>
-                </div>
-            </div>
-            <div class="filters-row">
-                <div class="filter-section">
-                    <div id="chart-ld-rate-industry" class="chart"></div>
-                </div>
-            </div>
-            <div class="filters-row">
-                <div class="filter-section">
-                    <div id="chart-ld-rate-period-industry" class="chart"></div>
-                </div>
-            </div>
-            <div class="filters-row">
-                <div class="filter-section">
-                    <div id="chart-total-balance-industry" class="chart"></div>
-                </div>
-                <div class="filter-section">
-                    <div id="chart-total-rate-industry" class="chart"></div>
-                </div>
-            </div>
-            <div class="filters-row">
-                <div class="filter-section">
-                    <div id="chart-coverage-rate-industry" class="chart"></div>
-                </div>
-                <div class="filter-section">
-                    <div id="chart-adequacy-rate-industry" class="chart"></div>
-                </div>
-            </div>
-            <div class="filters-row">
-                <div class="filter-section">
-                    <div id="chart-roe-industry" class="chart"></div>
-                </div>
-                <div class="filter-section">
-                    <div id="chart-roa-industry" class="chart"></div>
-                </div>
-            </div>
-            <div class="filters-row">
-                <div class="filter-section">
-                    <div id="chart-rorwa-industry" class="chart"></div>
-                </div>
-            </div>
-        </div>
+        </div> -->
     </div>
 
     <script>
         // 获取DOM元素
+        const searchBtn = document.getElementById('searchBtn');
+        const tableResult = document.getElementById('tableResult');
+
         const selectHeader = document.getElementById('selectHeader');
-        const selectStock = document.getElementById('selectStock');
-        const searchStock = document.getElementById('searchStock');
+        const selectStockHeader = document.getElementById('selectStockHeader');
+        const selectIndustry = document.getElementById('selectIndustry');
+        const searchIndustry = document.getElementById('searchIndustry');
         const selectOptions = document.getElementById('selectOptions');
         const optionsList = document.getElementById('optionsList');
-        const stockIndustry = document.getElementById('stockIndustry');
-        const stockType = document.getElementById('stockType');
-        const stockNameGroup = document.getElementById('stockNameGroup');
-        const stockIndustryGroup = document.getElementById('stockIndustryGroup');
-        const stockContainer = document.getElementById('stock-container');
-        const industryContainer = document.getElementById('industry-container');
+        const days = document.getElementById('days');
 
-        const chartShareholderNode = document.getElementById('chart-shareholder');
-        const chartInterestRateNode = document.getElementById('chart-interest-rate');
-        const chartInterestRatePeriodNode = document.getElementById('chart-interest-rate-period');
-        const chartImpairmentLossNode = document.getElementById('chart-impairment-loss');
-        const chartTotalBalanceNode = document.getElementById('chart-total-balance');
-        const chartTotalRateNode = document.getElementById('chart-total-rate');
-        const chartNewBalanceNode = document.getElementById('chart-new-balance');
-        const chartNewRateNode = document.getElementById('chart-new-rate');
-        const chartCoverageRateNode = document.getElementById('chart-coverage-rate');
-        const chartAdequacyRateNode = document.getElementById('chart-adequacy-rate');
-        const chartShareholderIndustryNode = document.getElementById('chart-shareholder-industry');
-        const chartImpairmentLossIndustryNode = document.getElementById('chart-impairment-loss-industry');
-        const chartInterestRateIndustryNode = document.getElementById('chart-interest-rate-industry');
-        const chartInterestRatePeriodIndustryNode = document.getElementById('chart-interest-rate-period-industry');
-        const chartLdRateIndustryNode = document.getElementById('chart-ld-rate-industry');
-        const chartLdRatePeriodIndustryNode = document.getElementById('chart-ld-rate-period-industry');
-        const chartTotalBalanceIndustryNode = document.getElementById('chart-total-balance-industry');
-        const chartTotalRateIndustryNode = document.getElementById('chart-total-rate-industry');
-        const chartCoverageRateIndustryNode = document.getElementById('chart-coverage-rate-industry');
-        const chartAdequacyRateIndustryNode = document.getElementById('chart-adequacy-rate-industry');
-        const chartROEIndustryNode = document.getElementById('chart-roe-industry');
-        const chartROAIndustryNode = document.getElementById('chart-roa-industry');
-        const chartRORWAIndustryNode = document.getElementById('chart-rorwa-industry');
+        const selectStock = document.getElementById('selectStock');
+        const selectStockOptions = document.getElementById('selectStockOptions');
+        const stockOptionsList = document.getElementById('stockOptionsList');
+        const industryContainer = document.getElementById('industry-container');
+        const searchStock = document.getElementById('searchStock');
 
         // 初始化ECharts实例
-        const chartShareholder = echarts.init(chartShareholderNode);
-        const chartInterestRate = echarts.init(chartInterestRateNode);
-        const chartInterestRatePeriod = echarts.init(chartInterestRatePeriodNode);
-        const chartImpairmentLoss = echarts.init(chartImpairmentLossNode);
-        const chartTotalBalance = echarts.init(chartTotalBalanceNode);
-        const chartTotalRate = echarts.init(chartTotalRateNode);
-        const chartNewBalance = echarts.init(chartNewBalanceNode);
-        const chartNewRate = echarts.init(chartNewRateNode);
-        const chartCoverageRate = echarts.init(chartCoverageRateNode);
-        const chartAdequacyRate = echarts.init(chartAdequacyRateNode);
-        const chartShareholderIndustry = echarts.init(chartShareholderIndustryNode);
-        const chartImpairmentLossIndustry = echarts.init(chartImpairmentLossIndustryNode);
-        const chartInterestRateIndustry = echarts.init(chartInterestRateIndustryNode);
-        const chartInterestRatePeriodIndustry = echarts.init(chartInterestRatePeriodIndustryNode);
-        const chartLdRateIndustry = echarts.init(chartLdRateIndustryNode);
-        const chartLdRatePeriodIndustry = echarts.init(chartLdRatePeriodIndustryNode);
-        const chartTotalBalanceIndustry = echarts.init(chartTotalBalanceIndustryNode);
-        const chartTotalRateIndustry = echarts.init(chartTotalRateIndustryNode);
-        const chartCoverageRateIndustry = echarts.init(chartCoverageRateIndustryNode);
-        const chartAdequacyRateIndustry = echarts.init(chartAdequacyRateIndustryNode);
-        const chartROEIndustry = echarts.init(chartROEIndustryNode);
-        const chartROAIndustry = echarts.init(chartROAIndustryNode);
-        const chartRORWAIndustry = echarts.init(chartRORWAIndustryNode);
+        // const chartIndustryNode = document.getElementById('chart-industry');
+        // const chartIndustry = echarts.init(chartIndustryNode);
 
-        let codeList = [];
-        let selectedCode = null;
-        let measurement = "";
-        let shareholderNumberList = [];
-        let industryShareholderNumberMap = {};
-        let interestRateList = [];
-        let industryInterestRateMap = {};
-        let interestRatePeriodList = [];
-        let industryInterestRatePeriodMap = {};
-        let impairmentLossList = [];
-        let industryImpairmentLossMap = {};
-        let totalBalanceList = [];
-        let industryTotalBalanceMap = {};
-        let totalRateList = [];
-        let industryTotalRateMap = {};
-        let newBalanceList = [];
-        let newRateList = [];
-        let coverageRateList = [];
-        let adequacyRateList = [];
-        let industryCoverageRateMap = {};
-        let industryAdequacyRateMap = {};
-        let industryLdRateMap = {};
-        let industryLdRatePeriodMap = {};
-        let industryROEMap = {};
-        let industryROAMap = {};
-        let industryRORWAMap = {};
+        let industryList = [];
+        let selectedIndustry = null;
+        let selectedStock = null;
+        let industryTrendList = [];
 
-        function generateCodeData() {
-            let resp = getCodeData();
+        function generateIndustryData() {
+            let resp = getIndustryBasicData();
             resp.then(data => {
                 data.forEach(item => {
-                    codeList.push({
-                        "code": item.company_code,
-                        "name": item.company_name
-                    });
+                    industryList.push(item);
                 });
             });
         }
 
         // 生成模拟K线数据
         function generateCandleData() {
-            if (selectedCode === null) {
-                return;
+            let searchIndustry = "";
+            if (selectedIndustry != null) {
+                searchIndustry = selectedIndustry.industry_code;
             }
-            let codeSelect = document.getElementById("stockName");
+            let searchStock = "";
+            if (selectedStock != null) {
+                searchStock = selectedStock;
+            }
+            let keepDays = days.value;
 
-            let resp = getBankTraceData(selectedCode.code);
+            let resp = getIndustryTrendData(searchIndustry, searchStock, keepDays);
             resp.then(data => {
-                if (data.status != 200) {
-                    return;
-                }
-                shareholderNumberList = [];
-                interestRateList = [];
-                interestRatePeriodList = [];
-                impairmentLossList = [];
-                totalBalanceList = [];
-                totalRateList = [];
-                newBalanceList = [];
-                newRateList = [];
-                coverageRateList = [];
-                adequacyRateList = [];
-                measurement = "";
-                let d = data.json();
-                d.then(data => {
-                    let dateList = data.date_list;
-                    measurement = data.measurement;
-                    let reportList = data.report_list;
-                    for (let i = 0; i < dateList.length; i++) {
-                        let date = dateList[i].year + "." + getReportTypeString2(dateList[i].report_type);
-                        shareholderNumberList.push({
-                            "date": date,
-                            "value": reportList[i].shareholder_number
-                        });
-                        interestRateList.push({
-                            "date": date,
-                            "value": reportList[i].interest_rate
-                        });
-                        interestRatePeriodList.push({
-                            "date": date,
-                            "value": reportList[i].interest_rate_period
-                        });
-                        impairmentLossList.push({
-                            "date": date,
-                            "value": reportList[i].impairment_loss
-                        });
-                        totalBalanceList.push({
-                            "date": date,
-                            "value": reportList[i].total_balance
-                        });
-                        totalRateList.push({
-                            "date": date,
-                            "value": reportList[i].total_rate
-                        });
-                        newBalanceList.push({
-                            "date": date,
-                            "value": reportList[i].new_balance
-                        });
-                        newRateList.push({
-                            "date": date,
-                            "value": reportList[i].new_rate
-                        });
-                        coverageRateList.push({
-                            "date": date,
-                            "value": reportList[i].coverage_rate
-                        });
-                        adequacyRateList.push({
-                            "date": date,
-                            "value": reportList[i].adequacy_rate
-                        });
-                    }
-
-                    renderChart();
-                });
+                industryTrendList = data.industry_price_trend;
+                renderTable(data);
             });
         }
 
-        function generateCandleIndustryData() {
-            if (stockIndustry.value === "") {
-                return;
+        function renderTable(data) {
+            tableResult.innerHTML = '';        
+            const row = document.createElement('tr');
+
+            if (data.industry_price_trend != null) {
+                for (let i = 0; i < data.industry_price_trend.length; i++) {
+                    const row = document.createElement('tr');
+                    const item = data.industry_price_trend[i];
+                    row.innerHTML = `
+                        <td>${item.industry_code}</td>
+                        <td>${item.industry_name}</td>
+                        <td>${item.price_trend_list[0].date}</td>
+                        <td>${item.price_trend_list[item.price_trend_list.length - 1].date}</td>
+                        <td>${item.price_trend_list[item.price_trend_list.length - 1].price}</td>
+                        <td><a href="https://quote.eastmoney.com/bk/90.${item.industry_code}.html#fullScreenChart" target="_blank" style="color:white;">板块详情</a></td>
+                    `;
+                    tableResult.appendChild(row);
+                }
+            } else if (data.industry_code_trend != null) {
+                for (let i = 0; i < data.industry_code_trend.length; i++) {
+                    const row = document.createElement('tr');
+                    const item = data.industry_code_trend[i];
+                    row.innerHTML = `
+                        <td>${item.stock_code}</td>
+                        <td>${item.stock_name}</td>
+                        <td>${item.price_trend_list[0].date}</td>
+                        <td>${item.price_trend_list[item.price_trend_list.length - 1].date}</td>
+                        <td>${item.price_trend_list[item.price_trend_list.length - 1].price}</td>
+                        <td><a href="https://xueqiu.com/S/${item.stock_code}" target="_blank" style="color:white;">股票详情</a></td>
+                    `;
+                    tableResult.appendChild(row);
+                }
             }
+        }
+
+        function generateCandleIndustryData() {
             let resp = getIndustryTraceData(stockIndustry.value);
             resp.then(data => {
                 if (data.status != 200) {
@@ -839,89 +731,19 @@
             });
         }
 
-        function renderSingleChart(dataList, dataProperty, chartNode, mea) {
-            let option = {
-                title: {
-                    text: dataProperty.title + "(" + mea + ")",  // 图表标题
-                    left: 'center',        // 标题居中
-                    textStyle: {
-                        color: 'white',
-                        fontSize: 20,
-                        fontWeight: 'bolder',
-                        fontFamily: 'Arial, sans-serif',
-                        textShadow: '0 2px 4px rgba(0,0,0,0.2)' // 可选文字阴影
-                    }
-                },
-                tooltip: {                // 提示框
-                    trigger: 'axis'       // 触发方式：坐标轴
-                },
-                legend: {                 // 图例
-                    data: [dataProperty.legend],     // 系列名称
-                    bottom: 10,            // 图例位置（底部）
-                    textStyle: {
-                        color: 'white',
-                        fontSize: 15,
-                        fontWeight: 'bolder',
-                        fontFamily: 'Arial, sans-serif',
-                        textShadow: '0 2px 4px rgba(0,0,0,0.2)' // 可选文字阴影
-                    }
-                },
-                xAxis: {
-                    type: 'category',    // 类目轴（离散数据）
-                    data: [...dataList.map(item => item.date)]  // X轴数据
-                },
-                yAxis: {
-                    type: 'value'         // 数值轴
-                },
-                series: [{
-                    name: dataProperty.serieName,
-                    type: 'line',         // 折线图类型
-                    data: [...dataList.map(item => item.value)],  // Y轴数据
-                    smooth: true,          // 平滑曲线
-                    areaStyle: {           // 填充区域
-                        color: 'rgba(64, 158, 255, 0.2)'
-                    },
-                    lineStyle: {           // 线条样式
-                        width: 3,
-                        color: '#1890FF'
-                    },
-                    symbol: 'circle',     // 数据点形状
-                    symbolSize: 10
-                }]
-            };
-
-            // 清理原先的图表数据
-            chartNode.setOption({}, true);
-            chartNode.setOption(option);
-        }
-
-        // 渲染图表函数
-        function renderChart() {
-            renderSingleChart(shareholderNumberList, ChartPropertyMap["shareholderNumber"], chartShareholder, "户");
-            renderSingleChart(interestRateList, ChartPropertyMap["interestRate"], chartInterestRate, "%");
-            renderSingleChart(interestRatePeriodList, ChartPropertyMap["interestRatePeriod"], chartInterestRatePeriod, "%");
-            renderSingleChart(impairmentLossList, ChartPropertyMap["impairmentLoss"], chartImpairmentLoss, measurement);
-            renderSingleChart(totalBalanceList, ChartPropertyMap["totalBalance"], chartTotalBalance, measurement);
-            renderSingleChart(totalRateList, ChartPropertyMap["totalRate"], chartTotalRate, "%");
-            renderSingleChart(newBalanceList, ChartPropertyMap["newBalance"], chartNewBalance, measurement);
-            renderSingleChart(newRateList, ChartPropertyMap["newRate"], chartNewRate, "%");
-            renderSingleChart(coverageRateList, ChartPropertyMap["coverageRate"], chartCoverageRate, "%");
-            renderSingleChart(adequacyRateList, ChartPropertyMap["adequacyRate"], chartAdequacyRate, "%");
-        }
-        
-        function renderMultiChart(dataMap, title2, chartNode, mea) {
-            if (dataMap.size == 0) {
+        function renderChart(data) {
+            if (data.length == 0) {
                 return;
             }
-            let codeNameList = [];
+            let nameList = [];
             let dataList = [];
-            for (const [codeName, item] of Object.entries(dataMap)) {
-                codeNameList.push(codeName);
-                dataList.push(item);
+            for (let i = 0; i < data.length; i++) {
+                nameList.push(data[i].industry_name);
+                dataList.push(data[i].price_trend_list);
             }
             let option = {
                 title: {
-                    text: title2 + "(" + mea + ")",  // 图表标题
+                    text: "板块趋势",  // 图表标题
                     left: 'center',        // 标题居中
                     textStyle: {
                         color: 'white',
@@ -935,7 +757,7 @@
                     trigger: 'axis'       // 触发方式：坐标轴
                 },
                 legend: {                 // 图例
-                    data: codeNameList,     // 系列名称
+                    data: nameList,     // 系列名称
                     bottom: 10,            // 图例位置（底部）
                     textStyle: {
                         color: 'white',
@@ -950,18 +772,18 @@
                     data: [...dataList[0].map(item => item.date)]  // X轴数据
                 },
                 yAxis: {
-                    type: 'value'         // 数值轴
+                    type: 'value',         // 数值轴
                 },
                 series: []
             };
             for (let i = 0; i < dataList.length; i++) {
                 option.series.push({
-                    name: codeNameList[i],
+                    name: nameList[i],
                     type: 'line',         // 折线图类型
-                    data: [...dataList[i].map(item => item.value)],  // Y轴数据
+                    data: [...dataList[i].map(item => item.price)],  // Y轴数据
                     smooth: true,          // 平滑曲线
                     areaStyle: {           // 填充区域
-                        color: 'rgba(64, 158, 255, 0.2)'
+                        color: 'transparent'
                     },
                     lineStyle: {           // 线条样式
                         width: 3,
@@ -973,43 +795,63 @@
             }
 
             // 清理原先的图表数据
-            chartNode.setOption({}, true);
-            chartNode.setOption(option);
-        }
-
-        function renderIndustryChart() {
-            renderMultiChart(industryShareholderNumberMap, ChartPropertyMap["shareholderNumber"]["title"], chartShareholderIndustry, "户");
-            renderMultiChart(industryImpairmentLossMap, ChartPropertyMap["impairmentLoss"]["title"], chartImpairmentLossIndustry, measurement);
-            renderMultiChart(industryInterestRateMap, ChartPropertyMap["interestRate"]["title"], chartInterestRateIndustry, "%");
-            renderMultiChart(industryInterestRatePeriodMap, ChartPropertyMap["interestRatePeriod"]["title"], chartInterestRatePeriodIndustry, "%");
-            renderMultiChart(industryLdRateMap, ChartPropertyMap["ldRate"]["title"], chartLdRateIndustry, "%");
-            renderMultiChart(industryLdRatePeriodMap, ChartPropertyMap["ldRatePeriod"]["title"], chartLdRatePeriodIndustry, "%");
-            renderMultiChart(industryTotalBalanceMap, ChartPropertyMap["totalBalance"]["title"], chartTotalBalanceIndustry, measurement);
-            renderMultiChart(industryTotalRateMap, ChartPropertyMap["totalRate"]["title"], chartTotalRateIndustry, "%");
-            renderMultiChart(industryCoverageRateMap, ChartPropertyMap["coverageRate"]["title"], chartCoverageRateIndustry, "%");
-            renderMultiChart(industryAdequacyRateMap, ChartPropertyMap["adequacyRate"]["title"], chartAdequacyRateIndustry, "%");
-            renderMultiChart(industryROEMap, ChartPropertyMap["roe"]["title"], chartROEIndustry, "%");
-            renderMultiChart(industryROAMap, ChartPropertyMap["roa"]["title"], chartROAIndustry, "%");
-            renderMultiChart(industryRORWAMap, ChartPropertyMap["rorwa"]["title"], chartRORWAIndustry, "%");
+            chartIndustry.setOption({}, true);
+            chartIndustry.setOption(option);
         }
 
         function renderOptions(filter = '') {
             optionsList.innerHTML = '';
             
-            const filteredStocks = codeList.filter(code => 
-                code.name.toLowerCase().includes(filter.toLowerCase()) || 
-                code.code.toLowerCase().includes(filter.toLowerCase())
+            const filteredIndustryList = industryList.filter(code => 
+                code.industry_name.toLowerCase().includes(filter.toLowerCase()) || 
+                code.industry_code.toLowerCase().includes(filter.toLowerCase())
             );
             
-            if (filteredStocks.length === 0) {
-                optionsList.innerHTML = '<div class="no-results">没有找到匹配的股票</div>';
+            if (filteredIndustryList.length === 0) {
+                optionsList.innerHTML = '<div class="no-results">没有找到匹配的板块</div>';
                 return;
             }
             
-            filteredStocks.forEach(stock => {
+            filteredIndustryList.forEach(industry => {
                 const li = document.createElement('li');
                 li.className = 'option-item';
-                if (selectedCode && selectedCode.code === stock.code) {
+                if (selectedIndustry && selectedIndustry.industry_code === industry.industry_code) {
+                    li.classList.add('selected');
+                }
+                li.dataset.value = industry.industry_code;
+                
+                li.innerHTML = `
+                    <div>${industry.industry_name}(${industry.industry_code})</div>
+                `;
+                
+                li.addEventListener('click', () => {
+                    selectIndustryCodeAndName(industry);
+                });
+                
+                optionsList.appendChild(li);
+            });
+        }
+
+        function renderStockOptions(filter = '') {
+            if (!selectedIndustry) {
+                return;
+            }
+            stockOptionsList.innerHTML = '';
+            
+            const filteredStockList = selectedIndustry.company_code_list.filter(stock => 
+                stock.code.toLowerCase().includes(filter.toLowerCase()) ||
+                stock.name.toLowerCase().includes(filter.toLowerCase())
+            );
+            
+            if (filteredStockList.length === 0) {
+                stockOptionsList.innerHTML = '<div class="no-results">没有找到匹配的个股</div>';
+                return;
+            }
+            
+            filteredStockList.forEach(stock => {
+                const li = document.createElement('li');
+                li.className = 'option-item';
+                if (selectedStock && selectedStock.code === stock.code) {
                     li.classList.add('selected');
                 }
                 li.dataset.value = stock.code;
@@ -1019,27 +861,42 @@
                 `;
                 
                 li.addEventListener('click', () => {
-                    selectCodeAndName(stock);
+                    selectStockCodeAndName(stock);
                 });
                 
-                optionsList.appendChild(li);
+                stockOptionsList.appendChild(li);
             });
         }
 
-        function selectCodeAndName(stock) {
-            selectedCode = stock;
-            selectStock.value = stock.name + '(' + stock.code + ')';
+        function selectIndustryCodeAndName(industry) {
+            selectedIndustry = industry;
+            selectIndustry.value = industry.industry_name + '(' + industry.industry_code + ')';
             closeDropdown();
-            renderOptions(searchStock.value);
-            generateCandleData();
+            renderOptions(searchIndustry.value);
+            renderStockOptions();
         }
-        
+
+        function selectStockCodeAndName(stock) {
+            selectedStock = stock;
+            selectStock.value = stock.name + '(' + stock.code + ')';;
+            closeCodeDropdown();
+            renderStockOptions(searchStock.value);
+        }
+
         // 打开下拉框
         function openDropdown() {
             selectOptions.classList.add('open');
             selectHeader.classList.add('open');
-            searchStock.focus();
+            searchIndustry.focus();
             renderOptions();
+        }
+        
+        // 打开个股下拉框
+        function openCodeDropdown() {
+            selectStockOptions.classList.add('open');
+            selectStockHeader.classList.add('open');
+            searchStock.focus();
+            renderStockOptions();
         }
         
         // 关闭下拉框
@@ -1047,13 +904,12 @@
             selectOptions.classList.remove('open');
             selectHeader.classList.remove('open');
         }
-        
-        function initContainer() {
-            stockNameGroup.style.display = 'block';
-            stockContainer.style.display = 'block';
 
-            stockIndustryGroup.style.display = 'none';
-            industryContainer.style.display = 'none';
+        
+        // 关闭个股下拉框
+        function closeCodeDropdown() {
+            selectStockOptions.classList.remove('open');
+            selectStockHeader.classList.remove('open');
         }
 
         // 事件监听
@@ -1065,13 +921,31 @@
             }
         });
         
-        searchStock.addEventListener('input', (e) => {
+        selectStockHeader.addEventListener('click', (e) => {
+            if (stockOptionsList.classList.contains('open')) {
+                closeCodeDropdown();
+            } else {
+                openCodeDropdown();
+            }
+        });
+        
+        searchIndustry.addEventListener('input', (e) => {
             renderOptions(e.target.value);
         });
         
-        searchStock.addEventListener('keydown', (e) => {
+        searchStock.addEventListener('input', (e) => {
+            renderStockOptions(e.target.value);
+        });
+
+        searchIndustry.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeDropdown();
+            }
+        });
+
+        searchStock.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeCodeDropdown();
             }
         });
         
@@ -1079,6 +953,7 @@
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.searchable-select')) {
                 closeDropdown();
+                closeCodeDropdown();
             }
         });
 
@@ -1087,27 +962,11 @@
             chartShareholder.resize();
         });
 
-        stockType.addEventListener('change', (e) => {
-            if (e.target.value === 'stock') {
-                stockNameGroup.style.display = 'block';
-                stockIndustryGroup.style.display = 'none';
-                stockContainer.style.display = 'block';
-                industryContainer.style.display = 'none';
-            } else {
-                stockNameGroup.style.display = 'none';
-                stockIndustryGroup.style.display = 'block';
-                stockContainer.style.display = 'none';
-                industryContainer.style.display = 'block';
-            }
+        searchBtn.addEventListener('click', () => {
+            generateCandleData();
         });
 
-        stockIndustry.addEventListener('change', (e) => {
-            generateCandleIndustryData();
-        });
-
-        generateCandleData();
-        generateCodeData();
-        initContainer();
+        generateIndustryData();
     </script>
 </body>
 </html>
