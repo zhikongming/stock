@@ -52,6 +52,7 @@ func customizedRegister(r *server.Hertz) {
 	r.GET("/industry/bank", handler.GetIndustryTrackData)
 	r.GET("/industry/basic", handler.GetIndustryBasicData)
 	r.GET("/industry/trend", handler.GetIndustryTrendData)
+	r.GET("/industry/relation", handler.GetIndustryRelationData)
 }
 
 func registerPlatform(r *server.Hertz) {

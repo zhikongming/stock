@@ -26,6 +26,16 @@ const (
 	KLineType30Min = "30"
 )
 
+var (
+	NidList = []string{
+		"",
+		"nid=0443b0a56be4891ed303783a0aa5f1e5;",
+		"nid=0a84c5047bfdf49fce8c8e74b8a28d0d;",
+		"nid=09cdb1f985f0041a7560b309d8d60cea;",
+		"nid=09c6294722c427885aa8f647795f8cb4;",
+	}
+)
+
 type EastMoneyClient struct {
 }
 
@@ -153,12 +163,18 @@ func (c *EastMoneyClient) GetRemoteStockBasic(ctx context.Context, code string, 
 		"fqt":     "1",
 		"lmt":     "360",
 	}
-	headers := map[string]string{
-		"Cookie": "nid=0443b0a56be4891ed303783a0aa5f1e5;",
-	}
-	resp, err := DoGet(ctx, path, params, headers)
-	if err != nil {
-		return nil, err
+	var resp []byte
+	var err error
+	for i := 0; i < len(NidList); i++ {
+		idx := emCache.GetCookieIndex()
+		headers := map[string]string{
+			"Cookie": NidList[idx],
+		}
+		resp, err = DoGet(ctx, path, params, headers)
+		if err == nil {
+			break
+		}
+		emCache.SetCookieIndex(idx + 1)
 	}
 
 	var ret model.EMGetRemoteStockDailyResp

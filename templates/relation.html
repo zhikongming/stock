@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>板块跟踪</title>
+    <title>相关性</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="./echarts.min.js"></script>
     <script src="./common.js"></script>
@@ -466,46 +466,13 @@
         <div class="controls">
             <div class="control-group" style="max-width: 20%;" id="industryGroup">
                 <div class="form-group">
-                    <label for="stockIndustry">板块</label>
-                    <div class="searchable-select" id="codeSelect">
-                        <div class="select-header" id="selectHeader">
-                            <input type="text" placeholder="搜索板块..." id="selectIndustry" readonly>
-                            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
-                        </div>
-                        <div class="select-options" id="selectOptions">
-                            <div class="search-input-container">
-                                <input type="text" class="search-input" id="searchIndustry" placeholder="输入板块...">
-                            </div>
-                            <ul class="options-list" id="optionsList">
-                                <!-- 选项将通过JavaScript动态生成 -->
-                            </ul>
-                        </div>
+                    <label for="stockIndustry">相关性类型</label>
+                    <div class="searchable-select">
+                        <select id="relationType">
+                            <option value="SZ">上证指数</option>
+                            <option value="">板块间</option>
+                        </select>
                     </div>
-                </div>
-            </div>
-            <div class="control-group" style="max-width: 20%; display: none;" id="stockGroup">
-                <div class="form-group">
-                    <label>个股</label>
-                    <div class="searchable-select" id="codeSelect">
-                        <div class="select-header" id="selectStockHeader">
-                            <input type="text" placeholder="搜索个股..." id="selectStock" readonly>
-                            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
-                        </div>
-                        <div class="select-options" id="selectStockOptions">
-                            <div class="search-input-container">
-                                <input type="text" class="search-input" id="searchStock" placeholder="输入个股...">
-                            </div>
-                            <ul class="options-list" id="stockOptionsList">
-                                <!-- 选项将通过JavaScript动态生成 -->
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="control-group" style="max-width: 20%;" id="dateGroup">
-                <div class="form-group">
-                    <label>截止日期</label>
-                    <input type="date" id="endDate" placeholder="输入截止日期..." value="">
                 </div>
             </div>
             <div class="control-group" style="max-width: 20%;" id="daysGroup">
@@ -519,300 +486,111 @@
             </div>
         </div>
 
-        <div class="filters-container">
-            <div class="filters-row">
-                <div class="filter-section">
-                    <h4 class="table-title">价格数据</h4>
-                    <table class="results-table">
-                        <thead>
-                            <tr>
-                                <th>代码</th>
-                                <th>名称</th>
-                                <th>开始日期</th>
-                                <th>结束日期</th>
-                                <th>最新相对价格(以第一天价格为基准)</th>
-                                <th>详情</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableResult"></tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="filters-container" id="relationContainer">
         </div>
-
-        <!-- <div class="filters-container" id="industry-container">
-            <div class="filters-row">
-                <div class="filter-section">
-                    <div id="chart-industry" class="chart"></div>
-                </div>
-            </div>
-        </div> -->
     </div>
 
     <script>
         // 获取DOM元素
         const searchBtn = document.getElementById('searchBtn');
-        const tableResult = document.getElementById('tableResult');
-
-        const selectHeader = document.getElementById('selectHeader');
-        const selectStockHeader = document.getElementById('selectStockHeader');
-        const selectIndustry = document.getElementById('selectIndustry');
-        const searchIndustry = document.getElementById('searchIndustry');
-        const selectOptions = document.getElementById('selectOptions');
-        const optionsList = document.getElementById('optionsList');
         const days = document.getElementById('days');
-        const endDate = document.getElementById('endDate');
-
-        const selectStock = document.getElementById('selectStock');
-        const selectStockOptions = document.getElementById('selectStockOptions');
-        const stockOptionsList = document.getElementById('stockOptionsList');
-        const industryContainer = document.getElementById('industry-container');
-        const searchStock = document.getElementById('searchStock');
-
-        // 初始化ECharts实例
-        // const chartIndustryNode = document.getElementById('chart-industry');
-        // const chartIndustry = echarts.init(chartIndustryNode);
-
-        let industryList = [];
-        let selectedIndustry = null;
-        let selectedStock = null;
-        let industryTrendList = [];
-
-        function generateIndustryData() {
-            let resp = getIndustryBasicData();
-            resp.then(data => {
-                data.forEach(item => {
-                    industryList.push(item);
-                });
-            });
-        }
+        const relationType = document.getElementById('relationType');
+        const relationContainer = document.getElementById('relationContainer');
 
         // 生成模拟K线数据
         function generateCandleData() {
-            let searchIndustry = "";
-            if (selectedIndustry != null) {
-                searchIndustry = selectedIndustry.industry_code;
-            }
-            let searchStock = "";
-            if (selectedStock != null) {
-                searchStock = selectedStock;
-            }
             let keepDays = days.value;
-            let endDateValue = "";
-            if (endDate != null) {
-                endDateValue = endDate.value;
-            }
+            let relationTypeValue = relationType.value;
 
-            let resp = getIndustryTrendData(searchIndustry, searchStock, keepDays, endDateValue);
+            let resp = getIndustryRelationData(relationTypeValue, keepDays);
             resp.then(data => {
-                industryTrendList = data.industry_price_trend;
                 renderTable(data);
             });
         }
 
         function renderTable(data) {
-            tableResult.innerHTML = '';        
-            const row = document.createElement('tr');
+            relationContainer.innerHTML = '';
 
-            if (data.industry_price_trend != null) {
-                for (let i = 0; i < data.industry_price_trend.length; i++) {
+            if (data.industry_relation_list != null) {
+                let tbody = document.createElement('tbody');
+                const row = document.createElement('tr');
+                for (let i = 0; i < data.industry_relation_list.length; i++) {
                     const row = document.createElement('tr');
-                    const item = data.industry_price_trend[i];
+                    const item = data.industry_relation_list[i];
                     row.innerHTML = `
                         <td>${item.industry_code}</td>
                         <td>${item.industry_name}</td>
-                        <td>${item.price_trend_list[0].date}</td>
-                        <td>${item.price_trend_list[item.price_trend_list.length - 1].date}</td>
-                        <td>${item.price_trend_list[item.price_trend_list.length - 1].price}</td>
-                        <td><a href="https://quote.eastmoney.com/bk/90.${item.industry_code}.html#fullScreenChart" target="_blank" style="color:white;">板块详情</a></td>
+                        <td>${item.correlation}</td>
+                        <td>${item.correlation_string}</td>
+                        <td><a href="https://quote.eastmoney.com/bk/90.${item.industry_code}.html#fullScreenChart" target="_blank" style="color:white;">板块走势</a></td>
+                        <td><a href="./industry_trend" target="_blank" style="color:white;">板块详情</a></td>
                     `;
-                    tableResult.appendChild(row);
+                    tbody.appendChild(row);
                 }
-            } else if (data.industry_code_trend != null) {
-                for (let i = 0; i < data.industry_code_trend.length; i++) {
+                // 创建和指数相关性表头
+                let div = document.createElement('div');
+                div.className = 'filter-section';
+                div.innerHTML = `
+                    <h4 class="table-title">指数相关性数据<span id="relationDate"> (${data.start_date} - ${data.end_date})</span></h4>
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>板块代码</th>
+                                <th>板块名称</th>
+                                <th>皮尔逊相关系数</th>
+                                <th>系数含义</th>
+                                <th>走势</th>
+                                <th>详情</th>
+                            </tr>
+                        </thead>
+                        ${tbody.innerHTML}
+                    </table>
+                `;
+                relationContainer.appendChild(div);
+            } else if (data.split_industry_relation_list != null) {
+                for (let i = 0; i < data.split_industry_relation_list.length; i++) {
+                    let tbody = document.createElement('tbody');
                     const row = document.createElement('tr');
-                    const item = data.industry_code_trend[i];
-                    row.innerHTML = `
-                        <td>${item.stock_code}</td>
-                        <td>${item.stock_name}</td>
-                        <td>${item.price_trend_list[0].date}</td>
-                        <td>${item.price_trend_list[item.price_trend_list.length - 1].date}</td>
-                        <td>${item.price_trend_list[item.price_trend_list.length - 1].price}</td>
-                        <td><a href="https://xueqiu.com/S/${item.stock_code}" target="_blank" style="color:white;">股票详情</a></td>
+                    for (let j = 0; j < data.split_industry_relation_list[i].length; j++) {
+                        const row = document.createElement('tr');
+                        const item = data.split_industry_relation_list[i][j];
+                        row.innerHTML = `
+                            <td>${item.industry_code}</td>
+                            <td>${item.industry_name}</td>
+                            <td>${item.correlation}</td>
+                            <td>${item.correlation_string}</td>
+                            <td><a href="https://quote.eastmoney.com/bk/90.${item.industry_code}.html#fullScreenChart" target="_blank" style="color:white;">板块走势</a></td>
+                            <td><a href="./industry_trend" target="_blank" style="color:white;">板块详情</a></td>
+                        `;
+                        tbody.appendChild(row);
+                    }
+                    // 创建和指数相关性表头
+                    let div = document.createElement('div');
+                    div.className = 'filter-section';
+                    div.innerHTML = `
+                        <h4 class="table-title">指数相关性数据<span id="relationDate"> (${data.start_date} - ${data.end_date})</span></h4>
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>板块代码</th>
+                                    <th>板块名称</th>
+                                    <th>皮尔逊相关系数</th>
+                                    <th>系数含义</th>
+                                    <th>走势</th>
+                                    <th>详情</th>
+                                </tr>
+                            </thead>
+                            ${tbody.innerHTML}
+                        </table>
                     `;
-                    tableResult.appendChild(row);
+                    relationContainer.appendChild(div);
                 }
             }
         }
-
-        function renderOptions(filter = '') {
-            optionsList.innerHTML = '';
-            
-            const filteredIndustryList = industryList.filter(code => 
-                code.industry_name.toLowerCase().includes(filter.toLowerCase()) || 
-                code.industry_code.toLowerCase().includes(filter.toLowerCase())
-            );
-            
-            if (filteredIndustryList.length === 0) {
-                optionsList.innerHTML = '<div class="no-results">没有找到匹配的板块</div>';
-                return;
-            }
-            
-            filteredIndustryList.forEach(industry => {
-                const li = document.createElement('li');
-                li.className = 'option-item';
-                if (selectedIndustry && selectedIndustry.industry_code === industry.industry_code) {
-                    li.classList.add('selected');
-                }
-                li.dataset.value = industry.industry_code;
-                
-                li.innerHTML = `
-                    <div>${industry.industry_name}(${industry.industry_code})</div>
-                `;
-                
-                li.addEventListener('click', () => {
-                    selectIndustryCodeAndName(industry);
-                });
-                
-                optionsList.appendChild(li);
-            });
-        }
-
-        function renderStockOptions(filter = '') {
-            if (!selectedIndustry) {
-                return;
-            }
-            stockOptionsList.innerHTML = '';
-            
-            const filteredStockList = selectedIndustry.company_code_list.filter(stock => 
-                stock.code.toLowerCase().includes(filter.toLowerCase()) ||
-                stock.name.toLowerCase().includes(filter.toLowerCase())
-            );
-            
-            if (filteredStockList.length === 0) {
-                stockOptionsList.innerHTML = '<div class="no-results">没有找到匹配的个股</div>';
-                return;
-            }
-            
-            filteredStockList.forEach(stock => {
-                const li = document.createElement('li');
-                li.className = 'option-item';
-                if (selectedStock && selectedStock.code === stock.code) {
-                    li.classList.add('selected');
-                }
-                li.dataset.value = stock.code;
-                
-                li.innerHTML = `
-                    <div>${stock.name}(${stock.code})</div>
-                `;
-                
-                li.addEventListener('click', () => {
-                    selectStockCodeAndName(stock);
-                });
-                
-                stockOptionsList.appendChild(li);
-            });
-        }
-
-        function selectIndustryCodeAndName(industry) {
-            selectedIndustry = industry;
-            selectIndustry.value = industry.industry_name + '(' + industry.industry_code + ')';
-            closeDropdown();
-            renderOptions(searchIndustry.value);
-            renderStockOptions();
-        }
-
-        function selectStockCodeAndName(stock) {
-            selectedStock = stock;
-            selectStock.value = stock.name + '(' + stock.code + ')';;
-            closeCodeDropdown();
-            renderStockOptions(searchStock.value);
-        }
-
-        // 打开下拉框
-        function openDropdown() {
-            selectOptions.classList.add('open');
-            selectHeader.classList.add('open');
-            searchIndustry.focus();
-            renderOptions();
-        }
-        
-        // 打开个股下拉框
-        function openCodeDropdown() {
-            selectStockOptions.classList.add('open');
-            selectStockHeader.classList.add('open');
-            searchStock.focus();
-            renderStockOptions();
-        }
-        
-        // 关闭下拉框
-        function closeDropdown() {
-            selectOptions.classList.remove('open');
-            selectHeader.classList.remove('open');
-        }
-
-        
-        // 关闭个股下拉框
-        function closeCodeDropdown() {
-            selectStockOptions.classList.remove('open');
-            selectStockHeader.classList.remove('open');
-        }
-
-        // 事件监听
-        selectHeader.addEventListener('click', (e) => {
-            if (selectOptions.classList.contains('open')) {
-                closeDropdown();
-            } else {
-                openDropdown();
-            }
-        });
-        
-        selectStockHeader.addEventListener('click', (e) => {
-            if (stockOptionsList.classList.contains('open')) {
-                closeCodeDropdown();
-            } else {
-                openCodeDropdown();
-            }
-        });
-        
-        searchIndustry.addEventListener('input', (e) => {
-            renderOptions(e.target.value);
-        });
-        
-        searchStock.addEventListener('input', (e) => {
-            renderStockOptions(e.target.value);
-        });
-
-        searchIndustry.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                closeDropdown();
-            }
-        });
-
-        searchStock.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                closeCodeDropdown();
-            }
-        });
-        
-        // 点击外部关闭下拉框
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.searchable-select')) {
-                closeDropdown();
-                closeCodeDropdown();
-            }
-        });
-
-        // 窗口大小改变时调整图表大小
-        window.addEventListener('resize', () => {
-            chartShareholder.resize();
-        });
 
         searchBtn.addEventListener('click', () => {
             generateCandleData();
         });
-
-        generateIndustryData();
     </script>
 </body>
 </html>

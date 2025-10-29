@@ -1089,6 +1089,35 @@
             });
         }
 
+        function setShareholderValue(resp) {
+            if (resp == undefined) {
+                shareholderNumber.value = 0.0;
+                let shareholderNames = document.querySelectorAll('input[name="shareholderNames"]')
+                let shareholderShares = document.querySelectorAll('input[name="shareholderShares"]')
+                let shareholderRatios = document.querySelectorAll('input[name="shareholderRatios"]')
+                for (let i = 0; i < shareholderNames.length; i++) {
+                    shareholderNames[i].value = "";
+                    shareholderShares[i].value = 0;
+                    shareholderRatios[i].value = 0;
+                }
+                return;
+            }
+            report = resp.report;
+            // 股东数据
+            shareholderNumber.value = report.shareholder.shareholder_number;
+            let shareholderNames = document.querySelectorAll('input[name="shareholderNames"]')
+            let shareholderShares = document.querySelectorAll('input[name="shareholderShares"]')
+            let shareholderRatios = document.querySelectorAll('input[name="shareholderRatios"]')
+            for (let i = 0; i < shareholderNames.length; i++) {
+                if (i >= report.shareholder.shareholder_list.length) {
+                    break;
+                }
+                shareholderNames[i].value = report.shareholder.shareholder_list[i].name;
+                shareholderShares[i].value = report.shareholder.shareholder_list[i].share;
+                shareholderRatios[i].value = report.shareholder.shareholder_list[i].ratio;
+            }
+        }
+
         function setValue(resp) {
             if (resp == undefined) {
                 shareholderNumber.value = 0.0;
@@ -1333,6 +1362,14 @@
             resp.then(data => {
                 if (data.status != 200) {
                     setValue();
+                    let preReportType = getPreMOMReportType(reportType);
+                    let preResp = getStockReport(code, year, preReportType, true);
+                    preResp.then(preData => {
+                        const result = preData.json();
+                        result.then(rp => {
+                            setShareholderValue(rp);
+                        });
+                    });
                     return;
                 };
                 const result = data.json();

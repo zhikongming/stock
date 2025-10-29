@@ -86,10 +86,14 @@ func GetLastStockPrice(ctx context.Context, code string) (*StockPrice, error) {
 	return &stockPrice, nil
 }
 
-func GetLastNStockPrice(ctx context.Context, code string, limit int) ([]*StockPrice, error) {
+func GetLastNStockPrice(ctx context.Context, code string, date string, limit int) ([]*StockPrice, error) {
 	var stockPriceList []*StockPrice
 	db := GetDB()
-	err := db.WithContext(ctx).Where("company_code =?", code).Order("id desc").Limit(limit).Find(&stockPriceList).Error
+	db = db.WithContext(ctx).Where("company_code =?", code)
+	if date != "" {
+		db = db.Where("date <= ?", date)
+	}
+	err := db.Order("id desc").Limit(limit).Find(&stockPriceList).Error
 	if err != nil {
 		if err != gorm.ErrRecordNotFound {
 			return nil, err

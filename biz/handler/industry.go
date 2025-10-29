@@ -52,3 +52,26 @@ func GetIndustryTrendData(ctx context.Context, c *app.RequestContext) {
 	}
 	c.JSON(http.StatusOK, data)
 }
+
+func GetIndustryRelationData(ctx context.Context, c *app.RequestContext) {
+	var req model.GetIndustryRelationDataReq
+	if c.BindQuery(&req) != nil {
+		c.JSON(http.StatusBadRequest, utils.H{
+			"message": "bad request",
+		})
+		return
+	}
+	if req.Days <= 0 {
+		req.Days = 1
+	} else if req.Days > 360 {
+		req.Days = 360
+	}
+	data, err := service.GetIndustryRelationData(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.H{
+			"message": fmt.Sprintf("error: %v", err),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}

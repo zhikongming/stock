@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"sort"
 	"strconv"
 	"sync"
@@ -182,14 +183,6 @@ func GetIndustryTrendDetail(ctx context.Context, req *model.GetIndustryTrendData
 		return nil, err
 	}
 
-	// tmpList := make([]*dal.StockIndustry, 0)
-	// for _, item := range industryList {
-	// 	if item.Code == "BK0420" {
-	// 		tmpList = append(tmpList, item)
-	// 	}
-	// }
-	// industryList = tmpList
-
 	industryDalMap := make(map[string]*dal.StockIndustry)
 	for _, industry := range industryList {
 		industryDalMap[industry.Code] = industry
@@ -231,7 +224,7 @@ func GetIndustryTrendDetail(ctx context.Context, req *model.GetIndustryTrendData
 			stockPrice := stockPriceList[i]
 			nextStockPrice := stockPriceList[i+1]
 			date := utils.FormatDate(stockPrice.Date)
-			diff := utils.Float64KeepDecimal(100*(stockPrice.PriceClose-nextStockPrice.PriceClose)/nextStockPrice.PriceClose, 2)
+			diff := utils.Float64KeepDecimal(100*(stockPrice.PriceClose-nextStockPrice.PriceClose)/nextStockPrice.PriceClose, 4)
 			price := utils.Float64KeepDecimal(100*(stockPrice.PriceClose-lastStockPrice.PriceClose)/lastStockPrice.PriceClose, 4)
 			industryDateMap[industryCode] = append(industryDateMap[industryCode], &model.CodeDiffPrice{
 				Date:  date,
@@ -258,7 +251,7 @@ func GetIndustryTrendDetail(ctx context.Context, req *model.GetIndustryTrendData
 		for date, dl := range diffMap {
 			d.PriceTrendList = append(d.PriceTrendList, &model.PriceTrend{
 				DateString: date,
-				Diff:       utils.Float64KeepDecimal(utils.ListFloat64Average(dl), 2),
+				Diff:       utils.Float64KeepDecimal(utils.ListFloat64Average(dl), 4),
 				Price:      utils.Float64KeepDecimal(utils.ListFloat64Average(priceMap[date]), 4),
 				Date:       utils.ParseDate(date),
 			})
@@ -342,6 +335,7 @@ func filterStockPrice(stockPriceMap map[string][]*dal.StockPrice) map[string][]*
 func syncStockIndustryCode(ctx context.Context, stockCodeList []string) error {
 	jobCh := make(chan struct{}, MaxJobNum)
 	wg := sync.WaitGroup{}
+	canceled := false
 	for _, stockCode := range stockCodeList {
 		wg.Add(1)
 		go func(stockCode string) {
@@ -350,11 +344,15 @@ func syncStockIndustryCode(ctx context.Context, stockCodeList []string) error {
 				<-jobCh
 			}()
 			jobCh <- struct{}{}
+			if canceled {
+				return
+			}
 			err := syncOneStockCode(ctx, &model.SyncStockCodeReq{
 				Code: stockCode,
 			})
 			if err != nil {
 				log.Printf("sync stock code failed: %v", err)
+				canceled = true
 			}
 		}(stockCode)
 	}
@@ -428,7 +426,7 @@ func getStockPrice(ctx context.Context, stockCodeList []string, req *model.GetIn
 	for _, stockCode := range stockCodeList {
 		jobList2 = append(jobList2, func(stockCode string) func() (interface{}, error) {
 			return func() (interface{}, error) {
-				d, err := dal.GetLastNStockPrice(ctx, stockCode, req.Days+1)
+				d, err := dal.GetLastNStockPrice(ctx, stockCode, req.EndDate, req.Days+1)
 				return &WrapJobs{
 					Data:      d,
 					StockCode: stockCode,
@@ -445,4 +443,172 @@ func getStockPrice(ctx context.Context, stockCodeList []string, req *model.GetIn
 		ret[price.StockCode] = price.Data
 	}
 	return ret, nil
+}
+
+func GetIndustryRelationData(ctx context.Context, req *model.GetIndustryRelationDataReq) (*model.GetIndustryRelationDataResp, error) {
+	if req.IsSplitIndustry {
+		return GetIndustryRelationBySplitIndustry(ctx, req)
+	} else {
+		return GetIndustryRelationByBasicCode(ctx, req)
+	}
+}
+
+func GetIndustryRelationByBasicCode(ctx context.Context, req *model.GetIndustryRelationDataReq) (*model.GetIndustryRelationDataResp, error) {
+	// 获取股价趋势
+	trendReq := &model.GetIndustryTrendDataReq{
+		Days:         req.Days,
+		SyncPrice:    false,
+		IndustryCode: req.IndustryCode,
+	}
+	trendList, err := GetIndustryTrendDetail(ctx, trendReq)
+	if err != nil {
+		return nil, err
+	}
+	// 获取上证指数, 计算皮尔逊系数
+	stockDailyData, err := GetBasicStockPrice(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// 计算相关的皮尔逊系数
+	ret := make([]*model.IndustryRelation, 0)
+	parsedStockDailyData := stockDailyData.ToDatePriceList()
+	stockDailyTrendData := model.TransferDatePriceToPriceTrend(parsedStockDailyData)
+	for _, trend := range trendList {
+		// 计算相关的皮尔逊系数
+		correlation := CalculatePearsonCorrelation(trend.PriceTrendList, stockDailyTrendData)
+		ret = append(ret, &model.IndustryRelation{
+			IndustryCode:      trend.IndustryCode,
+			IndustryName:      trend.IndustryName,
+			Correlation:       utils.Float64KeepDecimal(correlation, 2),
+			CorrelationString: utils.GetCorrelationString(correlation),
+		})
+	}
+	sort.Sort(model.SortIndustryRelation(ret))
+	return &model.GetIndustryRelationDataResp{
+		StartDate:            trendList[0].PriceTrendList[0].DateString,
+		EndDate:              trendList[len(trendList)-1].PriceTrendList[len(trendList[len(trendList)-1].PriceTrendList)-1].DateString,
+		IndustryRelationList: ret,
+	}, nil
+}
+
+func GetIndustryRelationBySplitIndustry(ctx context.Context, req *model.GetIndustryRelationDataReq) (*model.GetIndustryRelationDataResp, error) {
+	// 获取股价趋势
+	trendReq := &model.GetIndustryTrendDataReq{
+		Days:         req.Days,
+		SyncPrice:    false,
+		IndustryCode: req.IndustryCode,
+	}
+	trendList, err := GetIndustryTrendDetail(ctx, trendReq)
+	if err != nil {
+		return nil, err
+	}
+	// 计算相关的皮尔逊系数
+	ret := make([][]*model.IndustryRelation, 0)
+	for {
+		strongIndustryRelationList, weakPriceTrendList := GetOneStrongCorrelationList(trendList)
+		sort.Sort(model.SortIndustryRelation(strongIndustryRelationList))
+		ret = append(ret, strongIndustryRelationList)
+		if len(weakPriceTrendList) == 0 {
+			break
+		}
+		trendList = weakPriceTrendList
+	}
+	return &model.GetIndustryRelationDataResp{
+		StartDate:                 trendList[0].PriceTrendList[0].DateString,
+		EndDate:                   trendList[len(trendList)-1].PriceTrendList[len(trendList[len(trendList)-1].PriceTrendList)-1].DateString,
+		SplitIndustryRelationList: ret,
+	}, nil
+}
+
+func GetOneStrongCorrelationList(trend []*model.IndustryPriceTrend) ([]*model.IndustryRelation, []*model.IndustryPriceTrend) {
+	if len(trend) == 0 {
+		return nil, nil
+	}
+	strongIndustryRelationList := make([]*model.IndustryRelation, 0)
+	weakPriceTrendList := make([]*model.IndustryPriceTrend, 0)
+	strongIndustryRelationList = append(strongIndustryRelationList, &model.IndustryRelation{
+		IndustryCode:      trend[0].IndustryCode,
+		IndustryName:      trend[0].IndustryName,
+		Correlation:       1.0,
+		CorrelationString: "基准",
+	})
+	for idx := 1; idx < len(trend); idx++ {
+		correlation := CalculatePearsonCorrelation(trend[idx].PriceTrendList, trend[0].PriceTrendList)
+		if utils.IsStrongCorrelation(correlation) {
+			strongIndustryRelationList = append(strongIndustryRelationList, &model.IndustryRelation{
+				IndustryCode:      trend[idx].IndustryCode,
+				IndustryName:      trend[idx].IndustryName,
+				Correlation:       utils.Float64KeepDecimal(correlation, 2),
+				CorrelationString: "强相关",
+			})
+		} else {
+			weakPriceTrendList = append(weakPriceTrendList, trend[idx])
+		}
+	}
+	return strongIndustryRelationList, weakPriceTrendList
+}
+
+func GetBasicStockPrice(ctx context.Context) (*model.StockDailyData, error) {
+	// 默认获取上证指数
+	stockCode := utils.GetBasicStockCode()
+	client := NewEastMoneyClient()
+	stockDailyData, err := client.GetRemoteStockDaily(ctx, stockCode, time.Now())
+	if err != nil {
+		return nil, err
+	}
+	return stockDailyData, nil
+}
+
+func CalculatePearsonCorrelation(trend1, trend2 []*model.PriceTrend) float64 {
+	// 计算相关的皮尔逊系数
+	x, y := alignPriceTrend(trend1, trend2)
+	// 计算均值
+	var sumX, sumY float64
+	for i := range trend1 {
+		sumX += x[i].Diff
+		sumY += y[i].Diff
+	}
+	meanX := sumX / float64(len(x))
+	meanY := sumY / float64(len(y))
+
+	// 计算协方差和标准差
+	var cov, stdX, stdY float64
+	for i := range x {
+		devX := x[i].Diff - meanX
+		devY := y[i].Diff - meanY
+		cov += devX * devY
+		stdX += devX * devX
+		stdY += devY * devY
+	}
+
+	stdX = math.Sqrt(stdX)
+	stdY = math.Sqrt(stdY)
+
+	if stdX == 0 || stdY == 0 {
+		return math.NaN()
+	}
+
+	return cov / (stdX * stdY)
+}
+
+func alignPriceTrend(trend1, trend2 []*model.PriceTrend) ([]*model.PriceTrend, []*model.PriceTrend) {
+	// 两者长度不等, 需要根据日期对其以下长度
+	longest := trend1
+	shortest := trend2
+	if len(trend1) < len(trend2) {
+		longest = trend2
+		shortest = trend1
+	}
+	for idx, item := range longest {
+		if item.DateString == shortest[0].DateString {
+			longest = longest[idx:]
+			break
+		}
+	}
+	if len(longest) == len(shortest) {
+		return longest, shortest
+	}
+	// 长度不相等, 取最短的长度
+	longest = longest[:len(shortest)]
+	return longest, shortest
 }

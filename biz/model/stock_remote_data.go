@@ -1,5 +1,12 @@
 package model
 
+import (
+	"strconv"
+	"time"
+
+	"github.com/zhikongming/stock/utils"
+)
+
 type GetRemoteStockBasicResp struct {
 	ErrorCode        int             `json:"error_code"`
 	ErrorDescription string          `json:"error_description"`
@@ -81,6 +88,20 @@ func (d *StockDailyData) GetColumnIndexByKey(keyName string) int {
 		return value
 	}
 	return -1
+}
+
+func (d *StockDailyData) ToDatePriceList() []*DatePrice {
+	datePriceList := make([]*DatePrice, 0)
+	for _, item := range d.Item {
+		timestampIndex := d.GetColumnIndexByKey("timestamp")
+		timestamp, _ := strconv.ParseInt(utils.ToString(item[timestampIndex]), 10, 64)
+		date := utils.TimestampToDate(timestamp / int64(time.Microsecond))
+		datePriceList = append(datePriceList, &DatePrice{
+			Date:  date,
+			Price: utils.Float64KeepDecimal(utils.ToFloat64(item[d.GetColumnIndexByKey("close")]), 2),
+		})
+	}
+	return datePriceList
 }
 
 type StockRelationResp struct {
