@@ -7,6 +7,9 @@ const updateStockReportUrl = "/stock/report";
 const getPriceDataUrl = "/analyze/trend/code";
 const getDataBankUrl = "/data/bank";
 const getDataIndustryUrl = "/industry/bank";
+const getIndustryTrendUrl = "/industry/trend"
+const getIndustryBasicUrl = "/industry/basic"
+const getIndustryRelationUrl = "/industry/relation"
 
 const ChartPropertyMap = {
     "shareholderNumber": {
@@ -105,6 +108,53 @@ async function getPriceData(code, start_date, line_type) {
 
 async function getCodeData() {
     const response = await fetch(domain + getCodeDataUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
+
+async function getIndustryBasicData() {
+    const response = await fetch(domain + getIndustryBasicUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
+
+async function getIndustryTrendData(industry, stock, days, endDate) {
+    const url = domain + getIndustryTrendUrl;
+    const urlObj = new URL(url);
+    urlObj.searchParams.set("days", days);
+    if (industry != "") {
+        urlObj.searchParams.set("industry_code", industry);
+    }
+    if (endDate != "") {
+        urlObj.searchParams.set("end_date", endDate);
+    }
+
+    const response = await fetch(urlObj.toString(), {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
+
+async function getIndustryRelationData(relationType, days) {
+    const url = domain + getIndustryRelationUrl;
+    const urlObj = new URL(url);
+    urlObj.searchParams.set("days", days);
+    if (relationType == "") {
+        urlObj.searchParams.set("is_split_industry", true);
+    }
+
+    const response = await fetch(urlObj.toString(), {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json'
@@ -260,6 +310,14 @@ function getReportTypeString(reportType) {
         return "年报";
     }
     return "";
+}
+
+function getPreMOMReportType(reportType) {
+    if (reportType == 1) {
+        return 4;
+    } else {
+        return reportType-1;
+    }
 }
 
 function getReportTypeString2(reportType) {

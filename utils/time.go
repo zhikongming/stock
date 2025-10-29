@@ -64,3 +64,18 @@ func IsDateGreaterThan(date1, date2 string) bool {
 	t2, _ := time.Parse(DateFormat, date2)
 	return t1.After(t2)
 }
+
+func GetDateOfToday() string {
+	return time.Now().Format(DateFormat)
+}
+
+func GetDateOfLastDays(days int) string {
+	t := time.Now().AddDate(0, 0, -days)
+	return t.Format(DateFormat)
+}
+
+func Before(date1 string, date2 string) bool {
+	t1, _ := time.Parse(DateFormat, date1)
+	t2, _ := time.Parse(DateFormat, date2)
+	return t1.Before(t2)
+}

@@ -30,7 +30,7 @@ func SyncStockCode(ctx context.Context, c *app.RequestContext) {
 	}
 
 	c.JSON(consts.StatusOK, utils.H{
-		"message": "pong",
+		"message": "success",
 	})
 }
 
@@ -43,4 +43,26 @@ func GetAllCode(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 	c.JSON(consts.StatusOK, codeList)
+}
+
+func SyncStockIndustry(ctx context.Context, c *app.RequestContext) {
+	var req model.SyncStockIndustryReq
+	if c.BindJSON(&req) != nil {
+		c.JSON(http.StatusBadRequest, utils.H{
+			"message": "bad request",
+		})
+		return
+	}
+
+	err := service.SyncStockIndustry(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.H{
+			"message": fmt.Sprintf("error: %v", err),
+		})
+		return
+	}
+
+	c.JSON(consts.StatusOK, utils.H{
+		"message": "success",
+	})
 }

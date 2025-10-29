@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>板块跟踪</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="./echarts.min.js"></script>
+    <script src="./common.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2c3e50);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.85;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .chart-container {
+            background: rgba(30, 35, 60, 0.8);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            margin-bottom: 30px;
+            height: 1000px;
+        }
+        
+        #chart {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 20px;
+            background: rgba(40, 45, 70, 0.8);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-group {
+            flex: 1;
+            min-width: 300px;
+            padding: 15px;
+            background: rgba(30, 35, 60, 0.6);
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #4facfe;
+            border-bottom: 2px solid #4facfe;
+            padding-bottom: 8px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(20, 25, 40, 0.8);
+            color: #e0e0e0;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.4);
+        }
+        
+        button {
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            color: #1a1a2e;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 28px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            max-width: 200px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .info-panel {
+            background: rgba(40, 45, 70, 0.8);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .info-content {
+            line-height: 1.8;
+        }
+        
+        .info-content h3 {
+            color: #00f2fe;
+            margin: 15px 0 10px;
+        }
+        
+        .info-content ul {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .info-content li {
+            margin-bottom: 8px;
+        }
+        
+        .code-block {
+            background: rgba(20, 25, 40, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            padding-bottom: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.0rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+        }
+        
+        /* 支持搜索的下拉框样式 */
+        .searchable-select {
+            position: relative;
+            width: 100%;
+        }
+        .select-header {
+            display: flex;
+            align-items: center;
+            background: rgba(25, 35, 60, 0.8);
+            border-radius: 10px;
+            border: 1px solid rgba(74, 107, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .select-header:hover {
+            border-color: #4facfe;
+        }
+        .select-header input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            padding-right: 30px;
+        }
+        .select-header .arrow {
+            position: absolute;
+            right: 15px;
+            transition: transform 0.3s;
+        }
+        .select-header.open .arrow {
+            transform: rotate(180deg);
+        }
+        .select-options {
+            position: absolute;
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(40, 50, 90, 0.95);
+            border-radius: 10px;
+            border: 1px solid rgba(74, 107, 255, 0.5);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            margin-top: 10px;
+            display: none;
+        }
+        .select-options.open {
+            display: block;
+        }
+        .search-input-container {
+            padding: 12px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.2);
+            position: sticky;
+            top: 0;
+            background: rgba(40, 50, 90, 0.95);
+            z-index: 10;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(74, 107, 255, 0.5);
+            background: rgba(25, 35, 60, 0.8);
+            color: #fff;
+            font-size: 1rem;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 8px rgba(79, 172, 254, 0.5);
+        }
+        .options-list {
+            list-style: none;
+            padding: 8px 0;
+        }
+        .option-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .option-item:hover {
+            background: rgba(74, 107, 255, 0.3);
+        }
+        .option-item.selected {
+            background: rgba(79, 172, 254, 0.2);
+            color: #4facfe;
+        }
+        .option-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(79, 172, 254, 0.2);
+            border-radius: 6px;
+        }
+        .no-results {
+            padding: 20px;
+            text-align: center;
+            color: #a0d2ff;
+            font-style: italic;
+        }
+        .result-display {
+            background: rgba(40, 50, 90, 0.6);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .result-display h3 {
+            color: #00f2fe;
+            margin-bottom: 15px;
+        }
+        .selected-value {
+            font-size: 1.4rem;
+            color: #4facfe;
+            font-weight: 600;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .code-block {
+            background: rgba(25, 35, 60, 0.8);
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        .code-block h3 {
+            color: #4facfe;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        pre {
+            background: rgba(15, 22, 37, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            color: #a0d2ff;
+            font-family: 'Courier New', monospace;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+        .filters-container {
+            background: rgba(30, 40, 70, 0.7);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+            border: 1px solid rgba(74, 107, 255, 0.3);
+        }
+        .filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .filters-header h2 {
+            color: #4facfe;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .filters-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-section {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(40, 50, 90, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(74, 107, 255, 0.2);
+            margin-bottom: 15px;
+        }
+        .filter-section h3 {
+            color: #00f2fe;
+            margin-bottom: 18px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        .chart {
+            height: 400px;
+        }
+        .highlight {
+            color: #4facfe;
+        }
+
+        .results-table th {
+            background: rgba(74, 107, 255, 0.3);
+            padding: 16px 20px;
+            text-align: left;
+            color: #4facfe;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        .results-table td {
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.1);
+        }
+        .results-table tbody tr {
+            transition: all 0.3s ease;
+            background: rgba(40, 50, 90, 0.4);
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .results-table tbody tr:hover {
+            background: rgba(40, 50, 90, 0.7);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .table-title {
+            text-align: center;
+            color: #00f2fe;
+            font-size: 1.2rem;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(160, 210, 255, 0.2);
+            padding-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+            
+            .control-group {
+                min-width: 100%;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .chart-container {
+                height: 450px;
+            }
+
+            .results-table th, .results-table td {
+                padding: 12px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <div class="control-group" style="max-width: 20%;" id="industryGroup">
+                <div class="form-group">
+                    <label for="stockIndustry">板块</label>
+                    <div class="searchable-select" id="codeSelect">
+                        <div class="select-header" id="selectHeader">
+                            <input type="text" placeholder="搜索板块..." id="selectIndustry" readonly>
+                            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+                        </div>
+                        <div class="select-options" id="selectOptions">
+                            <div class="search-input-container">
+                                <input type="text" class="search-input" id="searchIndustry" placeholder="输入板块...">
+                            </div>
+                            <ul class="options-list" id="optionsList">
+                                <!-- 选项将通过JavaScript动态生成 -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="control-group" style="max-width: 20%; display: none;" id="stockGroup">
+                <div class="form-group">
+                    <label>个股</label>
+                    <div class="searchable-select" id="codeSelect">
+                        <div class="select-header" id="selectStockHeader">
+                            <input type="text" placeholder="搜索个股..." id="selectStock" readonly>
+                            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+                        </div>
+                        <div class="select-options" id="selectStockOptions">
+                            <div class="search-input-container">
+                                <input type="text" class="search-input" id="searchStock" placeholder="输入个股...">
+                            </div>
+                            <ul class="options-list" id="stockOptionsList">
+                                <!-- 选项将通过JavaScript动态生成 -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="control-group" style="max-width: 20%;" id="dateGroup">
+                <div class="form-group">
+                    <label>截止日期</label>
+                    <input type="date" id="endDate" placeholder="输入截止日期..." value="">
+                </div>
+            </div>
+            <div class="control-group" style="max-width: 20%;" id="daysGroup">
+                <div class="form-group">
+                    <label>查询天数</label>
+                    <input type="number" id="days" placeholder="输入查询天数..." value="30">
+                </div>
+            </div>
+            <div class="control-group">
+                <button id="searchBtn">查询</button>
+            </div>
+        </div>
+
+        <div class="filters-container">
+            <div class="filters-row">
+                <div class="filter-section">
+                    <h4 class="table-title">价格数据</h4>
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>代码</th>
+                                <th>名称</th>
+                                <th>开始日期</th>
+                                <th>结束日期</th>
+                                <th>最新相对价格(以第一天价格为基准)</th>
+                                <th>详情</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableResult"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- <div class="filters-container" id="industry-container">
+            <div class="filters-row">
+                <div class="filter-section">
+                    <div id="chart-industry" class="chart"></div>
+                </div>
+            </div>
+        </div> -->
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const searchBtn = document.getElementById('searchBtn');
+        const tableResult = document.getElementById('tableResult');
+
+        const selectHeader = document.getElementById('selectHeader');
+        const selectStockHeader = document.getElementById('selectStockHeader');
+        const selectIndustry = document.getElementById('selectIndustry');
+        const searchIndustry = document.getElementById('searchIndustry');
+        const selectOptions = document.getElementById('selectOptions');
+        const optionsList = document.getElementById('optionsList');
+        const days = document.getElementById('days');
+        const endDate = document.getElementById('endDate');
+
+        const selectStock = document.getElementById('selectStock');
+        const selectStockOptions = document.getElementById('selectStockOptions');
+        const stockOptionsList = document.getElementById('stockOptionsList');
+        const industryContainer = document.getElementById('industry-container');
+        const searchStock = document.getElementById('searchStock');
+
+        // 初始化ECharts实例
+        // const chartIndustryNode = document.getElementById('chart-industry');
+        // const chartIndustry = echarts.init(chartIndustryNode);
+
+        let industryList = [];
+        let selectedIndustry = null;
+        let selectedStock = null;
+        let industryTrendList = [];
+
+        function generateIndustryData() {
+            let resp = getIndustryBasicData();
+            resp.then(data => {
+                data.forEach(item => {
+                    industryList.push(item);
+                });
+            });
+        }
+
+        // 生成模拟K线数据
+        function generateCandleData() {
+            let searchIndustry = "";
+            if (selectedIndustry != null) {
+                searchIndustry = selectedIndustry.industry_code;
+            }
+            let searchStock = "";
+            if (selectedStock != null) {
+                searchStock = selectedStock;
+            }
+            let keepDays = days.value;
+            let endDateValue = "";
+            if (endDate != null) {
+                endDateValue = endDate.value;
+            }
+
+            let resp = getIndustryTrendData(searchIndustry, searchStock, keepDays, endDateValue);
+            resp.then(data => {
+                industryTrendList = data.industry_price_trend;
+                renderTable(data);
+            });
+        }
+
+        function renderTable(data) {
+            tableResult.innerHTML = '';        
+            const row = document.createElement('tr');
+
+            if (data.industry_price_trend != null) {
+                for (let i = 0; i < data.industry_price_trend.length; i++) {
+                    const row = document.createElement('tr');
+                    const item = data.industry_price_trend[i];
+                    row.innerHTML = `
+                        <td>${item.industry_code}</td>
+                        <td>${item.industry_name}</td>
+                        <td>${item.price_trend_list[0].date}</td>
+                        <td>${item.price_trend_list[item.price_trend_list.length - 1].date}</td>
+                        <td>${item.price_trend_list[item.price_trend_list.length - 1].price}</td>
+                        <td><a href="https://quote.eastmoney.com/bk/90.${item.industry_code}.html#fullScreenChart" target="_blank" style="color:white;">板块详情</a></td>
+                    `;
+                    tableResult.appendChild(row);
+                }
+            } else if (data.industry_code_trend != null) {
+                for (let i = 0; i < data.industry_code_trend.length; i++) {
+                    const row = document.createElement('tr');
+                    const item = data.industry_code_trend[i];
+                    row.innerHTML = `
+                        <td>${item.stock_code}</td>
+                        <td>${item.stock_name}</td>
+                        <td>${item.price_trend_list[0].date}</td>
+                        <td>${item.price_trend_list[item.price_trend_list.length - 1].date}</td>
+                        <td>${item.price_trend_list[item.price_trend_list.length - 1].price}</td>
+                        <td><a href="https://xueqiu.com/S/${item.stock_code}" target="_blank" style="color:white;">股票详情</a></td>
+                    `;
+                    tableResult.appendChild(row);
+                }
+            }
+        }
+
+        function renderOptions(filter = '') {
+            optionsList.innerHTML = '';
+            
+            const filteredIndustryList = industryList.filter(code => 
+                code.industry_name.toLowerCase().includes(filter.toLowerCase()) || 
+                code.industry_code.toLowerCase().includes(filter.toLowerCase())
+            );
+            
+            if (filteredIndustryList.length === 0) {
+                optionsList.innerHTML = '<div class="no-results">没有找到匹配的板块</div>';
+                return;
+            }
+            
+            filteredIndustryList.forEach(industry => {
+                const li = document.createElement('li');
+                li.className = 'option-item';
+                if (selectedIndustry && selectedIndustry.industry_code === industry.industry_code) {
+                    li.classList.add('selected');
+                }
+                li.dataset.value = industry.industry_code;
+                
+                li.innerHTML = `
+                    <div>${industry.industry_name}(${industry.industry_code})</div>
+                `;
+                
+                li.addEventListener('click', () => {
+                    selectIndustryCodeAndName(industry);
+                });
+                
+                optionsList.appendChild(li);
+            });
+        }
+
+        function renderStockOptions(filter = '') {
+            if (!selectedIndustry) {
+                return;
+            }
+            stockOptionsList.innerHTML = '';
+            
+            const filteredStockList = selectedIndustry.company_code_list.filter(stock => 
+                stock.code.toLowerCase().includes(filter.toLowerCase()) ||
+                stock.name.toLowerCase().includes(filter.toLowerCase())
+            );
+            
+            if (filteredStockList.length === 0) {
+                stockOptionsList.innerHTML = '<div class="no-results">没有找到匹配的个股</div>';
+                return;
+            }
+            
+            filteredStockList.forEach(stock => {
+                const li = document.createElement('li');
+                li.className = 'option-item';
+                if (selectedStock && selectedStock.code === stock.code) {
+                    li.classList.add('selected');
+                }
+                li.dataset.value = stock.code;
+                
+                li.innerHTML = `
+                    <div>${stock.name}(${stock.code})</div>
+                `;
+                
+                li.addEventListener('click', () => {
+                    selectStockCodeAndName(stock);
+                });
+                
+                stockOptionsList.appendChild(li);
+            });
+        }
+
+        function selectIndustryCodeAndName(industry) {
+            selectedIndustry = industry;
+            selectIndustry.value = industry.industry_name + '(' + industry.industry_code + ')';
+            closeDropdown();
+            renderOptions(searchIndustry.value);
+            renderStockOptions();
+        }
+
+        function selectStockCodeAndName(stock) {
+            selectedStock = stock;
+            selectStock.value = stock.name + '(' + stock.code + ')';;
+            closeCodeDropdown();
+            renderStockOptions(searchStock.value);
+        }
+
+        // 打开下拉框
+        function openDropdown() {
+            selectOptions.classList.add('open');
+            selectHeader.classList.add('open');
+            searchIndustry.focus();
+            renderOptions();
+        }
+        
+        // 打开个股下拉框
+        function openCodeDropdown() {
+            selectStockOptions.classList.add('open');
+            selectStockHeader.classList.add('open');
+            searchStock.focus();
+            renderStockOptions();
+        }
+        
+        // 关闭下拉框
+        function closeDropdown() {
+            selectOptions.classList.remove('open');
+            selectHeader.classList.remove('open');
+        }
+
+        
+        // 关闭个股下拉框
+        function closeCodeDropdown() {
+            selectStockOptions.classList.remove('open');
+            selectStockHeader.classList.remove('open');
+        }
+
+        // 事件监听
+        selectHeader.addEventListener('click', (e) => {
+            if (selectOptions.classList.contains('open')) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+        
+        selectStockHeader.addEventListener('click', (e) => {
+            if (stockOptionsList.classList.contains('open')) {
+                closeCodeDropdown();
+            } else {
+                openCodeDropdown();
+            }
+        });
+        
+        searchIndustry.addEventListener('input', (e) => {
+            renderOptions(e.target.value);
+        });
+        
+        searchStock.addEventListener('input', (e) => {
+            renderStockOptions(e.target.value);
+        });
+
+        searchIndustry.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeDropdown();
+            }
+        });
+
+        searchStock.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeCodeDropdown();
+            }
+        });
+        
+        // 点击外部关闭下拉框
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.searchable-select')) {
+                closeDropdown();
+                closeCodeDropdown();
+            }
+        });
+
+        // 窗口大小改变时调整图表大小
+        window.addEventListener('resize', () => {
+            chartShareholder.resize();
+        });
+
+        searchBtn.addEventListener('click', () => {
+            generateCandleData();
+        });
+
+        generateIndustryData();
+    </script>
+</body>
+</html>

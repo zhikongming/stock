@@ -29,6 +29,7 @@ type StockPrice struct {
 	KdjK        float64   `json:"kdj_k" gorm:"column:kdj_k"`
 	KdjD        float64   `json:"kdj_d" gorm:"column:kdj_d"`
 	KdjJ        float64   `json:"kdj_j" gorm:"column:kdj_j"`
+	UpdateTime  time.Time `json:"update_time" gorm:"column:update_time"`
 }
 
 func (StockPrice) TableName() string {
@@ -83,6 +84,23 @@ func GetLastStockPrice(ctx context.Context, code string) (*StockPrice, error) {
 		return nil, nil
 	}
 	return &stockPrice, nil
+}
+
+func GetLastNStockPrice(ctx context.Context, code string, date string, limit int) ([]*StockPrice, error) {
+	var stockPriceList []*StockPrice
+	db := GetDB()
+	db = db.WithContext(ctx).Where("company_code =?", code)
+	if date != "" {
+		db = db.Where("date <= ?", date)
+	}
+	err := db.Order("id desc").Limit(limit).Find(&stockPriceList).Error
+	if err != nil {
+		if err != gorm.ErrRecordNotFound {
+			return nil, err
+		}
+		return nil, nil
+	}
+	return stockPriceList, nil
 }
 
 func CreateStockPrice(ctx context.Context, stockPrice *StockPrice) error {

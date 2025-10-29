@@ -33,6 +33,20 @@ var (
 		"SZ": "0",
 		"BJ": "0",
 	}
+	CodeToPrefixMap = map[string]string{
+		"60":  "SH",
+		"900": "SH",
+		"688": "SH",
+		"689": "SH",
+		"00":  "SZ",
+		"30":  "SZ",
+		"200": "SZ",
+		"8":   "BJ",
+		"43":  "BJ",
+		"920": "BJ",
+	}
+	IgnoreCode             = "20"
+	ShanghaiCompositeIndex = "SH000001"
 )
 
 func GetMALineString(lineType MALineType) string {
@@ -56,4 +70,30 @@ func GetMALineString(lineType MALineType) string {
 		value += "P>60"
 	}
 	return value
+}
+
+func GetBasicStockCode() string {
+	return ShanghaiCompositeIndex
+}
+
+func GetCorrelationString(correlation float64) string {
+	if correlation >= 0.7 {
+		return "强正相关"
+	} else if correlation >= 0.3 {
+		return "中正相关"
+	} else if correlation >= 0.1 {
+		return "弱正相关"
+	} else if correlation <= -0.7 {
+		return "强负相关"
+	} else if correlation <= -0.3 {
+		return "中负相关"
+	} else if correlation <= -0.1 {
+		return "弱负相关"
+	} else {
+		return "无相关"
+	}
+}
+
+func IsStrongCorrelation(correlation float64) bool {
+	return correlation >= 0.7
 }

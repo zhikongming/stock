@@ -10,3 +10,14 @@ func ListSwap[T any](list []T) []T {
 	}
 	return list
 }
+
+func ListFloat64Average(list []float64) float64 {
+	if len(list) == 0 {
+		return 0
+	}
+	sum := 0.0
+	for _, v := range list {
+		sum += v
+	}
+	return sum / float64(len(list))
+}

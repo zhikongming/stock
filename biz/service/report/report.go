@@ -109,6 +109,8 @@ func GetBankReport(ctx context.Context, rp *dal.StockReport, disableMsg bool) (*
 	}
 	resp.Measurement = base.GetMeasurement()
 	resp.Comment = rp.Comment
+	resp.PreMOMReport = report.GetPreMOMReport()
+	resp.PreYOYReport = report.GetPreYOYReport()
 	if disableMsg {
 		return resp, nil
 	}
@@ -117,8 +119,6 @@ func GetBankReport(ctx context.Context, rp *dal.StockReport, disableMsg bool) (*
 		return nil, err
 	}
 	resp.Message = msg
-	resp.PreMOMReport = report.GetPreMOMReport()
-	resp.PreYOYReport = report.GetPreYOYReport()
 	return resp, nil
 }
 
