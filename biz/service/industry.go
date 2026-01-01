@@ -94,12 +94,22 @@ func GetIndustryTrendData(ctx context.Context, req *model.GetIndustryTrendDataRe
 			return nil, err
 		}
 		resp.IndustryPriceTrend = trend
+		for _, item := range resp.IndustryPriceTrend {
+			for _, priceTrend := range item.PriceTrendList {
+				priceTrend.Price = utils.Float64KeepDecimal((priceTrend.Price-1)*100, 2)
+			}
+		}
 	} else {
 		trend, err := GetIndustryCodeDetail(ctx, req)
 		if err != nil {
 			return nil, err
 		}
 		resp.IndustryCodeTrend = trend
+		for _, item := range resp.IndustryCodeTrend {
+			for _, priceTrend := range item.PriceTrendList {
+				priceTrend.Price = utils.Float64KeepDecimal((priceTrend.Price-1)*100, 2)
+			}
+		}
 	}
 
 	return resp, nil

@@ -623,7 +623,7 @@
                         <td>${item.industry_name}</td>
                         <td>${item.price_trend_list[0].date}</td>
                         <td>${item.price_trend_list[item.price_trend_list.length - 1].date}</td>
-                        <td>${item.price_trend_list[item.price_trend_list.length - 1].price}</td>
+                        <td>${item.price_trend_list[item.price_trend_list.length - 1].price}%</td>
                         <td><a href="https://quote.eastmoney.com/bk/90.${item.industry_code}.html#fullScreenChart" target="_blank" style="color:white;">板块详情</a></td>
                     `;
                     tableResult.appendChild(row);
@@ -637,7 +637,7 @@
                         <td>${item.stock_name}</td>
                         <td>${item.price_trend_list[0].date}</td>
                         <td>${item.price_trend_list[item.price_trend_list.length - 1].date}</td>
-                        <td>${item.price_trend_list[item.price_trend_list.length - 1].price}</td>
+                        <td>${item.price_trend_list[item.price_trend_list.length - 1].price}%</td>
                         <td><a href="https://xueqiu.com/S/${item.stock_code}" target="_blank" style="color:white;">股票详情</a></td>
                     `;
                     tableResult.appendChild(row);
