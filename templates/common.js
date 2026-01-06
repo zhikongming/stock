@@ -10,6 +10,9 @@ const getDataIndustryUrl = "/industry/bank";
 const getIndustryTrendUrl = "/industry/trend"
 const getIndustryBasicUrl = "/industry/basic"
 const getIndustryRelationUrl = "/industry/relation"
+const addSubscribeStrategyUrl = "/subscribe/strategy"
+const getSubscribeStrategyUrl = "/subscribe/strategy"
+const deleteSubscribeStrategyUrl = "/subscribe/strategy"
 
 const ChartPropertyMap = {
     "shareholderNumber": {
@@ -379,6 +382,42 @@ async function getIndustryTraceData(industryType) {
         headers: {
             'Content-Type': 'application/json'
         }
+    });
+    return response;
+}
+
+async function addSubscribeStrategyData(strategy) {
+    console.log(strategy);
+    const url = domain + addSubscribeStrategyUrl;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(strategy)
+    });
+    return response;
+}
+
+async function getSubscribeStrategyData() {
+    const url = domain + getSubscribeStrategyUrl;
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response;
+}
+
+async function deleteSubscribeStrategyData(id) {
+    const url = domain + deleteSubscribeStrategyUrl;
+    const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"id": id})
     });
     return response;
 }

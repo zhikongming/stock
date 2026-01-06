@@ -185,14 +185,7 @@ func GetIndustryCodeDetail(ctx context.Context, req *model.GetIndustryTrendDataR
 	return ret, nil
 }
 
-// 获取板块的走势图
-func GetIndustryTrendDetail(ctx context.Context, req *model.GetIndustryTrendDataReq) ([]*model.IndustryPriceTrend, error) {
-	// 根据板块内的股票的波动率，计算当天板块的波动率
-	industryList, err := dal.GetAllStockIndustry(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+func WrapGetIndustryTrendDetail(ctx context.Context, req *model.GetIndustryTrendDataReq, industryList []*dal.StockIndustry) ([]*model.IndustryPriceTrend, error) {
 	industryDalMap := make(map[string]*dal.StockIndustry)
 	for _, industry := range industryList {
 		industryDalMap[industry.Code] = industry
@@ -271,6 +264,25 @@ func GetIndustryTrendDetail(ctx context.Context, req *model.GetIndustryTrendData
 	}
 	sort.Sort(model.SortIndustryPriceTrend(ret))
 	return ret, nil
+}
+
+// 获取板块的走势图
+func GetIndustryTrendDetail(ctx context.Context, req *model.GetIndustryTrendDataReq) ([]*model.IndustryPriceTrend, error) {
+	// 根据板块内的股票的波动率，计算当天板块的波动率
+	industryList, err := dal.GetAllStockIndustry(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return WrapGetIndustryTrendDetail(ctx, req, industryList)
+}
+
+func GetIndustryTrendDetailByIndustryCode(ctx context.Context, req *model.GetIndustryTrendDataReq, industryCode string) ([]*model.IndustryPriceTrend, error) {
+	industry, err := dal.GetStockIndustry(ctx, industryCode)
+	if err != nil {
+		return nil, err
+	}
+	industryList := []*dal.StockIndustry{industry}
+	return WrapGetIndustryTrendDetail(ctx, req, industryList)
 }
 
 func filterStockPrice(stockPriceMap map[string][]*dal.StockPrice) map[string][]*dal.StockPrice {
