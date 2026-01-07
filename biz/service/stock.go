@@ -123,7 +123,6 @@ func SyncStockDailyPriceWrap(ctx context.Context, req *model.SyncStockCodeReq, w
 
 func GetStockPrice(ctx context.Context, code string, startTime time.Time, endTime time.Time, kLineType model.KLineType) ([]*dal.StockPrice, error) {
 	// 只获取数据，不需同步数据
-	fmt.Printf("startTime = %v, endTime = %v\n", startTime, endTime)
 	client := NewEastMoneyClient()
 	stockDailyData, err := client.GetRemoteStockByKLineType(ctx, code, startTime, endTime, kLineType)
 	if err != nil {
@@ -460,6 +459,12 @@ func SyncStockIndustry(ctx context.Context, req *model.SyncStockIndustryReq) err
 		return err
 	}
 
+	// 同步个股的名称等数据
+	err = syncStockCodeByIndustryRelation(ctx)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -587,4 +592,29 @@ func getDiffIndustryCode(local []*dal.StockIndustryRelation, remote map[string][
 		}
 	}
 	return addList, deleteList
+}
+
+func syncStockCodeByIndustryRelation(ctx context.Context) error {
+	localIndustryRelationList, err := dal.GetAllStockIndustryRelation(ctx)
+	if err != nil {
+		return err
+	}
+	for _, industryRelation := range localIndustryRelationList {
+		exist, err := dal.IsStockCodeExist(ctx, industryRelation.CompanyCode)
+		if err != nil {
+			return err
+		}
+		if exist {
+			continue
+		}
+		req := &model.SyncStockCodeReq{
+			Code:         industryRelation.CompanyCode,
+			BusinessType: 2,
+		}
+		err = SyncStockBasic(ctx, req)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
