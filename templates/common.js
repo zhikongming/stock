@@ -10,6 +10,9 @@ const getDataIndustryUrl = "/industry/bank";
 const getIndustryTrendUrl = "/industry/trend"
 const getIndustryBasicUrl = "/industry/basic"
 const getIndustryRelationUrl = "/industry/relation"
+const addSubscribeStrategyUrl = "/subscribe/strategy"
+const getSubscribeStrategyUrl = "/subscribe/strategy"
+const deleteSubscribeStrategyUrl = "/subscribe/strategy"
 
 const ChartPropertyMap = {
     "shareholderNumber": {
@@ -383,10 +386,55 @@ async function getIndustryTraceData(industryType) {
     return response;
 }
 
+async function addSubscribeStrategyData(strategy) {
+    console.log(strategy);
+    const url = domain + addSubscribeStrategyUrl;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(strategy)
+    });
+    return response;
+}
+
+async function getSubscribeStrategyData() {
+    const url = domain + getSubscribeStrategyUrl;
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response;
+}
+
+async function deleteSubscribeStrategyData(id) {
+    const url = domain + deleteSubscribeStrategyUrl;
+    const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"id": id})
+    });
+    return response;
+}
+
 function getLoanRateTitle(name) {
     return name + "-贷款收益率";
 }
 
 function getDepositRateTitle(name) {
     return name + "-存款成本率";
+}
+
+function getUrlParamsMap() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramsMap = new Map();
+    urlParams.forEach((value, key) => {
+        paramsMap.set(key, value);
+    });
+    return paramsMap;
 }

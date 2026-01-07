@@ -890,13 +890,8 @@
             } else {
                 rate = "";
             }
-            let lastRate = (curValue - 2*momValue)/momValue * 100;
-            lastRate = lastRate.toFixed(2);
-            if (lastRate != 0) {
-                lastRate = lastRate + "%";
-            } else {
-                lastRate = "";
-            }
+
+            let lastRate = "-";
             momValue = getUnemptyValue(momValue, measurement);
             curValue = getUnemptyValue(curValue, measurement);
             yoyValue = getUnemptyValue(yoyValue, measurement);

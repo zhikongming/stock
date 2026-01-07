@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>板块跟踪</title>
+    <title>策略订阅和分析</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="./echarts.min.js"></script>
     <script src="./common.js"></script>
@@ -464,6 +464,16 @@
 <body>
     <div class="container">
         <div class="controls">
+            <div class="control-group" style="max-width: 20%;">
+                <div class="form-group">
+                    <label for="strategyType">策略类型</label>
+                    <select id="strategyType">
+                        <option value="1">板块波动率</option>
+                        <option value="2">个股波动率</option>
+                        <option value="3">个股价格变动</option>
+                    </select>
+                </div>
+            </div>
             <div class="control-group" style="max-width: 20%;" id="industryGroup">
                 <div class="form-group">
                     <label for="stockIndustry">板块</label>
@@ -502,36 +512,51 @@
                     </div>
                 </div>
             </div>
-            <div class="control-group" style="max-width: 20%;" id="dateGroup">
+            <div class="control-group" style="max-width: 20%;" id="rateChangeGroup">
+                <div class="form-group"><label>当在最新的天数内涨跌幅超过设置时, 策略触发</label></div>
                 <div class="form-group">
-                    <label>截止日期</label>
-                    <input type="date" id="endDate" placeholder="输入截止日期..." value="">
+                    <label style="display: inline;">最近天数: </label>
+                    <input type="number" id="days" placeholder="输入天数..." value="1" style="width: 40%;">
+                </div>
+                <div class="form-group">
+                    <label style="display: inline;">涨跌幅: </label>
+                    <input type="number" id="rateChange" placeholder="输入涨跌幅..." value="5.0" style="width: 40%;"> %
                 </div>
             </div>
-            <div class="control-group" style="max-width: 20%;" id="daysGroup">
+            <div class="control-group" style="max-width: 20%; display: none;" id="priceChangeGroup">
+                <div class="form-group"><label>当股价收盘价高于过于低于设置时, 策略触发</label></div>
                 <div class="form-group">
-                    <label>查询天数</label>
-                    <input type="number" id="days" placeholder="输入查询天数..." value="30">
+                    <label for="priceChangeType" style="display: inline;">股价策略: </label>
+                    <select id="priceChangeType" style="width: 40%;">
+                        <option value="1">高于</option>
+                        <option value="2">低于</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="display: inline;">股价: </label>
+                    <input type="number" id="priceChange" placeholder="输入股价..." value="1" style="width: 40%;">
                 </div>
             </div>
             <div class="control-group">
-                <button id="searchBtn">查询</button>
+                <button id="addBtn">添加</button>
             </div>
         </div>
 
         <div class="filters-container">
             <div class="filters-row">
                 <div class="filter-section">
-                    <h4 class="table-title">价格数据</h4>
+                    <h4 class="table-title">订阅策略结果</h4>
                     <table class="results-table">
                         <thead>
                             <tr>
-                                <th>代码</th>
-                                <th>名称</th>
-                                <th>开始日期</th>
-                                <th>结束日期</th>
-                                <th>最新相对价格(以第一天价格为基准)</th>
-                                <th>详情</th>
+                                <th>订阅标的</th>
+                                <th>订阅时间</th>
+                                <th>策略类型</th>
+                                <th>策略</th>
+                                <th>策略目标</th>
+                                <th>策略结果分析</th>
+                                <th>股价最新日期</th>
+                                <th>操作</th>
                             </tr>
                         </thead>
                         <tbody id="tableResult"></tbody>
@@ -539,120 +564,118 @@
                 </div>
             </div>
         </div>
-
-        <!-- <div class="filters-container" id="industry-container">
-            <div class="filters-row">
-                <div class="filter-section">
-                    <div id="chart-industry" class="chart"></div>
-                </div>
-            </div>
-        </div> -->
     </div>
 
     <script>
         // 获取DOM元素
-        const searchBtn = document.getElementById('searchBtn');
-        const tableResult = document.getElementById('tableResult');
-
         const selectHeader = document.getElementById('selectHeader');
-        const selectStockHeader = document.getElementById('selectStockHeader');
-        const selectIndustry = document.getElementById('selectIndustry');
-        const searchIndustry = document.getElementById('searchIndustry');
         const selectOptions = document.getElementById('selectOptions');
+        const searchIndustry = document.getElementById('searchIndustry');
         const optionsList = document.getElementById('optionsList');
+        const strategyType = document.getElementById('strategyType');
+        const industryGroup = document.getElementById('industryGroup');
+        const stockGroup = document.getElementById('stockGroup');
+        const rateChangeGroup = document.getElementById('rateChangeGroup');
+        const priceChangeGroup = document.getElementById('priceChangeGroup');
         const days = document.getElementById('days');
-        const endDate = document.getElementById('endDate');
+        const rateChange = document.getElementById('rateChange');
+        const priceChangeType = document.getElementById('priceChangeType');
+        const priceChange = document.getElementById('priceChange');
 
-        const selectStock = document.getElementById('selectStock');
-        const selectStockOptions = document.getElementById('selectStockOptions');
-        const stockOptionsList = document.getElementById('stockOptionsList');
-        const industryContainer = document.getElementById('industry-container');
-        const searchStock = document.getElementById('searchStock');
-
-        // 初始化ECharts实例
-        // const chartIndustryNode = document.getElementById('chart-industry');
-        // const chartIndustry = echarts.init(chartIndustryNode);
-
+        // 渲染数据
         let industryList = [];
+        let stockList = [];
         let selectedIndustry = null;
         let selectedStock = null;
-        let industryTrendList = [];
+
+        function addSubscribeStrategy() {
+            let industryValue = "";
+            let stockValue = "";
+            if (strategyType.value === '1') {
+                if (selectedIndustry) {
+                    industryValue = selectedIndustry.industry_code;
+                }
+            } else if (strategyType.value === '2' || strategyType.value === '3') {
+                if (selectedStock) {
+                    stockValue = selectedStock.code;
+                }
+            }
+            let strategy = {
+                strategy_type: parseFloat(strategyType.value),
+                industry_code: industryValue,
+                stock_code: stockValue,
+                days: parseInt(days.value),
+                rate_change: parseFloat(rateChange.value),
+                price_change_type: parseInt(priceChangeType.value),
+                price_change: parseFloat(priceChange.value),
+            };
+            let resp = addSubscribeStrategyData(strategy);
+            resp.then(data => {
+                if (data.status != 200) {
+                    alert("添加失败");
+                } else {
+                    alert("添加成功");
+                }
+                location.reload();
+            });
+        }
+
+        function getSubscribeStrategy() {
+            let resp = getSubscribeStrategyData();
+            resp.then(data => {
+                if (data.status != 200) {
+                    return;
+                } else {
+                    renderSubscribeStrategyResult(data.json());
+                }
+            });
+        }
+
+        function deleteSubscribeStrategy(id) {
+            let resp = deleteSubscribeStrategyData(id);
+            resp.then(data => {
+                location.reload();
+            });
+        }
+
+        function renderSubscribeStrategyResult(resp) {
+            let tableResult = document.getElementById('tableResult');
+            tableResult.innerHTML = '';
+
+            resp.then(data => {
+                for (let i = 0; i < data.data.length; i++) {
+                    let item = data.data[i];
+                    let row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.code}</td>
+                        <td>${item.date_time}</td>
+                        <td>${item.strategy_type}</td>
+                        <td>${item.result ? "符合" : "不符合"}</td>
+                        <td>${item.strategy_detail}</td>
+                        <td>${item.strategy}</td>
+                        <td>${item.last_date}</td>
+                        <td>
+                            <button onclick="deleteSubscribeStrategy(${item.id})">删除</button>
+                        </td>
+                    `;
+                    tableResult.appendChild(row);
+                };
+            });
+        }
 
         function generateIndustryData() {
             let resp = getIndustryBasicData();
             resp.then(data => {
                 data.forEach(item => {
                     industryList.push(item);
+                    item.company_code_list.forEach(stock => {
+                        stockList.push(stock);
+                    });
                 });
             });
         }
 
-        // 生成模拟K线数据
-        function generateCandleData() {
-            let searchIndustry = "";
-            if (selectedIndustry != null) {
-                searchIndustry = selectedIndustry.industry_code;
-            }
-            let searchStock = "";
-            if (selectedStock != null) {
-                searchStock = selectedStock;
-            }
-            let keepDays = days.value;
-            let endDateValue = "";
-            if (endDate != null) {
-                endDateValue = endDate.value;
-            }
-
-            let resp = getIndustryTrendData(searchIndustry, searchStock, keepDays, endDateValue);
-            resp.then(data => {
-                industryTrendList = data.industry_price_trend;
-                renderTable(data);
-            });
-        }
-
-        function renderTable(data) {
-            tableResult.innerHTML = '';        
-            const row = document.createElement('tr');
-            let endDateValue = "";
-            if (endDate != null) {
-                endDateValue = endDate.value;
-            }
-
-            if (data.industry_price_trend != null) {
-                for (let i = 0; i < data.industry_price_trend.length; i++) {
-                    const row = document.createElement('tr');
-                    const item = data.industry_price_trend[i];
-                    row.innerHTML = `
-                        <td>${item.industry_code}</td>
-                        <td>${item.industry_name}</td>
-                        <td>${item.price_trend_list[0].date}</td>
-                        <td>${item.price_trend_list[item.price_trend_list.length - 1].date}</td>
-                        <td>${item.price_trend_list[item.price_trend_list.length - 1].price}%</td>
-                        <td>
-                            <a href="https://quote.eastmoney.com/bk/90.${item.industry_code}.html#fullScreenChart" target="_blank" style="color:white;">板块走势</a>
-                            &nbsp;&nbsp;<a href="./industry_trend?industry_code=${item.industry_code}&keep_days=${days.value}&end_date=${endDateValue}" target="_blank" style="color:white;">板块详情</a>
-                        </td>
-                    `;
-                    tableResult.appendChild(row);
-                }
-            } else if (data.industry_code_trend != null) {
-                for (let i = 0; i < data.industry_code_trend.length; i++) {
-                    const row = document.createElement('tr');
-                    const item = data.industry_code_trend[i];
-                    row.innerHTML = `
-                        <td>${item.stock_code}</td>
-                        <td>${item.stock_name}</td>
-                        <td>${item.price_trend_list[0].date}</td>
-                        <td>${item.price_trend_list[item.price_trend_list.length - 1].date}</td>
-                        <td>${item.price_trend_list[item.price_trend_list.length - 1].price}%</td>
-                        <td><a href="https://xueqiu.com/S/${item.stock_code}" target="_blank" style="color:white;">股票详情</a></td>
-                    `;
-                    tableResult.appendChild(row);
-                }
-            }
-        }
-
-        function renderOptions(filter = '') {
+        function renderIndustryOptions(filter = '') {
             optionsList.innerHTML = '';
             
             const filteredIndustryList = industryList.filter(code => 
@@ -678,20 +701,24 @@
                 `;
                 
                 li.addEventListener('click', () => {
-                    selectIndustryCodeAndName(industry);
+                    selectIndustryName(industry);
                 });
                 
                 optionsList.appendChild(li);
             });
         }
 
+        function selectIndustryName(industry) {
+            selectedIndustry = industry;
+            selectIndustry.value = industry.industry_name + '(' + industry.industry_code + ')';
+            closeIndustryDropdown();
+            renderIndustryOptions(searchIndustry.value);
+        }
+
         function renderStockOptions(filter = '') {
-            if (!selectedIndustry) {
-                return;
-            }
             stockOptionsList.innerHTML = '';
             
-            const filteredStockList = selectedIndustry.company_code_list.filter(stock => 
+            const filteredStockList = stockList.filter(stock => 
                 stock.code.toLowerCase().includes(filter.toLowerCase()) ||
                 stock.name.toLowerCase().includes(filter.toLowerCase())
             );
@@ -714,22 +741,13 @@
                 `;
                 
                 li.addEventListener('click', () => {
-                    selectStockCodeAndName(stock);
+                    selectStockName(stock);
                 });
                 
                 stockOptionsList.appendChild(li);
             });
         }
-
-        function selectIndustryCodeAndName(industry) {
-            selectedIndustry = industry;
-            selectIndustry.value = industry.industry_name + '(' + industry.industry_code + ')';
-            closeDropdown();
-            renderOptions(searchIndustry.value);
-            renderStockOptions();
-        }
-
-        function selectStockCodeAndName(stock) {
+        function selectStockName(stock) {
             selectedStock = stock;
             selectStock.value = stock.name + '(' + stock.code + ')';;
             closeCodeDropdown();
@@ -737,13 +755,12 @@
         }
 
         // 打开下拉框
-        function openDropdown() {
+        function openIndustryDropdown() {
             selectOptions.classList.add('open');
             selectHeader.classList.add('open');
             searchIndustry.focus();
-            renderOptions();
+            renderIndustryOptions();
         }
-        
         // 打开个股下拉框
         function openCodeDropdown() {
             selectStockOptions.classList.add('open');
@@ -751,51 +768,26 @@
             searchStock.focus();
             renderStockOptions();
         }
-        
+
         // 关闭下拉框
-        function closeDropdown() {
+        function closeIndustryDropdown() {
             selectOptions.classList.remove('open');
             selectHeader.classList.remove('open');
         }
-
-        
         // 关闭个股下拉框
         function closeCodeDropdown() {
             selectStockOptions.classList.remove('open');
             selectStockHeader.classList.remove('open');
         }
 
-        function initParamEvents() {
-            const paramsMap = getUrlParamsMap();
-            let needRemoteData = false;
-            if (paramsMap.has('industry_code')) {
-                selectedIndustry = {"industry_code": paramsMap.get('industry_code')};
-                selectIndustry.value = paramsMap.get('industry_code');
-                needRemoteData = true;
-            }
-            if (paramsMap.has('keep_days')) {
-                days.value = paramsMap.get('keep_days');
-                needRemoteData = true;
-            }
-            if (paramsMap.has('end_date')) {
-                endDate.value = paramsMap.get('end_date');
-                needRemoteData = true;
-            }
-
-            if (needRemoteData) {
-                generateCandleData();
-            }
-        }
-
         // 事件监听
         selectHeader.addEventListener('click', (e) => {
             if (selectOptions.classList.contains('open')) {
-                closeDropdown();
+                closeIndustryDropdown();
             } else {
-                openDropdown();
+                openIndustryDropdown();
             }
         });
-        
         selectStockHeader.addEventListener('click', (e) => {
             if (stockOptionsList.classList.contains('open')) {
                 closeCodeDropdown();
@@ -803,43 +795,47 @@
                 openCodeDropdown();
             }
         });
-        
-        searchIndustry.addEventListener('input', (e) => {
-            renderOptions(e.target.value);
+
+        // 点击外部关闭下拉框
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.searchable-select')) {
+                closeIndustryDropdown();
+                closeCodeDropdown();
+            }
         });
-        
+
+        // 策略类型监听
+        strategyType.addEventListener('change', (e) => {
+            if (e.target.value === '1') {
+                industryGroup.style.display = 'block';
+                stockGroup.style.display = 'none';
+            } else {
+                industryGroup.style.display = 'none';
+                stockGroup.style.display = 'block';
+            }
+
+            if (e.target.value === '1' || e.target.value === '2') {
+                rateChangeGroup.style.display = 'block';
+                priceChangeGroup.style.display = 'none';
+            } else {
+                rateChangeGroup.style.display = 'none';
+                priceChangeGroup.style.display = 'block';
+            } 
+        });
+        searchIndustry.addEventListener('input', (e) => {
+            renderIndustryOptions(e.target.value);
+        });
         searchStock.addEventListener('input', (e) => {
             renderStockOptions(e.target.value);
         });
 
-        searchIndustry.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                closeDropdown();
-            }
+        // 设置按钮点击事件
+        addBtn.addEventListener('click', () => {
+            addSubscribeStrategy();
         });
-
-        searchStock.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                closeCodeDropdown();
-            }
-        });
-        
-        // 点击外部关闭下拉框
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.searchable-select')) {
-                closeDropdown();
-                closeCodeDropdown();
-            }
-        });
-
-        // 搜索按钮提交后的操作
-        searchBtn.addEventListener('click', () => {
-            generateCandleData();
-        });
-        // 读取链接的数据后的初始化操作
-        initParamEvents();
 
         generateIndustryData();
+        getSubscribeStrategy();
     </script>
 </body>
 </html>

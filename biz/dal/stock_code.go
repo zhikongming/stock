@@ -68,3 +68,16 @@ func GetStockCodeByIndustry(ctx context.Context, industryType int) ([]*StockCode
 	}
 	return stockCodeList, nil
 }
+
+func GetStockCodeByCode(ctx context.Context, code string) (*StockCode, error) {
+	db := GetDB()
+	var stockCode StockCode
+	err := db.WithContext(ctx).Where("company_code = ? or company_code_hk = ?", code, code).First(&stockCode).Error
+	if err != nil {
+		if err != gorm.ErrRecordNotFound {
+			return nil, err
+		}
+		return nil, nil
+	}
+	return &stockCode, nil
+}
