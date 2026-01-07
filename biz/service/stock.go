@@ -599,12 +599,20 @@ func syncStockCodeByIndustryRelation(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	for _, industryRelation := range localIndustryRelationList {
-		exist, err := dal.IsStockCodeExist(ctx, industryRelation.CompanyCode)
-		if err != nil {
-			return err
+	// 获取所有的股票数据
+	localStockCodeList, err := dal.GetAllStockCode(ctx)
+	if err != nil {
+		return err
+	}
+	localStockCodeMap := make(map[string]struct{})
+	for _, stockCode := range localStockCodeList {
+		localStockCodeMap[stockCode.CompanyCode] = struct{}{}
+		if stockCode.CompanyCodeHK != "" {
+			localStockCodeMap[stockCode.CompanyCodeHK] = struct{}{}
 		}
-		if exist {
+	}
+	for _, industryRelation := range localIndustryRelationList {
+		if _, found := localStockCodeMap[industryRelation.CompanyCode]; found {
 			continue
 		}
 		req := &model.SyncStockCodeReq{
