@@ -613,6 +613,10 @@
         function renderTable(data) {
             tableResult.innerHTML = '';        
             const row = document.createElement('tr');
+            let endDateValue = "";
+            if (endDate != null) {
+                endDateValue = endDate.value;
+            }
 
             if (data.industry_price_trend != null) {
                 for (let i = 0; i < data.industry_price_trend.length; i++) {
@@ -624,7 +628,10 @@
                         <td>${item.price_trend_list[0].date}</td>
                         <td>${item.price_trend_list[item.price_trend_list.length - 1].date}</td>
                         <td>${item.price_trend_list[item.price_trend_list.length - 1].price}%</td>
-                        <td><a href="https://quote.eastmoney.com/bk/90.${item.industry_code}.html#fullScreenChart" target="_blank" style="color:white;">板块详情</a></td>
+                        <td>
+                            <a href="https://quote.eastmoney.com/bk/90.${item.industry_code}.html#fullScreenChart" target="_blank" style="color:white;">板块走势</a>
+                            &nbsp;&nbsp;<a href="./industry_trend?industry_code=${item.industry_code}&keep_days=${days.value}&end_date=${endDateValue}" target="_blank" style="color:white;">板块详情</a>
+                        </td>
                     `;
                     tableResult.appendChild(row);
                 }
@@ -758,6 +765,28 @@
             selectStockHeader.classList.remove('open');
         }
 
+        function initParamEvents() {
+            const paramsMap = getUrlParamsMap();
+            let needRemoteData = false;
+            if (paramsMap.has('industry_code')) {
+                selectedIndustry = {"industry_code": paramsMap.get('industry_code')};
+                selectIndustry.value = paramsMap.get('industry_code');
+                needRemoteData = true;
+            }
+            if (paramsMap.has('keep_days')) {
+                days.value = paramsMap.get('keep_days');
+                needRemoteData = true;
+            }
+            if (paramsMap.has('end_date')) {
+                endDate.value = paramsMap.get('end_date');
+                needRemoteData = true;
+            }
+
+            if (needRemoteData) {
+                generateCandleData();
+            }
+        }
+
         // 事件监听
         selectHeader.addEventListener('click', (e) => {
             if (selectOptions.classList.contains('open')) {
@@ -803,9 +832,12 @@
             }
         });
 
+        // 搜索按钮提交后的操作
         searchBtn.addEventListener('click', () => {
             generateCandleData();
         });
+        // 读取链接的数据后的初始化操作
+        initParamEvents();
 
         generateIndustryData();
     </script>

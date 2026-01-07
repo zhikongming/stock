@@ -429,3 +429,12 @@ function getLoanRateTitle(name) {
 function getDepositRateTitle(name) {
     return name + "-存款成本率";
 }
+
+function getUrlParamsMap() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramsMap = new Map();
+    urlParams.forEach((value, key) => {
+        paramsMap.set(key, value);
+    });
+    return paramsMap;
+}
