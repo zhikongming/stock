@@ -21,6 +21,7 @@ const (
 	EastMoneyStockRelationPath = "/api/qt/stock/get"
 	EastMoneyStockDailyPath    = "/api/qt/stock/kline/get"
 	EastMoneyIndustryPath      = "/api/qt/clist/get"
+	EastMoneyFundFlowPath      = "/api/qt/stock/fflow/daykline/get"
 
 	KLineTypeDay   = "101"
 	KLineType30Min = "30"
@@ -314,6 +315,127 @@ func (c *EastMoneyClient) GetRemoteStockIndustryDetail(ctx context.Context, code
 			}
 			data = append(data, d)
 		}
+	}
+
+	return data, nil
+}
+
+func (c *EastMoneyClient) GetLatestRemoteFundFlow(ctx context.Context) ([]*model.FundFlowData, error) {
+	data := make([]*model.FundFlowData, 0)
+
+	path := fmt.Sprintf("%s%s", EastMoneyDomain2, EastMoneyIndustryPath)
+	pageSize := 100
+	params := map[string]string{
+		"fid":    "f62",
+		"po":     "1",
+		"pz":     fmt.Sprintf("%d", pageSize),
+		"np":     "1",
+		"fltt":   "2",
+		"invt":   "2",
+		"fs":     "m:0+t:6+f:!2,m:0+t:13+f:!2,m:0+t:80+f:!2,m:1+t:2+f:!2,m:1+t:23+f:!2,m:0+t:7+f:!2,m:1+t:3+f:!2",
+		"fields": "f12,f14,f2,f3,f62,f184,f66,f69,f72,f75,f78,f81,f84,f87,f204,f205,f124,f1,f13",
+	}
+	pageOffset := 1
+	for {
+		params["pn"] = fmt.Sprintf("%d", pageOffset)
+		resp, err := DoGet(ctx, path, params, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		var ret model.EMGetRemoteFundFlowResp
+		err = json.Unmarshal(resp, &ret)
+		if err != nil {
+			log.Printf("json unmarshal failed: %v", err)
+			return nil, err
+		}
+
+		if ret.Data == nil || ret.Data.Total <= 0 {
+			break
+		}
+		for _, item := range ret.Data.Diff {
+			d := &model.FundFlowData{}
+			if code, ok := item["f12"]; ok {
+				d.Code = c.GetFullStockCode(fmt.Sprintf("%v", code))
+			}
+			if name, ok := item["f14"]; ok {
+				d.Name = fmt.Sprintf("%v", name)
+			}
+			if mainInflowAmount, ok := item["f62"]; ok {
+				d.MainInflowAmount = int64(utils.ToFloat64(mainInflowAmount))
+			}
+			if extremeLargeInflowAmount, ok := item["f66"]; ok {
+				d.ExtremeLargeInflowAmount = int64(utils.ToFloat64(extremeLargeInflowAmount))
+			}
+			if largeInflowAmount, ok := item["f72"]; ok {
+				d.LargeInflowAmount = int64(utils.ToFloat64(largeInflowAmount))
+			}
+			if mediumInflowAmount, ok := item["f78"]; ok {
+				d.MediumInflowAmount = int64(utils.ToFloat64(mediumInflowAmount))
+			}
+			if smallInflowAmount, ok := item["f84"]; ok {
+				d.SmallInflowAmount = int64(utils.ToFloat64(smallInflowAmount))
+			}
+			if priceClose, ok := item["f2"]; ok {
+				d.PriceClose = utils.ToFloat64(priceClose)
+			}
+			data = append(data, d)
+		}
+
+		if ret.Data.Total <= pageSize*pageOffset {
+			break
+		}
+
+		pageOffset++
+	}
+
+	return data, nil
+}
+
+func (c *EastMoneyClient) GetRemoteFundFlowByCode(ctx context.Context, code string) ([]*model.FundFlowData, error) {
+	data := make([]*model.FundFlowData, 0)
+
+	path := fmt.Sprintf("%s%s", EastMoneyDomain3, EastMoneyFundFlowPath)
+	params := map[string]string{
+		"lmt":     "0",
+		"klt":     "101",
+		"fields1": "f1,f2,f3,f7",
+		"fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63,f64,f65",
+		"secid":   c.GetEastMoneyId(code),
+	}
+	headers := map[string]string{}
+	resp, err := DoGet(ctx, path, params, headers)
+	if err != nil {
+		return nil, err
+	}
+
+	var ret model.EMGetRemoteDailyFundFlowResp
+	err = json.Unmarshal(resp, &ret)
+	if err != nil {
+		log.Printf("json unmarshal failed: %v", err)
+		return nil, err
+	}
+
+	if ret.Data == nil {
+		return nil, fmt.Errorf("data is nil of %s", code)
+	}
+
+	for _, item := range ret.Data.Klines {
+		itemList := strings.Split(item, ",")
+		if len(itemList) < 14 {
+			continue
+		}
+		data = append(data, &model.FundFlowData{
+			Code:                     ret.Data.Code,
+			Name:                     ret.Data.Name,
+			MainInflowAmount:         int64(utils.ToFloat64(itemList[1])),
+			ExtremeLargeInflowAmount: int64(utils.ToFloat64(itemList[5])),
+			LargeInflowAmount:        int64(utils.ToFloat64(itemList[4])),
+			MediumInflowAmount:       int64(utils.ToFloat64(itemList[3])),
+			SmallInflowAmount:        int64(utils.ToFloat64(itemList[2])),
+			PriceClose:               utils.ToFloat64(itemList[11]),
+			Date:                     itemList[0],
+		})
 	}
 
 	return data, nil

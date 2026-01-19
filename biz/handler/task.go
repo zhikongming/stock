@@ -66,3 +66,25 @@ func SyncStockIndustry(ctx context.Context, c *app.RequestContext) {
 		"message": "success",
 	})
 }
+
+func SyncFundFlow(ctx context.Context, c *app.RequestContext) {
+	var req model.SyncFundFlowReq
+	if c.BindJSON(&req) != nil {
+		c.JSON(http.StatusBadRequest, utils.H{
+			"message": "bad request",
+		})
+		return
+	}
+
+	err := service.SyncFundFlow(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.H{
+			"message": fmt.Sprintf("error: %v", err),
+		})
+		return
+	}
+
+	c.JSON(consts.StatusOK, utils.H{
+		"message": "success",
+	})
+}

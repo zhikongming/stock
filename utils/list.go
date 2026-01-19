@@ -21,3 +21,14 @@ func ListFloat64Average(list []float64) float64 {
 	}
 	return sum / float64(len(list))
 }
+
+func ListSum[T int64 | float64 | int32 | int](list []T) T {
+	if len(list) == 0 {
+		return 0
+	}
+	sum := T(0)
+	for _, v := range list {
+		sum += v
+	}
+	return sum
+}

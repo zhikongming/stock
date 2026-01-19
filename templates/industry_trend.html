@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>板块跟踪</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- <link rel="stylesheet" href="./bootstrap.min.css"> -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <script src="./echarts.min.js"></script>
     <script src="./common.js"></script>
+    <!-- <script src="./bootstrap.bundle.min.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -466,7 +470,7 @@
         <div class="controls">
             <div class="control-group" style="max-width: 20%;" id="industryGroup">
                 <div class="form-group">
-                    <label for="stockIndustry">板块</label>
+                    <label>板块</label>
                     <div class="searchable-select" id="codeSelect">
                         <div class="select-header" id="selectHeader">
                             <input type="text" placeholder="搜索板块..." id="selectIndustry" readonly>
@@ -530,7 +534,8 @@
                                 <th>名称</th>
                                 <th>开始日期</th>
                                 <th>结束日期</th>
-                                <th>最新相对价格(以第一天价格为基准)</th>
+                                <th>涨跌幅</th>
+                                <th>资金流向(累计)</th>
                                 <th>详情</th>
                             </tr>
                         </thead>
@@ -539,14 +544,32 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- <div class="filters-container" id="industry-container">
-            <div class="filters-row">
-                <div class="filter-section">
-                    <div id="chart-industry" class="chart"></div>
+    <!-- 4. 模态框结构 -->
+    <!-- 注意：Bootstrap 模态框有清晰的三层结构：modal -> modal-dialog -> modal-content -->
+    <div class="modal fade" id="inflowModal" tabindex="-1" style="color: black">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <!-- 模态框头部 -->
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">资金流向图</h5>
+                    <!-- 关闭按钮，data-bs-dismiss="modal" 是关键 -->
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <!-- 模态框主体（你的图表放在这里） -->
+                <div class="modal-body">
+                    <div id="chart-container" style="height: 500px;">
+                        <!-- ECharts 图表容器 -->
+                        <div id="chart-inflow" class="chart"></div>
+                    </div>
+                </div>
+                <!-- 模态框底部 -->
+                <div class="modal-footer">
+                    资金流向数据为起始日期开始的累积, 用于展示在查询时间区间内资金的累积变化趋势.
                 </div>
             </div>
-        </div> -->
+        </div>
     </div>
 
     <script>
@@ -569,14 +592,15 @@
         const industryContainer = document.getElementById('industry-container');
         const searchStock = document.getElementById('searchStock');
 
-        // 初始化ECharts实例
-        // const chartIndustryNode = document.getElementById('chart-industry');
-        // const chartIndustry = echarts.init(chartIndustryNode);
+        // 模态框
+        const modalTitle = document.getElementById('modalTitle');
+        const chartInflowNode = document.getElementById('chart-inflow');
 
         let industryList = [];
         let selectedIndustry = null;
         let selectedStock = null;
         let industryTrendList = [];
+        let stockTrendList = [];
 
         function generateIndustryData() {
             let resp = getIndustryBasicData();
@@ -606,8 +630,153 @@
             let resp = getIndustryTrendData(searchIndustry, searchStock, keepDays, endDateValue);
             resp.then(data => {
                 industryTrendList = data.industry_price_trend;
+                stockTrendList = data.industry_code_trend;
                 renderTable(data);
             });
+        }
+
+        function renderInflowChart(priceTrendList) {
+            let chartInflow = echarts.init(chartInflowNode);
+            let nameList = ["主力净流入", "超大单净流入", "大单净流入", "中单净流入", "小单净流入"];
+            let option = {
+                title: {
+                    text: "资金流向",  // 图表标题
+                    left: 'center',        // 标题居中
+                    textStyle: {
+                        color: 'white',
+                        fontSize: 20,
+                        fontWeight: 'bolder',
+                        fontFamily: 'Arial, sans-serif',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.2)' // 可选文字阴影
+                    }
+                },
+                tooltip: {                // 提示框
+                    trigger: 'axis'       // 触发方式：坐标轴
+                },
+                legend: {                 // 图例
+                    data: nameList,     // 系列名称
+                    bottom: 10,            // 图例位置（底部）
+                    textStyle: {
+                        color: 'black',
+                        fontSize: 15,
+                        fontWeight: 'bolder',
+                        fontFamily: 'Arial, sans-serif',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.2)' // 可选文字阴影
+                    }
+                },
+                xAxis: {
+                    type: 'category',    // 类目轴（离散数据）
+                    data: [...priceTrendList.map(item => item.date)]  // X轴数据
+                },
+                yAxis: {
+                    type: 'value'         // 数值轴
+                },
+                series: []
+            };
+            let dataList = new Array(3);
+            for (let i = 0; i < nameList.length; i++) {
+                dataList[i] = [];
+            }
+            for (let i = 0; i < priceTrendList.length; i++) {
+                dataList[0].push(priceTrendList[i].main_inflow_amount);
+                dataList[1].push(priceTrendList[i].extreme_large_inflow_amount);
+                dataList[2].push(priceTrendList[i].large_inflow_amount);
+                dataList[3].push(priceTrendList[i].medium_inflow_amount);
+                dataList[4].push(priceTrendList[i].small_inflow_amount);
+            }
+            for (let i = 0; i < dataList.length; i++) {
+                option.series.push({
+                    name: nameList[i],
+                    type: 'line',         // 折线图类型
+                    data: [...dataList[i]],  // Y轴数据
+                    smooth: true,          // 平滑曲线
+                    areaStyle: {           // 填充区域
+                        color: 'rgba(64, 158, 255, 0.2)'
+                    },
+                    lineStyle: {           // 线条样式
+                        width: 3,
+                        color: '#1890FF'
+                    },
+                    symbol: 'circle',     // 数据点形状
+                    symbolSize: 10
+                });
+            }
+
+            // 清理原先的图表数据
+            chartInflow.setOption({}, true);
+            chartInflow.setOption(option);
+        }
+
+        function showIndustryTrendChart(code, inflowType) {
+            var priceTrend = null;
+            let name = "";
+            if (inflowType == INDUSTRY_INFLOW) {
+                for (let i = 0; i < industryTrendList.length; i++) {
+                    if (industryTrendList[i].industry_code === code) {
+                        priceTrend = industryTrendList[i];
+                        break;
+                    }
+                }
+                name = priceTrend.industry_name;
+            } else {
+                for (let i = 0; i < stockTrendList.length; i++) {
+                    if (stockTrendList[i].stock_code === code) {
+                        priceTrend = stockTrendList[i];
+                        break;
+                    }
+                }
+                name = priceTrend.stock_name;
+            }
+            if (priceTrend == null) {
+                return;
+            }
+            let startDate = "";
+            let endDate = "";
+            if (priceTrend.price_trend_list != null && priceTrend.price_trend_list.length > 0) {
+                startDate = priceTrend.price_trend_list[0].date;
+                endDate = priceTrend.price_trend_list[priceTrend.price_trend_list.length - 1].date;
+            }
+            modalTitle.innerHTML = `${name}  ${startDate} 至 ${endDate} 资金流向图`;
+            document.getElementById('inflowModal').addEventListener('shown.bs.modal', function () {
+                // 这个事件触发时，模态框的DOM已经完全可见, 这个时候才能init echarts实例.
+                renderInflowChart(priceTrend.price_trend_list);
+            });
+        }
+
+        function renderFuncInflowTable(item, inflowType) {
+            const line = item.price_trend_list[item.price_trend_list.length - 1]
+            const table = document.createElement('table');
+            let code = "";
+            if (inflowType == INDUSTRY_INFLOW) {
+                code = item.industry_code;
+            } else if (inflowType == STOCK_INFLOW) {
+                code = item.stock_code;
+            }
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>主力净流入</th>
+                        <th>超大单净流入</th>
+                        <th>大单净流入</th>
+                        <th>中单净流入</th>
+                        <th>小单净流入</th>
+                        <th>走势图</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>${formatAmountSmart(line.main_inflow_amount)}</td>
+                        <td>${formatAmountSmart(line.extreme_large_inflow_amount)}</td>
+                        <td>${formatAmountSmart(line.large_inflow_amount)}</td>
+                        <td>${formatAmountSmart(line.medium_inflow_amount)}</td>
+                        <td>${formatAmountSmart(line.small_inflow_amount)}</td>
+                        <td>
+                            <button onclick="showIndustryTrendChart('${code}', '${inflowType}')" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#inflowModal" style='margin-top: 0px;'>查看</button>
+                        </td>
+                    </tr>
+                </tbody>
+            `;
+            return table.outerHTML;
         }
 
         function renderTable(data) {
@@ -629,6 +798,9 @@
                         <td>${item.price_trend_list[item.price_trend_list.length - 1].date}</td>
                         <td>${item.price_trend_list[item.price_trend_list.length - 1].price}%</td>
                         <td>
+                            ${renderFuncInflowTable(item, INDUSTRY_INFLOW)}
+                        </td>
+                        <td>
                             <a href="https://quote.eastmoney.com/bk/90.${item.industry_code}.html#fullScreenChart" target="_blank" style="color:white;">板块走势</a>
                             &nbsp;&nbsp;<a href="./industry_trend?industry_code=${item.industry_code}&keep_days=${days.value}&end_date=${endDateValue}" target="_blank" style="color:white;">板块详情</a>
                         </td>
@@ -645,6 +817,9 @@
                         <td>${item.price_trend_list[0].date}</td>
                         <td>${item.price_trend_list[item.price_trend_list.length - 1].date}</td>
                         <td>${item.price_trend_list[item.price_trend_list.length - 1].price}%</td>
+                        <td>
+                            ${renderFuncInflowTable(item, STOCK_INFLOW)}
+                        </td>
                         <td><a href="https://xueqiu.com/S/${item.stock_code}" target="_blank" style="color:white;">股票详情</a></td>
                     `;
                     tableResult.appendChild(row);

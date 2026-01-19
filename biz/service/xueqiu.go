@@ -109,3 +109,11 @@ func (c *XueqiuClient) GetRemoteStockIndustry(ctx context.Context) ([]*model.Ind
 func (c *XueqiuClient) GetRemoteStockIndustryDetail(ctx context.Context, code string) ([]*model.StockItem, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+
+func (c *XueqiuClient) GetLatestRemoteFundFlow(ctx context.Context) ([]*model.FundFlowData, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (c *XueqiuClient) GetRemoteFundFlowByCode(ctx context.Context, code string) ([]*model.FundFlowData, error) {
+	return nil, fmt.Errorf("not implemented")
+}

@@ -43,6 +43,7 @@ func customizedRegister(r *server.Hertz) {
 	r.GET("/stock/code", handler.GetAllCode)
 	r.POST("/task/stock/code", handler.SyncStockCode)
 	r.POST("/task/stock/industry", handler.SyncStockIndustry)
+	r.POST("/task/stock/fund/flow", handler.SyncFundFlow)
 	r.POST("/analyze/stock/code", handler.AnalyzeStockCode)
 	r.POST("/filter/stock/code", handler.FilterStockCode)
 	r.POST("/analyze/trend/code", handler.AnalyzeTrendCode)

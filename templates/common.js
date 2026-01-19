@@ -92,6 +92,9 @@ const ChartPropertyMap = {
     }
 }
 
+const INDUSTRY_INFLOW = "industry_inflow";
+const STOCK_INFLOW = "stock_inflow";
+
 async function getPriceData(code, start_date, line_type) {
     let line_type_int = parseInt(line_type);
     const requestBody = {
@@ -437,4 +440,47 @@ function getUrlParamsMap() {
         paramsMap.set(key, value);
     });
     return paramsMap;
+}
+
+function formatAmountSmart(amount) {
+    if (typeof amount !== 'number' || isNaN(amount)) {
+        return 'Invalid';
+    }
+
+    const absAmount = Math.abs(amount);
+
+    // 单位配置
+    const units = [
+        { threshold: 1e12, unit: '万亿', divisor: 1e12 },
+        { threshold: 1e8, unit: '亿', divisor: 1e8 },
+        { threshold: 1e4, unit: '万', divisor: 1e4 },
+        { threshold: 0, unit: '', divisor: 1 }
+    ];
+
+    // 找到合适的单位
+    const selectedUnit = units.find(unit => absAmount >= unit.threshold);
+
+    // 计算转换后的值
+    const convertedValue = absAmount / selectedUnit.divisor;
+
+    // 智能决定小数位数
+    let decimalPlaces;
+    if (convertedValue >= 100) {
+        decimalPlaces = 0;           // 大于100，显示整数
+    } else if (convertedValue >= 10) {
+        decimalPlaces = 1;           // 10-100之间，显示1位小数
+    } else {
+        decimalPlaces = 2;           // 小于10，显示2位小数
+    }
+
+    // 格式化数字
+    let formattedValue = convertedValue.toFixed(decimalPlaces);
+
+    // 移除多余的尾随0
+    if (decimalPlaces > 0) {
+        formattedValue = parseFloat(formattedValue).toString();
+    }
+
+    // 添加符号和单位
+    return (amount < 0 ? '-' : '') + formattedValue + selectedUnit.unit;
 }

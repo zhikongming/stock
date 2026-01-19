@@ -51,7 +51,16 @@ type IndustryCodeTrend struct {
 	PriceTrendList []*PriceTrend `json:"price_trend_list"`
 }
 
+type FundInflowItem struct {
+	MainInflowAmount         int64 `json:"main_inflow_amount"`
+	ExtremeLargeInflowAmount int64 `json:"extreme_large_inflow_amount"`
+	LargeInflowAmount        int64 `json:"large_inflow_amount"`
+	MediumInflowAmount       int64 `json:"medium_inflow_amount"`
+	SmallInflowAmount        int64 `json:"small_inflow_amount"`
+}
+
 type PriceTrend struct {
+	FundInflowItem
 	DateString string    `json:"date"`
 	Diff       float64   `json:"diff"`
 	Price      float64   `json:"price"`
@@ -150,7 +159,14 @@ func (s SortIndustryRelation) Swap(i, j int) {
 }
 
 type CodeDiffPrice struct {
+	FundInflowItem
 	Date  string
+	Code  string
 	Diff  float64
 	Price float64
+}
+
+type ValidFuncInflowCounter struct {
+	InValidCount int
+	ValidCount   int
 }

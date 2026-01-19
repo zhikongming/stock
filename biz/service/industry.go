@@ -159,7 +159,43 @@ func GetIndustryCodeDetail(ctx context.Context, req *model.GetIndustryTrendDataR
 				Date:  date,
 				Diff:  diff,
 				Price: price,
+				Code:  stockCode,
 			})
+		}
+
+		// 计算资金流入数据, 这里采用折中的方案, 如果几乎所有的股票都没有这个数据的话, 则不予计算
+		inflowMap := make(map[string]*model.FundInflowItem)
+		var mainInflowAmount int64 = 0
+		var extremeLargeInflowAmount int64 = 0
+		var largeInflowAmount int64 = 0
+		var mediumInflowAmount int64 = 0
+		var smallInflowAmount int64 = 0
+		for i := len(stockPriceList) - 2; i >= 0; i-- {
+			stockPrice := stockPriceList[i]
+			mainInflowAmount += stockPrice.MainInflowAmount
+			extremeLargeInflowAmount += stockPrice.ExtremeLargeInflowAmount
+			largeInflowAmount += stockPrice.LargeInflowAmount
+			mediumInflowAmount += stockPrice.MediumInflowAmount
+			smallInflowAmount += stockPrice.SmallInflowAmount
+			date := utils.FormatDate(stockPrice.Date)
+			idx := fmt.Sprintf("%s_%s", stockCode, date)
+			inflowMap[idx] = &model.FundInflowItem{
+				MainInflowAmount:         mainInflowAmount,
+				ExtremeLargeInflowAmount: extremeLargeInflowAmount,
+				LargeInflowAmount:        largeInflowAmount,
+				MediumInflowAmount:       mediumInflowAmount,
+				SmallInflowAmount:        smallInflowAmount,
+			}
+		}
+		for _, codeDiff := range codeDateMap[stockCode] {
+			idx := fmt.Sprintf("%s_%s", codeDiff.Code, codeDiff.Date)
+			if item, ok := inflowMap[idx]; ok {
+				codeDiff.MainInflowAmount = item.MainInflowAmount
+				codeDiff.ExtremeLargeInflowAmount = item.ExtremeLargeInflowAmount
+				codeDiff.LargeInflowAmount = item.LargeInflowAmount
+				codeDiff.MediumInflowAmount = item.MediumInflowAmount
+				codeDiff.SmallInflowAmount = item.SmallInflowAmount
+			}
 		}
 	}
 
@@ -176,6 +212,13 @@ func GetIndustryCodeDetail(ctx context.Context, req *model.GetIndustryTrendDataR
 				Diff:       utils.Float64KeepDecimal(p.Diff, 2),
 				Price:      utils.Float64KeepDecimal((100+p.Price)/100, 4),
 				Date:       utils.ParseDate(p.Date),
+				FundInflowItem: model.FundInflowItem{
+					MainInflowAmount:         p.MainInflowAmount,
+					ExtremeLargeInflowAmount: p.ExtremeLargeInflowAmount,
+					LargeInflowAmount:        p.LargeInflowAmount,
+					MediumInflowAmount:       p.MediumInflowAmount,
+					SmallInflowAmount:        p.SmallInflowAmount,
+				},
 			})
 		}
 		sort.Sort(model.SortPriceTrend(d.PriceTrendList))
@@ -233,7 +276,42 @@ func WrapGetIndustryTrendDetail(ctx context.Context, req *model.GetIndustryTrend
 				Date:  date,
 				Diff:  diff,
 				Price: price,
+				Code:  stockCode,
 			})
+		}
+		// 计算资金流入数据, 这里采用折中的方案, 如果几乎所有的股票都没有这个数据的话, 则不予计算
+		inflowMap := make(map[string]*model.FundInflowItem)
+		var mainInflowAmount int64 = 0
+		var extremeLargeInflowAmount int64 = 0
+		var largeInflowAmount int64 = 0
+		var mediumInflowAmount int64 = 0
+		var smallInflowAmount int64 = 0
+		for i := len(stockPriceList) - 2; i >= 0; i-- {
+			stockPrice := stockPriceList[i]
+			mainInflowAmount += stockPrice.MainInflowAmount
+			extremeLargeInflowAmount += stockPrice.ExtremeLargeInflowAmount
+			largeInflowAmount += stockPrice.LargeInflowAmount
+			mediumInflowAmount += stockPrice.MediumInflowAmount
+			smallInflowAmount += stockPrice.SmallInflowAmount
+			date := utils.FormatDate(stockPrice.Date)
+			idx := fmt.Sprintf("%s_%s", stockCode, date)
+			inflowMap[idx] = &model.FundInflowItem{
+				MainInflowAmount:         mainInflowAmount,
+				ExtremeLargeInflowAmount: extremeLargeInflowAmount,
+				LargeInflowAmount:        largeInflowAmount,
+				MediumInflowAmount:       mediumInflowAmount,
+				SmallInflowAmount:        smallInflowAmount,
+			}
+		}
+		for _, codeDiff := range industryDateMap[industryCode] {
+			idx := fmt.Sprintf("%s_%s", codeDiff.Code, codeDiff.Date)
+			if item, ok := inflowMap[idx]; ok {
+				codeDiff.MainInflowAmount = item.MainInflowAmount
+				codeDiff.ExtremeLargeInflowAmount = item.ExtremeLargeInflowAmount
+				codeDiff.LargeInflowAmount = item.LargeInflowAmount
+				codeDiff.MediumInflowAmount = item.MediumInflowAmount
+				codeDiff.SmallInflowAmount = item.SmallInflowAmount
+			}
 		}
 	}
 
@@ -247,9 +325,19 @@ func WrapGetIndustryTrendDetail(ctx context.Context, req *model.GetIndustryTrend
 		}
 		diffMap := make(map[string][]float64)
 		priceMap := make(map[string][]float64)
+		mainInflowMap := make(map[string][]int64)
+		extremeLargeInflowMap := make(map[string][]int64)
+		largeInflowMap := make(map[string][]int64)
+		mediumInflowMap := make(map[string][]int64)
+		smallInflowMap := make(map[string][]int64)
 		for _, p := range diffList {
 			diffMap[p.Date] = append(diffMap[p.Date], p.Diff)
 			priceMap[p.Date] = append(priceMap[p.Date], (100+p.Price)/100)
+			mainInflowMap[p.Date] = append(mainInflowMap[p.Date], p.MainInflowAmount)
+			extremeLargeInflowMap[p.Date] = append(extremeLargeInflowMap[p.Date], p.ExtremeLargeInflowAmount)
+			largeInflowMap[p.Date] = append(largeInflowMap[p.Date], p.LargeInflowAmount)
+			mediumInflowMap[p.Date] = append(mediumInflowMap[p.Date], p.MediumInflowAmount)
+			smallInflowMap[p.Date] = append(smallInflowMap[p.Date], p.SmallInflowAmount)
 		}
 		for date, dl := range diffMap {
 			d.PriceTrendList = append(d.PriceTrendList, &model.PriceTrend{
@@ -257,6 +345,13 @@ func WrapGetIndustryTrendDetail(ctx context.Context, req *model.GetIndustryTrend
 				Diff:       utils.Float64KeepDecimal(utils.ListFloat64Average(dl), 4),
 				Price:      utils.Float64KeepDecimal(utils.ListFloat64Average(priceMap[date]), 4),
 				Date:       utils.ParseDate(date),
+				FundInflowItem: model.FundInflowItem{
+					MainInflowAmount:         utils.ListSum(mainInflowMap[date]),
+					ExtremeLargeInflowAmount: utils.ListSum(extremeLargeInflowMap[date]),
+					LargeInflowAmount:        utils.ListSum(largeInflowMap[date]),
+					MediumInflowAmount:       utils.ListSum(mediumInflowMap[date]),
+					SmallInflowAmount:        utils.ListSum(smallInflowMap[date]),
+				},
 			})
 		}
 		sort.Sort(model.SortPriceTrend(d.PriceTrendList))
