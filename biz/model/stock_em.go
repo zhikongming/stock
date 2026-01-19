@@ -63,3 +63,41 @@ type WrapStockItem struct {
 type WrapIndustryStockPriceItem struct {
 	Err error
 }
+
+type EMGetRemoteFundFlowResp struct {
+	Data *EMFundFlowData `json:"data"`
+}
+
+type EMFundFlowData struct {
+	Total int                      `json:"total"`
+	Diff  []map[string]interface{} `json:"diff"`
+}
+
+type FundFlowData struct {
+	Code                     string  `json:"code"`
+	Name                     string  `json:"name"`
+	MainInflowAmount         int64   `json:"main_inflow_amount"`
+	ExtremeLargeInflowAmount int64   `json:"extreme_large_inflow_amount"`
+	LargeInflowAmount        int64   `json:"large_inflow_amount"`
+	MediumInflowAmount       int64   `json:"medium_inflow_amount"`
+	SmallInflowAmount        int64   `json:"small_inflow_amount"`
+	PriceClose               float64 `json:"price_close"`
+	Date                     string  `json:"date"`
+}
+
+type EMGetRemoteDailyFundFlowResp struct {
+	Data *EMDailyFundFlowData `json:"data"`
+}
+
+type EMDailyFundFlowData struct {
+	Code   string   `json:"code"`
+	Name   string   `json:"name"`
+	Market int      `json:"market"`
+	Klines []string `json:"klines"`
+}
+
+type WrapFundFlowData struct {
+	Err          error
+	StockCode    string          `json:"stock_code"`
+	FundFlowData []*FundFlowData `json:"fund_flow_data"`
+}

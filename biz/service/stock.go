@@ -599,12 +599,20 @@ func syncStockCodeByIndustryRelation(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	for _, industryRelation := range localIndustryRelationList {
-		exist, err := dal.IsStockCodeExist(ctx, industryRelation.CompanyCode)
-		if err != nil {
-			return err
+	// 获取所有的股票数据
+	localStockCodeList, err := dal.GetAllStockCode(ctx)
+	if err != nil {
+		return err
+	}
+	localStockCodeMap := make(map[string]struct{})
+	for _, stockCode := range localStockCodeList {
+		localStockCodeMap[stockCode.CompanyCode] = struct{}{}
+		if stockCode.CompanyCodeHK != "" {
+			localStockCodeMap[stockCode.CompanyCodeHK] = struct{}{}
 		}
-		if exist {
+	}
+	for _, industryRelation := range localIndustryRelationList {
+		if _, found := localStockCodeMap[industryRelation.CompanyCode]; found {
 			continue
 		}
 		req := &model.SyncStockCodeReq{
@@ -614,6 +622,169 @@ func syncStockCodeByIndustryRelation(ctx context.Context) error {
 		err = SyncStockBasic(ctx, req)
 		if err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func SyncFundFlow(ctx context.Context, req *model.SyncFundFlowReq) error {
+	/*
+		 同步股票资金数据有两种方式:
+		  1. 获取当天的数据, 这样就不用处理历史数据 https://data.eastmoney.com/zjlx/detail.html
+			这里有个问题, 就是时间匹配的问题了, 远程的数据和本地的日期得匹配上.
+		  2. 补偿历史数据, https://data.eastmoney.com/zjlx/601318.html
+		  3. 很多B股就是没有资金的数据, 也不强求更新
+	*/
+	// 获取所有的股票信息数据
+	stockList, err := dal.GetAllStockCode(ctx)
+	if err != nil {
+		return err
+	}
+	// 检查所有股票最新的资金数据
+	needUpdateMultiList := make([]*dal.StockCode, 0)
+	needUpdateLatestList := make([]*dal.StockCode, 0)
+	for _, stock := range stockList {
+		lastStockList, err := dal.GetLastNStockPrice(ctx, stock.CompanyCode, "", 2)
+		if err != nil {
+			return err
+		}
+		if len(lastStockList) == 0 {
+			continue
+		} else if len(lastStockList) == 1 {
+			if !lastStockList[0].IsFundInflowUpdated() {
+				needUpdateLatestList = append(needUpdateLatestList, stock)
+			}
+		} else {
+			// 中间缺失数据了
+			if !lastStockList[1].IsFundInflowUpdated() {
+				needUpdateMultiList = append(needUpdateMultiList, stock)
+			} else if !lastStockList[0].IsFundInflowUpdated() {
+				needUpdateLatestList = append(needUpdateLatestList, stock)
+			}
+		}
+	}
+	err = syncLatestFundFlow(ctx, needUpdateLatestList)
+	if err != nil {
+		return err
+	}
+	err = syncMultiFundFlow(ctx, needUpdateMultiList)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func syncLatestFundFlow(ctx context.Context, stockList []*dal.StockCode) error {
+	if len(stockList) == 0 {
+		return nil
+	}
+	// 获取最新的数据
+	client := NewEastMoneyClient()
+	fundFlowList, err := client.GetLatestRemoteFundFlow(ctx)
+	if err != nil {
+		return err
+	}
+	fundFlowMap := make(map[string]*model.FundFlowData)
+	for _, fundFlow := range fundFlowList {
+		fundFlowMap[fundFlow.Code] = fundFlow
+	}
+	// 更新本地数据
+	for _, stock := range stockList {
+		stockPrice, err := dal.GetLastStockPrice(ctx, stock.CompanyCode)
+		if err != nil {
+			return err
+		}
+		if stockPrice == nil {
+			continue
+		}
+		if fundFlow, found := fundFlowMap[stock.CompanyCode]; !found || fundFlow.PriceClose != stockPrice.PriceClose {
+			continue
+		}
+		stockPrice.MainInflowAmount = fundFlowMap[stock.CompanyCode].MainInflowAmount
+		stockPrice.ExtremeLargeInflowAmount = fundFlowMap[stock.CompanyCode].ExtremeLargeInflowAmount
+		stockPrice.LargeInflowAmount = fundFlowMap[stock.CompanyCode].LargeInflowAmount
+		stockPrice.MediumInflowAmount = fundFlowMap[stock.CompanyCode].MediumInflowAmount
+		stockPrice.SmallInflowAmount = fundFlowMap[stock.CompanyCode].SmallInflowAmount
+		// 更新本地数据
+		err = dal.UpdateStockPrice(ctx, stockPrice)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func syncMultiFundFlow(ctx context.Context, stockList []*dal.StockCode) error {
+	if len(stockList) == 0 {
+		return nil
+	}
+
+	dataCh := make(chan *model.WrapFundFlowData, len(stockList))
+	wg := sync.WaitGroup{}
+	jobs := make(chan struct{}, MaxJobNum)
+	for _, stock := range stockList {
+		wg.Add(1)
+		go func(stock *dal.StockCode) {
+			defer wg.Done()
+			jobs <- struct{}{}
+			defer func() { <-jobs }()
+			client := NewEastMoneyClient()
+			remoteIndustryStockList, err := client.GetRemoteFundFlowByCode(ctx, stock.CompanyCode)
+			if err != nil {
+				d := &model.WrapFundFlowData{
+					StockCode: stock.CompanyCode,
+					Err:       err,
+				}
+				dataCh <- d
+				return
+			}
+			d := &model.WrapFundFlowData{
+				StockCode:    stock.CompanyCode,
+				FundFlowData: remoteIndustryStockList,
+			}
+			dataCh <- d
+		}(stock)
+	}
+	wg.Wait()
+	close(dataCh)
+
+	mp := make(map[string][]*model.FundFlowData)
+	for d := range dataCh {
+		if d.Err != nil {
+			return d.Err
+		}
+		mp[d.StockCode] = d.FundFlowData
+	}
+
+	// 根据日期更新数据库的数据
+	for stockCode, fundFlowList := range mp {
+		stockPriceList, err := dal.GetLastNStockPrice(ctx, stockCode, "", len(fundFlowList))
+		if err != nil {
+			return err
+		}
+		stockPriceMap := make(map[string]*dal.StockPrice)
+		for _, stockPrice := range stockPriceList {
+			date := utils.FormatDate(stockPrice.Date)
+			stockPriceMap[date] = stockPrice
+		}
+		for _, fundFlow := range fundFlowList {
+			stockPrice, found := stockPriceMap[fundFlow.Date]
+			if !found {
+				continue
+			}
+			if stockPrice.MainInflowAmount != 0 {
+				continue
+			}
+			stockPrice.MainInflowAmount = fundFlow.MainInflowAmount
+			stockPrice.ExtremeLargeInflowAmount = fundFlow.ExtremeLargeInflowAmount
+			stockPrice.LargeInflowAmount = fundFlow.LargeInflowAmount
+			stockPrice.MediumInflowAmount = fundFlow.MediumInflowAmount
+			stockPrice.SmallInflowAmount = fundFlow.SmallInflowAmount
+			// 更新本地数据
+			err = dal.UpdateStockPrice(ctx, stockPrice)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

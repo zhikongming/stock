@@ -8,28 +8,33 @@ import (
 )
 
 type StockPrice struct {
-	ID          uint      `json:"id" gorm:"primaryKey"`
-	CompanyCode string    `json:"company_code" gorm:"column:company_code"`
-	Date        time.Time `json:"date" gorm:"column:date"`
-	PriceHigh   float64   `json:"price_high" gorm:"column:price_high"`
-	PriceLow    float64   `json:"price_low" gorm:"column:price_low"`
-	PriceOpen   float64   `json:"price_open" gorm:"column:price_open"`
-	PriceClose  float64   `json:"price_close" gorm:"column:price_close"`
-	Amount      int64     `json:"amount" gorm:"column:amount"`
-	BollingUp   float64   `json:"bolling_up" gorm:"column:bolling_up"`
-	BollingDown float64   `json:"bolling_down" gorm:"column:bolling_down"`
-	BollingMid  float64   `json:"bolling_mid" gorm:"column:bolling_mid"`
-	Ma5         float64   `json:"ma5" gorm:"column:ma5"`
-	Ma10        float64   `json:"ma10" gorm:"column:ma10"`
-	Ma20        float64   `json:"ma20" gorm:"column:ma20"`
-	Ma30        float64   `json:"ma30" gorm:"column:ma30"`
-	Ma60        float64   `json:"ma60" gorm:"column:ma60"`
-	MacdDif     float64   `json:"macd_dif" gorm:"column:macd_dif"`
-	MacdDea     float64   `json:"macd_dea" gorm:"column:macd_dea"`
-	KdjK        float64   `json:"kdj_k" gorm:"column:kdj_k"`
-	KdjD        float64   `json:"kdj_d" gorm:"column:kdj_d"`
-	KdjJ        float64   `json:"kdj_j" gorm:"column:kdj_j"`
-	UpdateTime  time.Time `json:"update_time" gorm:"column:update_time"`
+	ID                       uint      `json:"id" gorm:"primaryKey"`
+	CompanyCode              string    `json:"company_code" gorm:"column:company_code"`
+	Date                     time.Time `json:"date" gorm:"column:date"`
+	PriceHigh                float64   `json:"price_high" gorm:"column:price_high"`
+	PriceLow                 float64   `json:"price_low" gorm:"column:price_low"`
+	PriceOpen                float64   `json:"price_open" gorm:"column:price_open"`
+	PriceClose               float64   `json:"price_close" gorm:"column:price_close"`
+	Amount                   int64     `json:"amount" gorm:"column:amount"`
+	BollingUp                float64   `json:"bolling_up" gorm:"column:bolling_up"`
+	BollingDown              float64   `json:"bolling_down" gorm:"column:bolling_down"`
+	BollingMid               float64   `json:"bolling_mid" gorm:"column:bolling_mid"`
+	Ma5                      float64   `json:"ma5" gorm:"column:ma5"`
+	Ma10                     float64   `json:"ma10" gorm:"column:ma10"`
+	Ma20                     float64   `json:"ma20" gorm:"column:ma20"`
+	Ma30                     float64   `json:"ma30" gorm:"column:ma30"`
+	Ma60                     float64   `json:"ma60" gorm:"column:ma60"`
+	MacdDif                  float64   `json:"macd_dif" gorm:"column:macd_dif"`
+	MacdDea                  float64   `json:"macd_dea" gorm:"column:macd_dea"`
+	KdjK                     float64   `json:"kdj_k" gorm:"column:kdj_k"`
+	KdjD                     float64   `json:"kdj_d" gorm:"column:kdj_d"`
+	KdjJ                     float64   `json:"kdj_j" gorm:"column:kdj_j"`
+	UpdateTime               time.Time `json:"update_time" gorm:"column:update_time"`
+	MainInflowAmount         int64     `json:"main_inflow_amount" gorm:"column:main_inflow_amount"`
+	ExtremeLargeInflowAmount int64     `json:"extreme_large_inflow_amount" gorm:"column:extreme_large_inflow_amount"`
+	LargeInflowAmount        int64     `json:"large_inflow_amount" gorm:"column:large_inflow_amount"`
+	MediumInflowAmount       int64     `json:"medium_inflow_amount" gorm:"column:medium_inflow_amount"`
+	SmallInflowAmount        int64     `json:"small_inflow_amount" gorm:"column:small_inflow_amount"`
 }
 
 func (StockPrice) TableName() string {
@@ -38,6 +43,11 @@ func (StockPrice) TableName() string {
 
 func (s *StockPrice) GetMacdValue() float64 {
 	return s.MacdDif - s.MacdDea
+}
+
+func (s *StockPrice) IsFundInflowUpdated() bool {
+	// 检查是否有资金流入数据更新
+	return s.MainInflowAmount != 0 || s.ExtremeLargeInflowAmount != 0 || s.LargeInflowAmount != 0 || s.MediumInflowAmount != 0 || s.SmallInflowAmount != 0
 }
 
 func GetStockPriceByDate(ctx context.Context, code string, dateStart string, dateEnd string, limit int) ([]*StockPrice, error) {

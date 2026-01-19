@@ -15,4 +15,7 @@ type RemoteClient interface {
 
 	GetRemoteStockIndustry(ctx context.Context) ([]*model.IndustryItem, error)
 	GetRemoteStockIndustryDetail(ctx context.Context, code string) ([]*model.StockItem, error)
+
+	GetLatestRemoteFundFlow(ctx context.Context) ([]*model.FundFlowData, error)
+	GetRemoteFundFlowByCode(ctx context.Context, code string) ([]*model.FundFlowData, error)
 }
