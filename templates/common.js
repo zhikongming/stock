@@ -95,6 +95,7 @@ const ChartPropertyMap = {
 
 const INDUSTRY_INFLOW = "industry_inflow";
 const STOCK_INFLOW = "stock_inflow";
+const MAX_OPEN_CODE_COUNT = 10;
 
 async function getPriceData(code, start_date, line_type) {
     let line_type_int = parseInt(line_type);

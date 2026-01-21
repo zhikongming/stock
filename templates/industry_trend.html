@@ -340,6 +340,13 @@
             align-items: center;
             gap: 10px;
         }
+        #showAllCodeBtn {
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        #showAllCodeBtn:hover {
+            cursor: pointer;
+        }
         pre {
             background: rgba(15, 22, 37, 0.9);
             padding: 20px;
@@ -526,7 +533,7 @@
         <div class="filters-container">
             <div class="filters-row">
                 <div class="filter-section">
-                    <h4 class="table-title">价格数据</h4>
+                    <h4 class="table-title">价格数据<span style="display: none; margin-left: 15px;" id="showAllCodeBtn">(点击查看所有股票)</span></h4>
                     <table class="results-table">
                         <thead>
                             <tr>
@@ -575,6 +582,7 @@
     <script>
         // 获取DOM元素
         const searchBtn = document.getElementById('searchBtn');
+        const showAllCodeBtn = document.getElementById('showAllCodeBtn');
         const tableResult = document.getElementById('tableResult');
 
         const selectHeader = document.getElementById('selectHeader');
@@ -601,6 +609,7 @@
         let selectedStock = null;
         let industryTrendList = [];
         let stockTrendList = [];
+        let openAllCodeListIndex = 0;
 
         function generateIndustryData() {
             let resp = getIndustryBasicData();
@@ -808,6 +817,7 @@
                     tableResult.appendChild(row);
                 }
             } else if (data.industry_code_trend != null) {
+                initShowAllCodeBtn();
                 for (let i = 0; i < data.industry_code_trend.length; i++) {
                     const row = document.createElement('tr');
                     const item = data.industry_code_trend[i];
@@ -960,6 +970,26 @@
             if (needRemoteData) {
                 generateCandleData();
             }
+        }
+
+        function initShowAllCodeBtn() {
+            openAllCodeListIndex = 0;
+            showAllCodeBtn.style.display = 'inline-block';
+            showAllCodeBtn.addEventListener('click', () => {
+                openAllCodeList();
+            });
+        }
+
+        function openAllCodeList() {
+            for (let i = openAllCodeListIndex * MAX_OPEN_CODE_COUNT; i < stockTrendList.length && i < (openAllCodeListIndex + 1) * MAX_OPEN_CODE_COUNT; i++) {
+                let openUrl = "https://xueqiu.com/S/" + stockTrendList[i].stock_code;
+                // 为了防止雪球请求太高, 会要求用户验证, 所以这里设置一个随机延迟
+                const delay = Math.floor(Math.random() * 1000);
+                setTimeout(() => {
+                    window.open(openUrl, '_blank');
+                }, delay);
+            }
+            openAllCodeListIndex++;
         }
 
         // 事件监听
