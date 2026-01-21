@@ -1,6 +1,10 @@
 package dal
 
-import "context"
+import (
+	"context"
+
+	"gorm.io/gorm"
+)
 
 type StockIndustry struct {
 	ID   uint   `json:"id" gorm:"primaryKey"`
@@ -53,6 +57,17 @@ func GetStockIndustryRelation(ctx context.Context, industryCode string) ([]*Stoc
 	var data []*StockIndustryRelation
 	if err := db.WithContext(ctx).Where("industry_code = ?", industryCode).Find(&data).Error; err != nil {
 		return nil, err
+	}
+	return data, nil
+}
+
+func GetStockIndustryRelationByCompanyCode(ctx context.Context, companyCode string) (*StockIndustryRelation, error) {
+	var data *StockIndustryRelation
+	if err := db.WithContext(ctx).Where("company_code = ?", companyCode).First(&data).Error; err != nil {
+		if err != gorm.ErrRecordNotFound {
+			return nil, err
+		}
+		return nil, nil
 	}
 	return data, nil
 }

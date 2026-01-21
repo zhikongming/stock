@@ -301,3 +301,22 @@ type DivergencePointItem struct {
 	PointType string  `json:"point_type"`
 	Price     float64 `json:"price"`
 }
+
+type CodeInfo struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
+type IndustryInfo struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
+type StockInfo struct {
+	CodeInfo     *CodeInfo     `json:"code_info"`
+	IndustryInfo *IndustryInfo `json:"industry_info"`
+}
+
+type GetStockInfoReq struct {
+	Name string `json:"name" query:"name"`
+}

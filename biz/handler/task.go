@@ -88,3 +88,23 @@ func SyncFundFlow(ctx context.Context, c *app.RequestContext) {
 		"message": "success",
 	})
 }
+
+func GetStockInfo(ctx context.Context, c *app.RequestContext) {
+	var req model.GetStockInfoReq
+	if c.BindQuery(&req) != nil {
+		c.JSON(http.StatusBadRequest, utils.H{
+			"message": "bad request",
+		})
+		return
+	}
+
+	info, err := service.GetStockInfo(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.H{
+			"message": fmt.Sprintf("error: %v", err),
+		})
+		return
+	}
+
+	c.JSON(consts.StatusOK, info)
+}

@@ -789,3 +789,39 @@ func syncMultiFundFlow(ctx context.Context, stockList []*dal.StockCode) error {
 	}
 	return nil
 }
+
+func GetStockInfo(ctx context.Context, req *model.GetStockInfoReq) (*model.StockInfo, error) {
+	stockInfo := &model.StockInfo{}
+
+	// 获取股票信息
+	stockCode, err := dal.GetStockCodeByCodeOrName(ctx, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	if stockCode == nil {
+		return stockInfo, nil
+	}
+	stockInfo.CodeInfo = &model.CodeInfo{
+		Code: stockCode.CompanyCode,
+		Name: stockCode.CompanyName,
+	}
+
+	// 获取行业信息
+	industryRelation, err := dal.GetStockIndustryRelationByCompanyCode(ctx, stockCode.CompanyCode)
+	if err != nil {
+		return nil, err
+	}
+	if industryRelation == nil {
+		return stockInfo, nil
+	}
+	industryBasic, err := dal.GetStockIndustry(ctx, industryRelation.IndustryCode)
+	if err != nil {
+		return nil, err
+	}
+
+	stockInfo.IndustryInfo = &model.IndustryInfo{
+		Code: industryBasic.Code,
+		Name: industryBasic.Name,
+	}
+	return stockInfo, nil
+}
