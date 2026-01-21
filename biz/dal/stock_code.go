@@ -81,3 +81,17 @@ func GetStockCodeByCode(ctx context.Context, code string) (*StockCode, error) {
 	}
 	return &stockCode, nil
 }
+
+func GetStockCodeByCodeOrName(ctx context.Context, codeOrName string) (*StockCode, error) {
+	db := GetDB()
+	var stockCode StockCode
+	param := "%" + codeOrName + "%"
+	err := db.WithContext(ctx).Where("company_code like ? or company_code_hk like ? or company_name like ? or company_name_hk like ?", param, param, param, param).First(&stockCode).Error
+	if err != nil {
+		if err != gorm.ErrRecordNotFound {
+			return nil, err
+		}
+		return nil, nil
+	}
+	return &stockCode, nil
+}

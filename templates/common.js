@@ -13,6 +13,7 @@ const getIndustryRelationUrl = "/industry/relation"
 const addSubscribeStrategyUrl = "/subscribe/strategy"
 const getSubscribeStrategyUrl = "/subscribe/strategy"
 const deleteSubscribeStrategyUrl = "/subscribe/strategy"
+const getStockInfoUrl = "/info/stock";
 
 const ChartPropertyMap = {
     "shareholderNumber": {
@@ -424,6 +425,27 @@ async function deleteSubscribeStrategyData(id) {
     });
     return response;
 }
+
+async function getStockInfoData(name) {
+    const url = domain + getStockInfoUrl;
+    const params = {
+        "name": name
+    };
+
+    const baseUrl = new URL(url);
+    Object.entries(params).forEach(([key, value]) => {
+        baseUrl.searchParams.append(key, value);
+    });
+    const response = await fetch(baseUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response;
+}
+
+
 
 function getLoanRateTitle(name) {
     return name + "-贷款收益率";
