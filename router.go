@@ -20,6 +20,11 @@ const (
 	NotFountHtml = "not_found.html"
 )
 
+var SuffixToContentType = map[string]string{
+	".css": "text/css",
+	".js":  "application/javascript",
+}
+
 // customizeRegister registers customize routers.
 func customizedRegister(r *server.Hertz) {
 	r.Use(cors.New(cors.Config{
@@ -79,11 +84,24 @@ func registerPlatform(r *server.Hertz) {
 		// 返回 HTML 文件
 		if strings.HasSuffix(filePath, ".html") {
 			ctx.File(filePath)
+		} else if NeedSetContentType(filePath) {
+			ctx.Response.Header.SetContentType(SuffixToContentType[filepath.Ext(filePath)])
+			data, _ := os.ReadFile(filePath)
+			ctx.Write([]byte(replaceContent(string(data))))
 		} else {
 			data, _ := os.ReadFile(filePath)
 			ctx.String(200, replaceContent(string(data)))
 		}
 	})
+}
+
+func NeedSetContentType(path string) bool {
+	for suffix := range SuffixToContentType {
+		if strings.HasSuffix(path, suffix) {
+			return true
+		}
+	}
+	return false
 }
 
 func addHtmlExtension(path string) string {

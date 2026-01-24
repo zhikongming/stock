@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>板块跟踪</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- <link rel="stylesheet" href="./bootstrap.min.css"> -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./bootstrap.min.css">
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"> -->
     <script src="./echarts.min.js"></script>
     <script src="./common.js"></script>
-    <!-- <script src="./bootstrap.bundle.min.js"></script> -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="./bootstrap.bundle.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> -->
     <style>
         * {
             margin: 0;
@@ -533,7 +533,7 @@
         <div class="filters-container">
             <div class="filters-row">
                 <div class="filter-section">
-                    <h4 class="table-title">价格数据<span style="display: none; margin-left: 15px;" id="showAllCodeBtn">(点击查看所有股票)</span></h4>
+                    <h4 class="table-title">价格数据<span style="display: none; margin-left: 15px;" id="showAllCodeBtn">(点击查看所有板块/股票)</span></h4>
                     <table class="results-table">
                         <thead>
                             <tr>
@@ -797,6 +797,7 @@
             }
 
             if (data.industry_price_trend != null) {
+                initShowAllCodeBtn(BTN_TYPE_INDUSTRY);
                 for (let i = 0; i < data.industry_price_trend.length; i++) {
                     const row = document.createElement('tr');
                     const item = data.industry_price_trend[i];
@@ -817,7 +818,7 @@
                     tableResult.appendChild(row);
                 }
             } else if (data.industry_code_trend != null) {
-                initShowAllCodeBtn();
+                initShowAllCodeBtn(BTN_TYPE_STOCK);
                 for (let i = 0; i < data.industry_code_trend.length; i++) {
                     const row = document.createElement('tr');
                     const item = data.industry_code_trend[i];
@@ -972,22 +973,32 @@
             }
         }
 
-        function initShowAllCodeBtn() {
+        function initShowAllCodeBtn(btnType) {
             openAllCodeListIndex = 0;
             showAllCodeBtn.style.display = 'inline-block';
             showAllCodeBtn.addEventListener('click', () => {
-                openAllCodeList();
+                openAllCodeList(btnType);
             });
         }
 
-        function openAllCodeList() {
-            for (let i = openAllCodeListIndex * MAX_OPEN_CODE_COUNT; i < stockTrendList.length && i < (openAllCodeListIndex + 1) * MAX_OPEN_CODE_COUNT; i++) {
-                let openUrl = "https://xueqiu.com/S/" + stockTrendList[i].stock_code;
-                // 为了防止雪球请求太高, 会要求用户验证, 所以这里设置一个随机延迟
-                const delay = Math.floor(Math.random() * 1000);
-                setTimeout(() => {
-                    window.open(openUrl, '_blank');
-                }, delay);
+        function openAllCodeList(btnType) {
+            if (btnType === BTN_TYPE_INDUSTRY) {
+                for (let i = openAllCodeListIndex * MAX_OPEN_CODE_COUNT; i < industryTrendList.length && i < (openAllCodeListIndex + 1) * MAX_OPEN_CODE_COUNT; i++) {
+                    let openUrl = "https://quote.eastmoney.com/bk/90." + industryTrendList[i].industry_code + ".html#fullScreenChart";
+                    const delay = Math.floor(Math.random() * 1000);
+                    setTimeout(() => {
+                        window.open(openUrl, '_blank');
+                    }, delay);
+                }
+            } else if (btnType === BTN_TYPE_STOCK) {
+                for (let i = openAllCodeListIndex * MAX_OPEN_CODE_COUNT; i < stockTrendList.length && i < (openAllCodeListIndex + 1) * MAX_OPEN_CODE_COUNT; i++) {
+                    let openUrl = "https://xueqiu.com/S/" + stockTrendList[i].stock_code;
+                    // 为了防止雪球请求太高, 会要求用户验证, 所以这里设置一个随机延迟
+                    const delay = Math.floor(Math.random() * 1000);
+                    setTimeout(() => {
+                        window.open(openUrl, '_blank');
+                    }, delay);
+                }
             }
             openAllCodeListIndex++;
         }
