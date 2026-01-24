@@ -513,7 +513,7 @@
                     </div>
                 </div>
             </div>
-            <div class="control-group" style="max-width: 20%;" id="dateGroup">
+            <div class="control-group" style="max-width: 20%;">
                 <div class="form-group">
                     <label>截止日期</label>
                     <input type="date" id="endDate" placeholder="输入截止日期..." value="">
@@ -610,6 +610,7 @@
         let industryTrendList = [];
         let stockTrendList = [];
         let openAllCodeListIndex = 0;
+        let globalBtnType = BTN_TYPE_INDUSTRY;
 
         function generateIndustryData() {
             let resp = getIndustryBasicData();
@@ -976,13 +977,11 @@
         function initShowAllCodeBtn(btnType) {
             openAllCodeListIndex = 0;
             showAllCodeBtn.style.display = 'inline-block';
-            showAllCodeBtn.addEventListener('click', () => {
-                openAllCodeList(btnType);
-            });
+            globalBtnType = btnType;
         }
 
-        function openAllCodeList(btnType) {
-            if (btnType === BTN_TYPE_INDUSTRY) {
+        function openAllCodeList() {
+            if (globalBtnType === BTN_TYPE_INDUSTRY) {
                 for (let i = openAllCodeListIndex * MAX_OPEN_CODE_COUNT; i < industryTrendList.length && i < (openAllCodeListIndex + 1) * MAX_OPEN_CODE_COUNT; i++) {
                     let openUrl = "https://quote.eastmoney.com/bk/90." + industryTrendList[i].industry_code + ".html#fullScreenChart";
                     const delay = Math.floor(Math.random() * 1000);
@@ -990,7 +989,7 @@
                         window.open(openUrl, '_blank');
                     }, delay);
                 }
-            } else if (btnType === BTN_TYPE_STOCK) {
+            } else if (globalBtnType === BTN_TYPE_STOCK) {
                 for (let i = openAllCodeListIndex * MAX_OPEN_CODE_COUNT; i < stockTrendList.length && i < (openAllCodeListIndex + 1) * MAX_OPEN_CODE_COUNT; i++) {
                     let openUrl = "https://xueqiu.com/S/" + stockTrendList[i].stock_code;
                     // 为了防止雪球请求太高, 会要求用户验证, 所以这里设置一个随机延迟
@@ -1054,6 +1053,10 @@
         });
         // 读取链接的数据后的初始化操作
         initParamEvents();
+
+        showAllCodeBtn.addEventListener('click', () => {
+            openAllCodeList();
+        });
 
         generateIndustryData();
     </script>
