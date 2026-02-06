@@ -29,11 +29,7 @@ const (
 
 var (
 	NidList = []string{
-		"",
-		"nid=0443b0a56be4891ed303783a0aa5f1e5;",
-		"nid=0a84c5047bfdf49fce8c8e74b8a28d0d;",
-		"nid=09cdb1f985f0041a7560b309d8d60cea;",
-		"nid=09c6294722c427885aa8f647795f8cb4;",
+		"nid18=04f8a68737c7fe9b73c36e870f1788eb;",
 	}
 )
 
@@ -162,7 +158,7 @@ func (c *EastMoneyClient) GetRemoteStockBasic(ctx context.Context, code string, 
 		"fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61",
 		"klt":     kLintType,
 		"fqt":     "1",
-		"lmt":     "360",
+		"lmt":     "30",
 	}
 	var resp []byte
 	var err error

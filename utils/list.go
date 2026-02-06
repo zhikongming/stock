@@ -32,3 +32,34 @@ func ListSum[T int64 | float64 | int32 | int](list []T) T {
 	}
 	return sum
 }
+
+func In[T comparable](item T, list []T) bool {
+	for _, v := range list {
+		if v == item {
+			return true
+		}
+	}
+	return false
+}
+
+func ListStringIgnoreEmpty(list []string) []string {
+	var result []string
+	for _, v := range list {
+		if v != "" {
+			result = append(result, v)
+		}
+	}
+	return result
+}
+
+func Uniq[T comparable](list []T) []T {
+	localMap := make(map[T]struct{})
+	for _, item := range list {
+		localMap[item] = struct{}{}
+	}
+	uniqList := make([]T, 0, len(localMap))
+	for item := range localMap {
+		uniqList = append(uniqList, item)
+	}
+	return uniqList
+}

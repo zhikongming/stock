@@ -5,470 +5,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>欢迎使用股票分析系统</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="./common.css">
     <script src="./common.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            color: #e0e0e0;
-            min-height: 100vh;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .container {
-            width: 100%;
-            max-width: 900px;
-            background: rgba(30, 35, 60, 0.9);
-            border-radius: 20px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
-            overflow: hidden;
-            animation: fadeIn 0.8s ease-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        header {
-            background: linear-gradient(90deg, #4a6fc5, #5d8de6);
-            padding: 30px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        header::before {
-            content: "";
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            transform: rotate(30deg);
-        }
-        
-        h1 {
-            font-size: 2.8rem;
-            margin-bottom: 10px;
-            color: white;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            position: relative;
-        }
-        
-        .subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            max-width: 600px;
-            margin: 0 auto;
-            line-height: 1.6;
-            color: rgba(255, 255, 255, 0.9);
-            position: relative;
-        }
-        
-        .content {
-            padding: 40px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 40px;
-        }
-        
-        .form-section {
-            flex: 1;
-            min-width: 300px;
-        }
-        
-        .info-section {
-            flex: 1;
-            min-width: 300px;
-            background: rgba(40, 45, 70, 0.6);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        .section-title {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            color: #5d8de6;
-            font-size: 1.8rem;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid rgba(93, 141, 230, 0.3);
-        }
-        
-        .section-title i {
-            font-size: 1.6rem;
-            background: rgba(93, 141, 230, 0.15);
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        /* 表单样式 */
-        .form-group {
-            position: relative;
-            margin-bottom: 30px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: 600;
-            color: #a0d2ff;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .form-group label i {
-            font-size: 1.2rem;
-            color: #5d8de6;
-        }
-        
-        .form-control {
-            width: 100%;
-            padding: 16px 20px 16px 55px;
-            border-radius: 12px;
-            border: none;
-            background: rgba(20, 25, 40, 0.95);
-            color: #e0e0e0;
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
-            border: 2px solid rgba(93, 141, 230, 0.4);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-        
-        .form-control:focus {
-            outline: none;
-            box-shadow: 0 0 0 4px rgba(93, 141, 230, 0.4);
-            border-color: #5d8de6;
-        }
-        
-        .form-icon {
-            position: absolute;
-            left: 20px;
-            top: 54px;
-            color: #a0d2ff;
-            font-size: 1.2rem;
-        }
-        
-        .submit-btn {
-            display: block;
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(90deg, #5d8de6, #4a6fc5);
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 6px 15px rgba(93, 141, 230, 0.4);
-            margin-top: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .submit-btn::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: 0.5s;
-        }
-        
-        .submit-btn:hover::before {
-            left: 100%;
-        }
-        
-        .submit-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(93, 141, 230, 0.6);
-        }
-        
-        .submit-btn:active {
-            transform: translateY(1px);
-        }
-        
-        /* 链接样式 */
-        .links-section {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 30px;
-        }
-        
-        .link-card {
-            background: rgba(30, 35, 60, 0.7);
-            border-radius: 15px;
-            padding: 25px;
-            flex: 1;
-            margin: 0 10px;
-            text-align: center;
-            transition: all 0.3s ease;
-            border: 2px solid rgba(93, 141, 230, 0.3);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        .link-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
-            border-color: #5d8de6;
-            background: rgba(40, 45, 70, 0.8);
-        }
-        
-        .link-card:first-child {
-            margin-left: 0;
-        }
-        
-        .link-card:last-child {
-            margin-right: 0;
-        }
-        
-        .link-icon {
-            font-size: 3rem;
-            color: #5d8de6;
-            margin-bottom: 20px;
-        }
-        
-        .link-title {
-            font-size: 1.4rem;
-            color: #ffffff;
-            margin-bottom: 15px;
-        }
-        
-        .link-desc {
-            color: #a0d2ff;
-            margin-bottom: 25px;
-            line-height: 1.7;
-        }
-        
-        .link-btn {
-            display: inline-block;
-            padding: 12px 30px;
-            padding-left: 25px;
-            background: rgba(93, 141, 230, 0.2);
-            color: #5d8de6;
-            text-decoration: none;
-            border-radius: 30px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            border: 2px solid rgba(93, 141, 230, 0.4);
-        }
-        
-        .link-btn:hover {
-            background: #5d8de6;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(93, 141, 230, 0.4);
-        }
-        
-        /* 信息卡片样式 */
-        .info-card {
-            background: rgba(30, 35, 60, 0.7);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 25px;
-            border-left: 4px solid #5d8de6;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
-        }
-        
-        .info-card:hover {
-            transform: translateX(10px);
-            background: rgba(40, 45, 70, 0.8);
-        }
-        
-        .info-card h3 {
-            color: #5d8de6;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .info-card p {
-            color: #d9d9d9;
-            line-height: 1.8;
-        }
-        
-        .notice-submit  {
-            background: rgba(76, 217, 100, 0.15); 
-            padding: 15px; 
-            border-radius: 10px; 
-            margin-top: 20px; 
-            border: 1px solid rgba(76, 217, 100, 0.3);
-        }
-        .notice-submit-success {
-            color: #4cd964; 
-            margin-right: 10px;
-        }
-        .notice-submit-fail {
-            color: #f80303; 
-            margin-right: 10px;
-        }
-
-        footer {
-            text-align: center;
-            padding: 25px;
-            color: #a0d2ff;
-            border-top: 1px solid rgba(93, 141, 230, 0.2);
-            font-size: 0.95rem;
-            background: rgba(20, 25, 40, 0.6);
-        }
-        
-        @media (max-width: 768px) {
-            .content {
-                flex-direction: column;
-                padding: 25px;
-                gap: 30px;
-            }
-            
-            h1 {
-                font-size: 2.2rem;
-            }
-            
-            .section-title {
-                font-size: 1.5rem;
-            }
-            
-            .links-section {
-                flex-direction: column;
-                gap: 20px;
-            }
-            
-            .link-card {
-                margin: 0;
-            }
-        }
-    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1><i class="fas fa-file-alt"></i> 欢迎使用股票分析系统</h1>
-        </header>
-        
-        <div class="content">
-            <div class="form-section">
-                <div class="links-section">
-                    <div class="link-card">
-                        <div class="link-icon">
-                            <i class="fas fa-search"></i>
-                        </div>
-                        <h3 class="link-title">股票查询</h3>
-                        <p class="link-desc">查询股票相关的信息, 包括板块, 周报等</p>
-                        <a href="./info_stock" target="_blank" class="link-btn">查询</a>
-                    </div>
-                    
-                    <div class="link-card">
-                        <div class="link-icon">
-                            <i class="fas fa-chart-bar"></i>
-                        </div>
-                        <h3 class="link-title">趋势</h3>
-                        <p class="link-desc">分析缠论的趋势，或者板块的趋势</p>
-                        <a href="./trend" target="_blank" class="link-btn">缠论</a>
-                        <a href="./industry_trend" target="_blank" class="link-btn">板块</a>
-                        <a href="./relation" target="_blank" class="link-btn">相关性</a>
-                    </div>
-                </div>
+    <div class="header">
+        <h1><i class="fas fa-chart-line"></i> 股票分析系统</h1>
+        <p>专业的股票数据分析平台，提供全面的股票查询、趋势分析、财报分析和策略制定功能。</p>
+    </div>
 
-                <div class="links-section">
-                    <div class="link-card">
-                        <div class="link-icon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <h3 class="link-title">财报分析</h3>
-                        <p class="link-desc">录入当期的财报数据之后，就可以分析对该数据做环比和同比的分析</p>
-                        <a href="./report" target="_blank" class="link-btn">分析</a>
-                        <a href="./add_report" target="_blank" class="link-btn">录入</a>
-                    </div>
-                    <div class="link-card">
-                        <div class="link-icon">
-                            <i class="fas fa-paper-plane"></i>
-                        </div>
-                        <h3 class="link-title">财报指标跟踪</h3>
-                        <p class="link-desc">跟踪多份财报的指标数据变化</p>
-                        <a href="./trace_bank" target="_blank" class="link-btn">银行</a>
-                    </div>
-                    <div class="link-card">
-                        <div class="link-icon">
-                            <i class="fas fa-chess"></i>
-                        </div>
-                        <h3 class="link-title">策略</h3>
-                        <p class="link-desc">设定自己的策略, 订阅之后系统将在符合策略的时候通知</p>
-                        <a href="./filter" target="_blank" class="link-btn">指标</a>
-                        <a href="./subscribe_strategy" target="_blank" class="link-btn">订阅</a>
-                    </div>
+    <div class="container">
+        <!-- 内容区域 -->
+        <div class="content">
+            <h2>系统功能概述</h2>
+            <p>本系统提供全面的股票分析功能，帮助投资者做出更明智的投资决策。</p>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3><i class="fas fa-search"></i> 股票查询</h3>
+                    <p>快速查找股票行情,基础数据和分析的报告</p>
+                    <ul>
+                        <li><a href="./info_stock" target="_blank" class="no-underline">基础数据</a></li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <h3><i class="fas fa-chart-line"></i> 趋势分析</h3>
+                    <p>深入分析市场趋势和股票走势</p>
+                    <ul>
+                        <li><a href="./trend" target="_blank" class="no-underline">缠论技术分析</a></li>
+                        <li><a href="./industry_trend" target="_blank" class="no-underline">板块追踪</a></li>
+                        <li><a href="./relation" target="_blank" class="no-underline">相关性分析</a></li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <h3><i class="fas fa-file-invoice-dollar"></i> 财报分析</h3>
+                    <p>专业的财务报表分析和解读</p>
+                    <ul>
+                        <li><a href="./add_report" target="_blank" class="no-underline">银行财报数据录入</a></li>
+                        <li><a href="./report" target="_blank" class="no-underline">银行财报分析</a></li>
+                        <li><a href="./trace_bank" target="_blank" class="no-underline">财报指标跟踪</a></li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <h3><i class="fas fa-chess-knight"></i> 投资策略</h3>
+                    <p>制定和执行个性化投资策略</p>
+                    <ul>
+                        <li><a href="./filter" target="_blank" class="no-underline">技术指标分析</a></li>
+                        <li><a href="./subscribe_strategy" target="_blank" class="no-underline">策略订阅服务</a></li>
+                        <li><a href="./watcher" target="_blank" class="no-underline">盯盘</a></li>
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
-
-    <script>
-        // 表单提交处理
-        document.getElementById('mainForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // 获取表单值
-            const name = document.getElementById('name').value;
-            const submitDiv = document.querySelector('.notice-submit');
-            let failMsg = `<i class="fas fa-times-circle" class="notice-submit-fail"></i>
-                        添加股票代码失败，可能是股票代码格式错误或者代码无效。`;
-            let successMsg = `<i class="fas fa-check-circle" class="notice-submit-success"></i>
-                        添加股票代码成功，可以在其他页面使用该股票代码。`;
-            
-            // 创建提交反馈
-            const originalButtonText = document.querySelector('.submit-btn').innerHTML;
-            document.querySelector('.submit-btn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> 提交中...';
-            
-            let ret = syncStockCode(name);
-            ret.then(resp => {
-                document.querySelector('.submit-btn').innerHTML = originalButtonText;
-                if (resp.status != 200) {
-                    submitDiv.innerHTML = failMsg;
-                    submitDiv.style.display = 'block';
-                    return;
-                }
-                submitDiv.innerHTML = successMsg;
-                submitDiv.style.display = 'block';
-            });
-        });
-        
-        // 链接悬停动画增强
-        const linkCards = document.querySelectorAll('.link-card');
-        linkCards.forEach(card => {
-            card.addEventListener('mouseenter', () => {
-                const icon = card.querySelector('.link-icon');
-                icon.style.transform = 'scale(1.1)';
-                icon.style.color = '#4facfe';
-            });
-            
-            card.addEventListener('mouseleave', () => {
-                const icon = card.querySelector('.link-icon');
-                icon.style.transform = 'scale(1)';
-                icon.style.color = '#5d8de6';
-            });
-        });
-    </script>
+    
+    <div class="footer">
+        <p>股票分析系统 &copy; 2025 | 仅供学习参考</p>
+    </div>
 </body>
 </html>

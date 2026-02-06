@@ -63,6 +63,9 @@ func customizedRegister(r *server.Hertz) {
 	r.GET("/subscribe/strategy", handler.GetSubscribeStrategyData)
 	r.DELETE("/subscribe/strategy", handler.DeleteSubscribeStrategyData)
 	r.GET("/info/stock", handler.GetStockInfo)
+	r.POST("/stock/watcher", handler.AddWatcher)
+	r.GET("/stock/watcher", handler.GetWatchers)
+	r.DELETE("/stock/watcher", handler.DeleteWatcher)
 }
 
 func registerPlatform(r *server.Hertz) {

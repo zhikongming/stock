@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎使用股票分析系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="./common.css">
+    <script src="./common.js"></script>
+</head>
+<body>
+    <div class="container">
+        <main class="main-content">
+            <div class="header">
+                <h1>盯盘策略提交</h1>
+                <p>创建新的股票盯盘策略，设置需要监控的股票代码</p>
+            </div>
+            
+            <!-- 提交表单 -->
+            <div class="form-container">
+                <div class="form-header">
+                    <i class="fas fa-plus-circle"></i>
+                    <h2>创建新策略</h2>
+                </div>
+                
+                <form id="strategy-form">
+                    <div class="form-group">
+                        <label class="form-label" for="strategy-name">
+                            <i class="fas fa-heading"></i>
+                            <span>盯盘策略名称</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            id="strategy-name" 
+                            class="form-control" 
+                            placeholder="例如：科技股突破监控"
+                            required
+                        >
+                        <span class="form-hint">为您的策略起一个易于识别的名称</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="stock-codes">
+                            <i class="fas fa-list-ol"></i>
+                            <span>股票代码</span>
+                        </label>
+                        <div class="stock-input-container">
+                            <div id="stock-tags-container"></div>
+                            <input 
+                                type="text" 
+                                id="stock-codes" 
+                                class="form-control" 
+                                placeholder="输入股票代码，按回车或逗号添加多个（例如：000001, 600036）"
+                            >
+                        </div>
+                        <span class="form-hint">可输入多个股票代码，用逗号、空格或回车分隔。已添加：<span id="stock-count">0</span> 个股票</span>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>提交策略</span>
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 存储股票代码数组
+        let stockCodes = [];
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            const stockInput = document.getElementById('stock-codes');
+            const stockTagsContainer = document.getElementById('stock-tags-container');
+            const stockCount = document.getElementById('stock-count');
+            const strategyForm = document.getElementById('strategy-form');
+            
+            // 股票代码输入处理
+            stockInput.addEventListener('keydown', function(e) {
+                // 回车键添加股票代码
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addStockCode(this.value.trim());
+                    this.value = '';
+                }
+                
+                // 逗号分隔添加股票代码
+                if (e.key === ',' || e.key === ' ') {
+                    const value = this.value.trim();
+                    if (value) {
+                        e.preventDefault();
+                        addStockCode(value.replace(',', ''));
+                        this.value = '';
+                    }
+                }
+            });
+            
+            // 输入框失去焦点时也处理
+            stockInput.addEventListener('blur', function() {
+                const value = this.value.trim();
+                if (value) {
+                    addStockCode(value);
+                    this.value = '';
+                }
+            });
+            
+            // 添加股票代码函数
+            function addStockCode(code) {
+                if (!code) return;
+                
+                // 检查是否已存在
+                if (stockCodes.includes(code)) {
+                    alert(`股票代码 ${code} 已添加`);
+                    return;
+                }
+                
+                // 添加到数组
+                stockCodes.push(code);
+                
+                // 更新显示
+                updateStockTags();
+                updateStockCount();
+            }
+            
+            // 移除股票代码函数
+            function removeStockCode(code) {
+                stockCodes = stockCodes.filter(item => item !== code);
+                updateStockTags();
+                updateStockCount();
+            }
+            
+            // 更新股票标签显示
+            function updateStockTags() {
+                stockTagsContainer.innerHTML = '';
+                
+                stockCodes.forEach(code => {
+                    const tag = document.createElement('div');
+                    tag.className = 'stock-tag';
+                    tag.innerHTML = `
+                        ${code}
+                        <span class="stock-tag-remove" data-code="${code}">
+                            <i class="fas fa-times"></i>
+                        </span>
+                    `;
+                    stockTagsContainer.appendChild(tag);
+                });
+                
+                // 为移除按钮添加事件
+                document.querySelectorAll('.stock-tag-remove').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const code = this.getAttribute('data-code');
+                        removeStockCode(code);
+                    });
+                });
+            }
+            
+            // 更新股票计数
+            function updateStockCount() {
+                stockCount.textContent = stockCodes.length;
+            }
+            
+            // 表单提交处理
+            strategyForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // 获取表单数据
+                const strategyName = document.getElementById('strategy-name').value.trim();
+                
+                // 验证数据
+                if (!strategyName) {
+                    alert('请填写策略名称');
+                    return;
+                }
+                
+                if (stockCodes.length === 0) {
+                    alert('请至少添加一个股票代码');
+                    return;
+                }
+                
+                // 显示结果
+                addWatcher(strategyName, stockCodes);
+                
+                // 重置表单
+                this.reset();
+                stockCodes = [];
+                updateStockTags();
+                updateStockCount();
+            });
+            
+            // 显示提交结果
+            function addWatcher(strategyName, stocks) {
+                let resp = addWatcherData(strategyName, stocks);
+                resp.then(data => {
+                    if (data.status === 200) {
+                        alert('添加成功');
+                    } else {
+                        console.log(data);
+                        let d = data.json();
+                        d.then(data => {
+                            alert('添加失败：' + data.message);
+                        });
+                    }
+                });                
+            }
+        });
+    </script>
+</body>

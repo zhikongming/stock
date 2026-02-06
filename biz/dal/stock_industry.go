@@ -32,6 +32,17 @@ func GetStockIndustry(ctx context.Context, code string) (*StockIndustry, error) 
 	return data, nil
 }
 
+func GetStockIndustryByName(ctx context.Context, name string) (*StockIndustry, error) {
+	var data *StockIndustry
+	if err := db.WithContext(ctx).Where("name = ?", name).First(&data).Error; err != nil {
+		if err != gorm.ErrRecordNotFound {
+			return nil, err
+		}
+		return nil, nil
+	}
+	return data, nil
+}
+
 func AddStockIndustry(ctx context.Context, industry *StockIndustry) error {
 	if err := db.WithContext(ctx).Create(industry).Error; err != nil {
 		return err

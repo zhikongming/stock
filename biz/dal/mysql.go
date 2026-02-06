@@ -9,6 +9,11 @@ import (
 	"gorm.io/driver/mysql"
 )
 
+const (
+	StatusEnabled  = 1
+	StatusDisabled = 0
+)
+
 var (
 	db *gorm.DB
 )
