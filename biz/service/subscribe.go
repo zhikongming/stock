@@ -23,7 +23,7 @@ func AddSubscribeStrategyData(ctx context.Context, strategy *model.AddSubscribeS
 	data := &dal.Subscribe{
 		DateTime: time.Now(),
 		Strategy: string(d),
-		Status:   int(dal.SubscribeStatusEnabled),
+		Status:   int(dal.StatusEnabled),
 	}
 	return dal.CreateSubscribe(ctx, data)
 }

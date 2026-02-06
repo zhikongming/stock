@@ -14,6 +14,10 @@ const addSubscribeStrategyUrl = "/subscribe/strategy"
 const getSubscribeStrategyUrl = "/subscribe/strategy"
 const deleteSubscribeStrategyUrl = "/subscribe/strategy"
 const getStockInfoUrl = "/info/stock";
+const addWatcherUrl = "/stock/watcher"
+const getWatcherUrl = "/stock/watcher"
+const deleteWatcherUrl = "/stock/watcher"
+const updateWatcherUrl = "/stock/watcher"
 
 const ChartPropertyMap = {
     "shareholderNumber": {
@@ -98,6 +102,8 @@ const STOCK_INFLOW = "stock_inflow";
 const MAX_OPEN_CODE_COUNT = 10;
 const BTN_TYPE_INDUSTRY = "industry";
 const BTN_TYPE_STOCK = "stock";
+const CODE_TYPE_INDUSTRY = "industry";
+const CODE_TYPE_STOCK = "stock";
 
 async function getPriceData(code, start_date, line_type) {
     let line_type_int = parseInt(line_type);
@@ -394,7 +400,6 @@ async function getIndustryTraceData(industryType) {
 }
 
 async function addSubscribeStrategyData(strategy) {
-    console.log(strategy);
     const url = domain + addSubscribeStrategyUrl;
     const response = await fetch(url, {
         method: 'POST',
@@ -448,7 +453,63 @@ async function getStockInfoData(name) {
     return response;
 }
 
+async function addWatcherData(name, stocks) {
+    const url = domain + addWatcherUrl;
+    let requestBody = {
+        "name": name,
+        "stock_code_list": stocks
+    };
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+    });
+    return response;
+}
 
+async function deleteWatcherData(id) {
+    const url = domain + deleteWatcherUrl;
+    const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"id": id})
+    });
+    return response;
+}
+
+async function getWatchersData() {
+    const url = domain + getWatcherUrl;
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
+
+async function getWatcherDataById(id) {
+    const url = domain + getWatcherUrl;
+    const params = {
+        "id": id
+    };
+
+    const baseUrl = new URL(url);
+    Object.entries(params).forEach(([key, value]) => {
+        baseUrl.searchParams.append(key, value);
+    });
+    const response = await fetch(baseUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
 
 function getLoanRateTitle(name) {
     return name + "-贷款收益率";
@@ -465,6 +526,11 @@ function getUrlParamsMap() {
         paramsMap.set(key, value);
     });
     return paramsMap;
+}
+
+function getQueryParam(name) {
+    const urlParams = getUrlParamsMap();
+    return urlParams.get(name);
 }
 
 function formatAmountSmart(amount) {
@@ -508,4 +574,30 @@ function formatAmountSmart(amount) {
 
     // 添加符号和单位
     return (amount < 0 ? '-' : '') + formattedValue + selectedUnit.unit;
+}
+
+function IsStockCode(code) {
+    return code.length === 6 && /^\d+$/.test(code);
+}
+
+function IsIndustryCode(code) {
+    suffix = code.slice(-2);
+    return code.length === 6 && code.startsWith("BK") && /^\d+$/.test(suffix);
+}
+
+function getEastmoneyFullScreenChartUrl(code, type) {
+    if (type === CODE_TYPE_INDUSTRY) {
+        return "https://quote.eastmoney.com/bk/90." + code + ".html#fullScreenChart";
+    } else if (type === CODE_TYPE_STOCK) {
+        return "https://quote.eastmoney.com/" + code + ".html#fullScreenChart";
+    } else {
+        return "";
+    }
+}
+
+function getEastmoneyIndustryChartUrlWithTime(oldUrl) {
+    const url = new URL(oldUrl);
+    const params = url.searchParams;
+    params.set('time', Date.now());
+    return url.toString();
 }

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎使用股票分析系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="./common.css">
+    <script src="./common.js"></script>
+</head>
+<body>
+    <div class="container">
+        <main class="main-content">
+            <div class="header">
+                <div class="header-content">
+                    <h1>策略详情</h1>
+                    <p>查看策略的详细监控数据和分析</p>
+                </div>
+                
+                <button class="back-strategy-btn" id="back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>返回列表</span>
+                </button>
+            </div>
+
+            <!-- 策略信息卡片 -->
+            <div class="strategy-detail-card">
+                <div class="detail-header">
+                    <div class="detail-icon blue">
+                        <i class="fas fa-chess-knight"></i>
+                    </div>
+                    <div class="detail-info">
+                        <h1 class="strategy-title" id="strategy-name">科技股突破监控策略</h1>
+                        <div class="strategy-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-id-card"></i>
+                                <span>策略ID: <strong id="strategy-id">STR-8F5G2H9A</strong></span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>创建时间: <strong id="strategy-date">2023-10-15 14:30</strong></span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-chart-line"></i>
+                                <span>监控股票: <strong id="strategy-stock-count">6</strong> 只</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="strategy-stocks">
+                    <h3 style="margin-bottom: 15px; color: var(--dark-color);">
+                        <i class="fas fa-list-ol"></i> 监控股票列表
+                    </h3>
+                    <button id="refresh-all-iframes" class="refresh-all-btn">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>刷新所有股价</span>
+                    </button>
+                    <div id="stock-tags-container" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <!-- 股票标签将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+
+                <!-- iframe展示区域 -->
+                <div id="iframes-container" class="iframes-container">
+                    <!-- iframe元素将通过JavaScript动态生成 -->
+                </div>
+                
+                <!-- 空状态（当没有策略详情时显示） -->
+                <div id="empty-state" class="empty-state" style="display: none;">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3>暂无策略详情数据</h3>
+                    <p>该策略当前没有可用的监控数据，请稍后再试</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const backButton = document.getElementById('back-btn');
+        const emptyState = document.getElementById('empty-state');
+        const strategyName = document.getElementById('strategy-name');
+        const strategyId = document.getElementById('strategy-id');
+        const strategyDate = document.getElementById('strategy-date');
+        const strategyStockCount = document.getElementById('strategy-stock-count');
+        const stockTagsContainer = document.getElementById('stock-tags-container');
+        const iframesContainer = document.getElementById('iframes-container');
+        const refreshAllButton = document.getElementById('refresh-all-iframes');
+
+        function generageStrategyData() {
+            const strategyId = getQueryParam('id');
+            if (!strategyId) {
+                showEmptyState(true);
+                return;
+            }
+
+            let resp = getWatcherDataById(strategyId);
+            resp.then(data => {
+                if (data.data && data.data.length > 0) {
+                    showEmptyState(false);
+                    let d = data.data[0];
+                    renderDetailInfo(d);
+                    renderIframe(d);
+                } else {
+                    showEmptyState(true);
+                }
+            });
+        }
+
+        function renderIframe(data) {
+            iframesContainer.innerHTML = '';
+            data.stocks.forEach(stock => {
+                let safeUrl = getEastmoneyFullScreenChartUrl(stock.code, stock.type);
+                const iframeItem = document.createElement('div');
+                iframeItem.className = 'iframe-item';
+                iframeItem.innerHTML = `
+                    <div class="iframe-header">
+                        <div class="iframe-title">
+                            <i class="fas fa-chart-line"></i>
+                            <span>${stock.name} - ${stock.code}</span>
+                        </div>
+                    </div>
+                    <iframe 
+                        class="iframe-content" 
+                        src="${safeUrl}"
+                        title="${stock.name}"
+                        frameborder="0"
+                    ></iframe>
+                `;
+                
+                iframesContainer.appendChild(iframeItem);
+            });
+        }
+
+        function showEmptyState(flag) {
+            if (flag) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+            }
+        }
+
+        function renderDetailInfo(data) {
+            strategyName.textContent = data.name;
+            strategyId.textContent = data.id;
+            // 创建时间格式化
+            const createDate = new Date(data.update_time);
+            const formattedDate = createDate.toLocaleDateString('zh-CN') + ' ' + 
+                createDate.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+            strategyDate.textContent = formattedDate;
+            strategyStockCount.textContent = data.stocks.length;
+
+            // 渲染股票标签
+            stockTagsContainer.innerHTML = '';
+            data.stocks.forEach(stock => {
+                const tag = document.createElement('div');
+                tag.className = 'stock-tag';
+                tag.textContent = stock.name;
+                if (stock.type === CODE_TYPE_INDUSTRY) {
+                    tag.textContent += '(行业)';
+                }
+                stockTagsContainer.appendChild(tag);
+            });
+        }
+
+        function refreshAllIframes() {
+            const iframes = iframesContainer.querySelectorAll('iframe');
+            iframes.forEach(iframe => {
+                iframe.src = getEastmoneyIndustryChartUrlWithTime(iframe.src); // 刷新iframe
+            });
+        }
+
+        // 返回按钮事件
+        backButton.addEventListener('click', function() {
+            window.location.href = './watcher';
+        });
+        // 全局刷新按钮事件
+        refreshAllButton.addEventListener('click', function() {
+            refreshAllIframes();
+        });
+
+        generageStrategyData();
+    </script>
+</body>

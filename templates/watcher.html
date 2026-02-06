@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎使用股票分析系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="./common.css">
+    <script src="./common.js"></script>
+</head>
+<body>
+    <div class="container">
+        <main class="main-content">
+            <div class="header">
+                <div class="header-content">
+                    <h1>盯盘策略管理</h1>
+                    <p>查看和管理您的所有股票盯盘策略</p>
+                </div>
+                
+                <a href="./add_watcher.html" class="add-strategy-btn">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>添加盯盘策略</span>
+                </a>
+            </div>
+
+            <div class="table-container">
+                <div class="table-header">
+                    <h2 class="table-title">
+                        <i class="fas fa-list"></i>
+                        <span>策略列表</span>
+                    </h2>
+                    
+                    <div class="table-actions">
+                        <div class="table-info">共 <span id="table-count">7</span> 条策略</div>
+                    </div>
+                </div>
+                
+                <table class="table-content-header" id="strategies-table">
+                    <thead>
+                        <tr>
+                            <th>策略名称</th>
+                            <th>股票代码</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-tbody">
+                        <!-- 策略数据将通过JavaScript动态生成 -->
+                    </tbody>
+                </table>
+                
+                <!-- 空状态（当没有策略时显示） -->
+                <div id="empty-state" class="empty-state" style="display: none;">
+                    <i class="fas fa-inbox"></i>
+                    <h3>暂无盯盘策略</h3>
+                    <p>您还没有创建任何盯盘策略，点击上方按钮开始添加</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const MaxStockTags = 3;
+        const iconClassList = ["blue", "purple", "orange", "green"];
+
+        const tableTbody = document.getElementById('table-tbody');
+        const emptyState = document.getElementById('empty-state');
+        const tableCount = document.getElementById('table-count');
+        let tableData = [];
+
+        function generageStrategyData() {
+            resp = getWatchersData();
+            resp.then(data => {
+                tableData = data.data;
+                renderTable();
+            });
+        }
+
+        function renderTable() {
+            tableTbody.innerHTML = '';
+            tableCount.textContent = tableData.length;
+
+            if (tableData.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+            emptyState.style.display = 'none';
+
+            let count = 0;
+            let idx = 0;
+            tableData.forEach(strategy => {
+                count++;
+                idx = count % iconClassList.length;
+                const row = document.createElement('tr');
+                row.dataset.id = strategy.id;
+                // 限制显示的股票标签数量
+                
+                const stockTags = strategy.stocks.slice(0, MaxStockTags).map(item => 
+                    `<span class="stock-tag">${item.name}</span>`
+                ).join('');
+
+                const moreStocksCount = strategy.stocks.length - MaxStockTags;
+                const moreStocksTag = moreStocksCount > 0 ? 
+                    `<span class="stock-tag more-stocks">+${moreStocksCount}</span>` : '';
+                
+                // 创建时间格式化
+                const createDate = new Date(strategy.update_time);
+                const formattedDate = createDate.toLocaleDateString('zh-CN') + ' ' + 
+                    createDate.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+                
+                row.innerHTML = `
+                    <td>
+                        <div class="table-name-cell">
+                            <div class="table-icon ${iconClassList[idx]}">
+                                <i class="fas fa-chess-knight"></i>
+                            </div>
+                            <div class="strategy-info">
+                                <div class="strategy-name">${strategy.name}</div>
+                            </div>
+                        </div>
+                    </td>
+                        <td class="stock-codes-cell">
+                            <div class="stock-tags">
+                                ${stockTags}
+                                ${moreStocksTag}
+                            </div>
+                        </td>
+                        <td>${formattedDate}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn view" title="查看详情" data-id="${strategy.id}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="action-btn edit" title="编辑策略" data-id="${strategy.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn delete" title="删除策略" data-id="${strategy.id}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    
+                    tableTbody.appendChild(row);
+            });
+
+            // 添加行点击事件
+            addRowClickEvents();
+                
+            // 添加按钮点击事件
+            addButtonEvents();
+        };
+
+        // 添加行点击事件（整行可点击跳转到详情页）
+        function addRowClickEvents() {
+            const rows = document.querySelectorAll('#table-tbody tr');
+                
+            rows.forEach(row => {
+                row.addEventListener('click', function(e) {
+                    // 如果点击的是操作按钮，不触发行点击
+                    if (e.target.closest('.action-btn')) {
+                        return;
+                    }
+                        
+                    const strategyId = this.dataset.id;
+                    let openUrl = "./watcher_detail?id=" + strategyId;
+                    window.open(openUrl, '_blank');
+                });
+            });
+        }
+
+        function addButtonEvents() {
+            // 查看按钮
+            document.querySelectorAll('.action-btn.view').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    const strategyId = this.dataset.id;
+                    let openUrl = "./watcher_detail?id=" + strategyId;
+                    window.open(openUrl, '_blank');
+                });
+            });
+                
+                // 编辑按钮
+                document.querySelectorAll('.action-btn.edit').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        const strategyId = this.dataset.id;
+                        alert("暂时不支持编辑");
+                    });
+                });
+                
+                // 删除按钮
+                document.querySelectorAll('.action-btn.delete').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        const strategyId = parseInt(this.dataset.id);
+                        const strategy = tableData.find(s => s.id === strategyId);
+                        deleteStrategy(strategyId, strategy);
+                    });
+                });
+        }
+
+        function deleteStrategy(strategyId, strategy) {
+            if (confirm(`确定要删除策略 "${strategy.name}" 吗？此操作不可撤销。`)) {
+                // 删除远端的数据
+                let resp = deleteWatcherData(strategyId);
+                resp.then(data => {
+                    if (data.status === 200) {
+                        // 从数据中移除
+                        const index = tableData.findIndex(s => s.id === strategyId);
+                        if (index !== -1) {
+                            tableData.splice(index, 1);
+                            renderTable();
+                            alert(`策略 "${strategy.name}" 已删除。`);
+                        }
+                    } else {
+                        alert(`删除策略 "${strategy.name}" 失败。`);
+                    }
+                });
+            }
+        }
+
+        generageStrategyData();
+    </script>
+</body>
