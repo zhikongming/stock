@@ -156,10 +156,17 @@
             data.stocks.forEach(stock => {
                 const tag = document.createElement('div');
                 tag.className = 'stock-tag';
-                tag.textContent = stock.name;
+                const link = document.createElement('a');
+                link.href = getEastmoneyFullScreenChartUrl(stock.code, stock.type);
+                link.target = '_blank';
+                link.className = 'no-underline';
+                tag.appendChild(link);
+                let content = stock.name;
                 if (stock.type === CODE_TYPE_INDUSTRY) {
-                    tag.textContent += '(行业)';
+                    content += '(行业)';
                 }
+                link.textContent = content;
+                tag.appendChild(link);
                 stockTagsContainer.appendChild(tag);
             });
         }
@@ -173,7 +180,7 @@
 
         // 返回按钮事件
         backButton.addEventListener('click', function() {
-            window.location.href = './watcher';
+            window.location.href = './watcher.html';
         });
         // 全局刷新按钮事件
         refreshAllButton.addEventListener('click', function() {

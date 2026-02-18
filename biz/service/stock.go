@@ -21,7 +21,7 @@ const (
 	KdjRsvPeriod = 9
 	KdjEmaPeriod = 3
 
-	MaxJobNum   = 3
+	MaxJobNum   = 1
 	MaxDBJobNum = 100
 )
 
@@ -196,7 +196,7 @@ func GetStockPrice(ctx context.Context, code string, startTime time.Time, endTim
 
 func SyncStockDailyPrice(ctx context.Context, req *model.SyncStockCodeReq) error {
 	// 检查是否存在股票基础数据, 如果不存在就同步数据
-	client := NewEastMoneyClient()
+	client := NewBaiduClient()
 	localStockDailyData, err := dal.GetLastStockPrice(ctx, req.Code)
 	if err != nil {
 		return err
@@ -223,6 +223,9 @@ func SyncStockDailyPrice(ctx context.Context, req *model.SyncStockCodeReq) error
 	stockDailyData, err := client.GetRemoteStockDaily(ctx, req.Code, dateTime)
 	if err != nil {
 		return err
+	}
+	if len(stockDailyData.Item) >= 100 {
+		stockDailyData.Item = stockDailyData.Item[len(stockDailyData.Item)-100:]
 	}
 	stockPriceList := make([]*dal.StockPrice, 0)
 	for _, item := range stockDailyData.Item {
@@ -301,6 +304,7 @@ func SyncStockDailyPrice(ctx context.Context, req *model.SyncStockCodeReq) error
 			}
 		}
 	}
+	time.Sleep(1 * time.Second)
 	return nil
 }
 
@@ -488,7 +492,8 @@ func CalculateKdj(dailyData []*dal.StockPrice) {
 }
 
 func SyncStockIndustry(ctx context.Context, req *model.SyncStockIndustryReq) error {
-	err := syncStockIndustry(ctx)
+	var err error
+	err = syncStockIndustry(ctx)
 	if err != nil {
 		return err
 	}
@@ -514,6 +519,7 @@ func syncStockIndustry(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	remoteIndustryList = getUniqIndustry(remoteIndustryList)
 	localIndustryList, err := dal.GetAllStockIndustry(ctx)
 	if err != nil {
 		return err
@@ -534,7 +540,31 @@ func syncStockIndustry(ctx context.Context) error {
 			}
 		}
 	}
+	remoteMap := make(map[string]struct{})
+	for _, remoteIndustry := range remoteIndustryList {
+		remoteMap[remoteIndustry.Name] = struct{}{}
+	}
+	for _, localIndustry := range localIndustryList {
+		if _, found := remoteMap[localIndustry.Name]; !found {
+			if err := dal.DeleteStockIndustry(ctx, localIndustry); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
+}
+
+func getUniqIndustry(industryList []*model.IndustryItem) []*model.IndustryItem {
+	uniqMap := make(map[string]struct{})
+	uniqList := make([]*model.IndustryItem, 0)
+	for _, industry := range industryList {
+		industry.Name = utils.RemoveIndustryNumberSuffix(industry.Name)
+		if _, found := uniqMap[industry.Name]; !found {
+			uniqMap[industry.Name] = struct{}{}
+			uniqList = append(uniqList, industry)
+		}
+	}
+	return uniqList
 }
 
 func syncStockIndustryRelation(ctx context.Context) error {

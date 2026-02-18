@@ -18,6 +18,7 @@ const addWatcherUrl = "/stock/watcher"
 const getWatcherUrl = "/stock/watcher"
 const deleteWatcherUrl = "/stock/watcher"
 const updateWatcherUrl = "/stock/watcher"
+const filterThirdBuyCodeUrl = "/filter/third/buy"
 
 const ChartPropertyMap = {
     "shareholderNumber": {
@@ -104,6 +105,7 @@ const BTN_TYPE_INDUSTRY = "industry";
 const BTN_TYPE_STOCK = "stock";
 const CODE_TYPE_INDUSTRY = "industry";
 const CODE_TYPE_STOCK = "stock";
+const THIRD_BUY_STORAGE_KEY = "third_buy_subscribed";
 
 async function getPriceData(code, start_date, line_type) {
     let line_type_int = parseInt(line_type);
@@ -511,6 +513,18 @@ async function getWatcherDataById(id) {
     return response.json();
 }
 
+async function filterThirdBuyCode(params) {
+    const url = domain + filterThirdBuyCodeUrl;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(params)
+    });
+    return response.json();
+}
+
 function getLoanRateTitle(name) {
     return name + "-贷款收益率";
 }
@@ -593,6 +607,10 @@ function getEastmoneyFullScreenChartUrl(code, type) {
     } else {
         return "";
     }
+}
+
+function getXueqiuStockUrl(code) {
+    return "https://xueqiu.com/S/" + code;
 }
 
 function getEastmoneyIndustryChartUrlWithTime(oldUrl) {

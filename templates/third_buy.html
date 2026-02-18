@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎使用股票分析系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="./common.css">
+    <script src="./common.js"></script>
+</head>
+<body>
+    <div class="page-container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-chart-pie"></i>
+                第三类买点筛选分析
+            </h1>
+            <p>根据设定的技术指标筛选符合条件的板块，支持按起始日期或天数查询(<a href="https://mp.weixin.qq.com/s/DRhukSFwJOosKIDTqj0V0w" class="no-underline" target="_blank">点击查看理论</a>)</p>
+        </div>
+        <div class="form-container">
+            <div class="form-header">
+                <i class="fas fa-sliders-h"></i>
+                <h2>筛选条件设置</h2>
+            </div>
+            <form id="filter-form">
+                <div class="form-grid">
+                    <!-- 板块名称 -->
+                    <div class="form-group">
+                        <label class="form-label" for="sector-name">
+                            <i class="fas fa-tag"></i>
+                            <span>板块名称</span>
+                        </label>
+                        <input list="sector-options" type="text" id="sector-name" class="form-control" placeholder="请输入或选择板块名称" value="贵金属">
+                        <datalist id="sector-options">
+                            <!-- javascript来生成数据 -->
+                        </datalist>
+                        <span class="form-hint">支持输入搜索，从下拉列表选择或自定义输入</span>
+                    </div>
+                    
+                    <!-- 查询方式选择 -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-search"></i>
+                            <span>查询方式</span>
+                        </label>
+                        <div class="radio-group">
+                            <label class="radio-item">
+                                <input type="radio" name="query-type" value="date" checked id="type-date">
+                                <span>按起始日期</span>
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="query-type" value="days" id="type-days">
+                                <span>按天数</span>
+                            </label>
+                        </div>
+                        <span class="form-hint">起始日期和天数仅一个生效</span>
+                    </div>
+                    
+                    <!-- 起始日期 -->
+                    <div class="form-group" id="date-group">
+                        <label class="form-label" for="start-date">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>起始日期</span>
+                        </label>
+                        <input type="date" id="start-date" class="form-control" value="2026-01-01">
+                        <span class="form-hint">分析股票价格在起始日期的数据</span>
+                    </div>
+                    
+                    <!-- 天数 -->
+                    <div class="form-group" id="days-group">
+                        <label class="form-label" for="days">
+                            <i class="fas fa-clock"></i>
+                            <span>天数</span>
+                        </label>
+                        <input type="number" id="days" class="form-control" placeholder="例如：30" min="1" max="365" disabled>
+                        <span class="form-hint">正整数，最近N个交易日</span>
+                    </div>
+                    
+                    <!-- 上涨幅度最低阈值 -->
+                    <div class="form-group">
+                        <label class="form-label" for="threshold-up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>上涨幅度最低阈值 (%)</span>
+                        </label>
+                        <input type="number" id="threshold-up" class="form-control" placeholder="例如：5" step="0.1" min="0" value="20">
+                        <span class="form-hint">上涨幅度最低阈值，建议上涨的阈值设置为至少20才有足够的利润空间</span>
+                    </div>
+                    
+                    <!-- 回调幅度最低阈值 -->
+                    <div class="form-group">
+                        <label class="form-label" for="threshold-pullback">
+                            <i class="fas fa-arrow-down"></i>
+                            <span>回调幅度最低阈值 (%)</span>
+                        </label>
+                        <input type="number" id="threshold-pullback" class="form-control" placeholder="例如：2" step="0.1" min="0" value="15">
+                        <span class="form-hint">回调幅度最低阈值，建议回调的阈值设置为至少15才有足够的利润空间</span>
+                    </div>
+                    
+                    <!-- 偏离度最大阈值 -->
+                    <div class="form-group">
+                        <label class="form-label" for="threshold-deviation">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>偏离度最大阈值 (%)</span>
+                        </label>
+                        <input type="number" id="threshold-deviation" class="form-control" placeholder="例如：10" step="0.1" min="0" value="5">
+                        <span class="form-hint">偏离度最大阈值，建议偏离度的阈值不宜过大或者过小</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="threshold-profit">
+                            <i class="fas fa-sack-dollar"></i>
+                            <span>潜在利润最小阈值 (%)</span>
+                        </label>
+                        <input type="number" id="threshold-profit" class="form-control" placeholder="例如：10" step="0.1" min="0" value="15">
+                        <span class="form-hint">潜在利润最小阈值，按照中枢盘整来操纵, 建议潜在利润的阈值设置为至少15才有足够的操作价值</span>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <div style="display: flex; justify-content: flex-end; ">
+                            <button type="submit" class="submit-btn">
+                                <i class="fas fa-search"></i>
+                                <span>提交筛选</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 表格区域 -->
+        <div class="table-container" id="table-container" style="display: none;" tabindex="-1">
+            <div class="table-header">
+                <h2 class="table-title">
+                    <i class="fas fa-table"></i>
+                    <span>个股三类买点明细表</span>
+                </h2>
+                <div class="table-info">
+                    共 <span id="table-count">0</span> 个标的(板块共 <span id="total-count">0</span> 个)
+                </div>
+            </div>
+            <div class="table-header-actions">
+                <button id="show-subscribed-btn" class="action-btn2 primary">
+                    <i class="fas fa-eye"></i>
+                    <span>只看订阅</span>
+                </button>
+                <button id="clear-subscriptions-btn" class="action-btn2 warning">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>清除订阅</span>
+                </button>
+            </div>
+            <table class="table-content-header" id="period-table">
+                <thead>
+                    <tr>
+                        <th>标的</th>
+                        <th>上涨阶段</th>
+                        <th>下跌阶段</th>
+                        <th>再次上涨</th>
+                        <th>可操作阶段</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="period-tbody">
+                    <!-- 动态渲染数据 -->
+                </tbody>
+            </table>
+            
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <i class="fas fa-database"></i>
+                <h3>暂无符合条件的三类买点数据</h3>
+                <p>请调整筛选条件后重试</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sectorOptions = document.getElementById("sector-options");
+        const typeDate = document.getElementById('type-date');
+        const typeDays = document.getElementById('type-days');
+        const startDateInput = document.getElementById('start-date');
+        const daysInput = document.getElementById('days');
+        const form = document.getElementById('filter-form');
+        const sectorName = document.getElementById('sector-name');
+        const thresholdUp = document.getElementById('threshold-up');
+        const thresholdPullback = document.getElementById('threshold-pullback');
+        const thresholdDeviation = document.getElementById('threshold-deviation');
+        const thresholdProfit = document.getElementById('threshold-profit');
+        const resultTbody = document.getElementById('period-tbody');
+        const resultCount = document.getElementById('table-count');
+        const totalCount = document.getElementById('total-count');
+        const emptyResult = document.getElementById('empty-state');
+        const tableContainer = document.getElementById('table-container');
+        const showSubscribedBtn = document.getElementById('show-subscribed-btn');
+        const clearSubscriptionsBtn = document.getElementById('clear-subscriptions-btn');
+
+        let industryList = [];
+        let stockList = [];
+        // 当前是否只显示订阅
+        let showSubscribedOnly = false;
+
+        function generateIndustryData() {
+            let resp = getIndustryBasicData();
+            resp.then(data => {
+                data.forEach(item => {
+                    industryList.push(item);
+                });
+                generateIndustryOptions();
+            });
+        }
+
+        function generateIndustryOptions() {
+            industryList.forEach(item => {
+                let option = document.createElement("option");
+                option.value = item.industry_name;
+                sectorOptions.appendChild(option);
+            });
+        }
+
+        function initQueryType() {
+            // 初始化：按起始日期，启用起始日期，禁用天数
+            startDateInput.disabled = false;
+            daysInput.disabled = true;
+            daysInput.value = '';
+        }
+
+        // 表单提交
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const queryType = document.querySelector('input[name="query-type"]:checked');
+            const sectorNameValue = sectorName.value.trim();
+            const queryTypeValue = queryType.value;
+            const thresholdUpValue =  parseFloat(thresholdUp.value);
+            const thresholdPullbackValue =  parseFloat(thresholdPullback.value);
+            const thresholdDeviationValue =  parseFloat(thresholdDeviation.value);
+            const thresholdProfitValue =  parseFloat(thresholdProfit.value);
+            const daysInputValue =  parseInt(daysInput.value);
+            const startDateInputValue = startDateInput.value;
+
+            // if (!sectorNameValue) {
+            //     alert("请输入行业名称");
+            //     return;
+            // }
+            let params = {
+                industry_name: sectorNameValue,
+                threshold_up: thresholdUpValue,
+                threshold_pullback: thresholdPullbackValue,
+                threshold_deviation: thresholdDeviationValue,
+                threshold_profit: thresholdProfitValue,
+            };
+            if (queryTypeValue === 'date') {
+                if (!startDateInput.value) {
+                    alert("请输入起始日期");
+                    return;
+                }
+                params.start_date = startDateInputValue;
+            } else {
+                if (!daysInput.value) {
+                    alert("请输入天数");
+                    return;
+                }
+                params.days = daysInputValue;
+            }
+            
+            let resp = filterThirdBuyCode(params);
+            resp.then(data => {
+                stockList = data;
+                renderTable(data);
+            });
+        });
+
+        // 格式化数字，保留两位小数
+        function formatNumber(value) {
+            return parseFloat(value).toFixed(2);
+        }
+
+        function formatRateWithSign(period) {
+            if (!period) return '--';
+            const rate = parseFloat(period.rate);
+            // 如果有价格数据，根据价格比较决定正负号
+            if (period.startPrice !== undefined && period.endPrice !== undefined) {
+                if (period.endPrice > period.startPrice) {
+                    return `+${rate.toFixed(2)}%`;
+                } else if (period.endPrice < period.startPrice) {
+                    return `-${rate.toFixed(2)}%`;
+                } else {
+                    return `${rate.toFixed(2)}%`;
+                }
+            }
+            // 没有价格时，直接显示rate（保留两位）
+            return `${rate.toFixed(2)}%`;
+        }
+
+        // 格式化日期区间
+        function formatDateRange(period) {
+            if (!period) return '--';
+            const { startDate, endDate } = period;
+            if (!startDate) return '--';
+            if (!endDate || startDate === endDate) {
+                return `<i class="far fa-calendar-alt"></i> ${startDate}`;
+            }
+            return `<i class="far fa-calendar-alt"></i> ${startDate} → ${endDate}`;
+        }
+
+        // 格式化价格信息（悬浮提示）
+        function formatPriceInfo(period) {
+            if (!period || !period.startPrice) return '';
+            if (period.endPrice !== undefined) {
+                return `💰 ${formatNumber(period.startPrice)} → ${formatNumber(period.endPrice)}`;
+            }
+            return `💰 ${formatNumber(period.startPrice)}`;
+        }
+
+        function renderTable(data) {
+            let rows = data.data;
+            tableContainer.style.display = 'block';
+            tableContainer.setAttribute('tabindex', '-1');
+            tableContainer.focus();
+            tableContainer.scrollIntoView({ behavior: 'smooth' });
+            resultTbody.innerHTML = '';
+
+            // 过滤订阅股票
+            if (showSubscribedOnly) {
+                const subscribed = getSubscribedStocks();
+                const subscribedCodes = new Set(subscribed.map(s => s.code));
+                rows = rows.filter(item => subscribedCodes.has(item.code));
+            }
+
+            if (rows.length === 0) {
+                resultCount.textContent = '0';
+                emptyResult.style.display = 'block';
+                return;
+            }
+                
+            emptyResult.style.display = 'none';
+            resultCount.textContent = rows.length;
+            totalCount.textContent = data.total;
+
+            rows.forEach(item => {
+                const tr = document.createElement('tr');
+                
+                // 1. 标的（名称+代码）
+                const tdStock = document.createElement('td');
+                tdStock.innerHTML = `
+                    <div class="stock-info">
+                        <span class="stock-name">${item.name}</span>
+                        <span class="stock-code">${item.code}</span>
+                        <span class="stock-industry">${item.industryName}</span>
+                    </div>
+                `;
+                tr.appendChild(tdStock);
+                
+                // 2. 上涨阶段
+                const tdUp = document.createElement('td');
+                tdUp.innerHTML = `
+                    <div class="period-cell">
+                        <span class="period-rate positive">
+                            <i class="fas fa-arrow-up"></i> ${formatRateWithSign(item.upPeriod)}
+                        </span>
+                        <span class="period-date">${formatDateRange(item.upPeriod)}</span>
+                        <span class="period-price" title="起止价格">${formatPriceInfo(item.upPeriod)}</span>
+                    </div>
+                `;
+                tr.appendChild(tdUp);
+                
+                // 3. 下跌阶段
+                const tdDown = document.createElement('td');
+                tdDown.innerHTML = `
+                    <div class="period-cell">
+                        <span class="period-rate negative">
+                            <i class="fas fa-arrow-down"></i> ${formatRateWithSign(item.downPeriod)}
+                        </span>
+                        <span class="period-date">${formatDateRange(item.downPeriod)}</span>
+                        <span class="period-price" title="起止价格">${formatPriceInfo(item.downPeriod)}</span>
+                    </div>
+                `;
+                tr.appendChild(tdDown);
+                
+                // 4. 再次上涨
+                const tdReup = document.createElement('td');
+                tdReup.innerHTML = `
+                    <div class="period-cell">
+                        <span class="period-rate ${parseFloat(item.reupPeriod?.rate) > 0 ? 'positive' : ''}">
+                            <i class="fas fa-arrow-up"></i> ${formatRateWithSign(item.reupPeriod)}
+                        </span>
+                        <span class="period-date">${formatDateRange(item.reupPeriod)}</span>
+                        <span class="period-price" title="起止价格">${formatPriceInfo(item.reupPeriod)}</span>
+                    </div>
+                `;
+                tr.appendChild(tdReup);
+                
+                // 5. 最终阶段（finalPeriod没有endDate）
+                const tdFinal = document.createElement('td');
+                // 最终阶段单独处理，因为没有endDate
+                let finalRateHtml = '';
+                if (item.finalPeriod) {
+                    const rate = parseFloat(item.finalPeriod.rate);
+                    const isPositive = item.finalPeriod.endPrice > item.finalPeriod.startPrice;
+                    finalRateHtml = `
+                        <span class="period-rate ${isPositive ? 'positive' : 'negative'}">
+                            <i class="fas ${isPositive ? 'fa-arrow-up' : 'fa-arrow-down'}"></i> 
+                            ${isPositive ? '+' : '-'}${Math.abs(rate).toFixed(2)}%
+                        </span>
+                    `;
+                }
+                tdFinal.innerHTML = `
+                    <div class="period-cell">
+                        ${finalRateHtml}
+                        <span class="period-date">
+                            <i class="far fa-calendar-alt"></i> ${item.finalPeriod?.startDate || '--'}
+                        </span>
+                        <span class="period-price" title="起始价格 → 最终价格">
+                            💰 ${item.finalPeriod ? formatNumber(item.finalPeriod.startPrice) + ' → ' + formatNumber(item.finalPeriod.endPrice) : '--'}
+                        </span>
+                    </div>
+                `;
+                tr.appendChild(tdFinal);
+                
+                // 6. 操作按钮（详情/查看）
+                const tdAction = document.createElement('td');
+                const subscribed = isSubscribed(item.code);
+                tdAction.innerHTML = `
+                    <button class="stock-action-btn detail-btn" onclick="window.open('${getXueqiuStockUrl(item.code)}', '_blank')">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>详情</span>
+                    </button>
+                    <button class="stock-action-btn subscribe-btn ${subscribed ? 'subscribed' : ''}" data-code="${item.code}" data-name="${item.name}">
+                        <i class="fas ${subscribed ? 'fa-check-circle' : 'fa-bell'}"></i>
+                        <span>${subscribed ? '已订阅' : '订阅'}</span>
+                    </button>
+                `;
+                tr.appendChild(tdAction);
+                
+                resultTbody.appendChild(tr);
+            });
+
+            initSubscribeButtons();
+        }
+
+        function initSubscribeButtons() {
+            // 为所有订阅按钮绑定事件
+            document.querySelectorAll('.subscribe-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const code = btn.dataset.code;
+                    const name = btn.dataset.name;
+                    const stock = { code, name };
+                    toggleSubscribe(stock);
+                    // 由于toggleSubscribe会重新渲染，不需要额外操作
+                });
+            });
+        }
+
+        // 切换只看订阅模式
+        function toggleShowSubscribed() {
+            showSubscribedOnly = !showSubscribedOnly;
+            const btn = document.getElementById('show-subscribed-btn');
+            if (showSubscribedOnly) {
+                btn.innerHTML = '<i class="fas fa-eye-slash"></i><span>显示全部</span>';
+            } else {
+                btn.innerHTML = '<i class="fas fa-eye"></i><span>只看订阅</span>';
+            }
+            renderTable(stockList);
+        }
+
+        // 清除所有订阅
+        function clearAllSubscriptions() {
+            if (confirm('确定清除所有订阅吗？')) {
+                localStorage.removeItem(THIRD_BUY_STORAGE_KEY);
+                // 如果当前是只看订阅模式，则退出该模式
+                showSubscribedOnly = false;
+                document.getElementById('show-subscribed-btn').innerHTML = '<i class="fas fa-eye"></i><span>只看订阅</span>';
+                renderTable(stockList);
+            }
+        }
+
+        // 订阅/取消订阅
+        function toggleSubscribe(stock) {
+            let subscribed = getSubscribedStocks();
+            const index = subscribed.findIndex(item => item.code === stock.code);
+            if (index === -1) {
+                // 订阅：保存必要信息，至少 code 和 name
+                subscribed.push({ code: stock.code, name: stock.name });
+            } else {
+                // 取消订阅
+                subscribed.splice(index, 1);
+            }
+            saveSubscribedStocks(subscribed);
+            // 刷新表格（保持当前筛选模式）
+            renderTable(stockList);
+        }
+
+        // 获取订阅列表（从 localStorage 读取）
+        function getSubscribedStocks() {
+            const stored = localStorage.getItem(THIRD_BUY_STORAGE_KEY);
+            return stored ? JSON.parse(stored) : [];
+        }
+
+        // 保存订阅列表
+        function saveSubscribedStocks(subscribed) {
+            localStorage.setItem(THIRD_BUY_STORAGE_KEY, JSON.stringify(subscribed));
+        }
+
+        // 检查某股票是否已订阅
+        function isSubscribed(code) {
+            const subscribed = getSubscribedStocks();
+            return subscribed.some(item => item.code === code);
+        }
+
+        // 监听查询方式切换
+        typeDate.addEventListener('change', function() {
+            if (this.checked) {
+                startDateInput.disabled = false;
+                daysInput.disabled = true;
+                daysInput.value = ''; // 清空天数
+            }
+        });
+            
+        typeDays.addEventListener('change', function() {
+            if (this.checked) {
+                startDateInput.disabled = true;
+                daysInput.disabled = false;
+                startDateInput.value = ''; // 清空起始日期
+            }
+        });
+
+        showSubscribedBtn.addEventListener('click', toggleShowSubscribed);
+        clearSubscriptionsBtn.addEventListener('click', clearAllSubscriptions);
+
+        generateIndustryData();
+        initQueryType();
+    </script>
+</body>

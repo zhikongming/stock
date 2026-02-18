@@ -164,7 +164,7 @@
                     }
                         
                     const strategyId = this.dataset.id;
-                    let openUrl = "./watcher_detail?id=" + strategyId;
+                    let openUrl = "./watcher_detail.html?id=" + strategyId;
                     window.open(openUrl, '_blank');
                 });
             });
@@ -175,27 +175,27 @@
             document.querySelectorAll('.action-btn.view').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     const strategyId = this.dataset.id;
-                    let openUrl = "./watcher_detail?id=" + strategyId;
+                    let openUrl = "./watcher_detail.html?id=" + strategyId;
                     window.open(openUrl, '_blank');
                 });
             });
-                
-                // 编辑按钮
-                document.querySelectorAll('.action-btn.edit').forEach(btn => {
-                    btn.addEventListener('click', function(e) {
-                        const strategyId = this.dataset.id;
-                        alert("暂时不支持编辑");
-                    });
+            
+            // 编辑按钮
+            document.querySelectorAll('.action-btn.edit').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    const strategyId = this.dataset.id;
+                    alert("暂时不支持编辑");
                 });
-                
-                // 删除按钮
-                document.querySelectorAll('.action-btn.delete').forEach(btn => {
-                    btn.addEventListener('click', function(e) {
-                        const strategyId = parseInt(this.dataset.id);
-                        const strategy = tableData.find(s => s.id === strategyId);
-                        deleteStrategy(strategyId, strategy);
-                    });
+            });
+            
+            // 删除按钮
+            document.querySelectorAll('.action-btn.delete').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    const strategyId = parseInt(this.dataset.id);
+                    const strategy = tableData.find(s => s.id === strategyId);
+                    deleteStrategy(strategyId, strategy);
                 });
+            });
         }
 
         function deleteStrategy(strategyId, strategy) {

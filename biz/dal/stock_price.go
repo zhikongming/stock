@@ -79,6 +79,7 @@ func GetStockPriceByCodeAndDate(ctx context.Context, code string, date string) (
 		if err != gorm.ErrRecordNotFound {
 			return nil, err
 		}
+		return nil, nil
 	}
 	return &stockPrice, nil
 }
