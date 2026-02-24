@@ -120,3 +120,41 @@ func AnalyzeTrendCode(ctx context.Context, c *app.RequestContext) {
 	c.JSON(consts.StatusOK, data)
 	return
 }
+
+func AnalyzeThirdBuyCode(ctx context.Context, c *app.RequestContext) {
+	var req model.AnalyzeThirdBuyCodeReq
+	if c.BindQuery(&req) != nil {
+		c.JSON(http.StatusBadRequest, utils.H{
+			"message": "bad request",
+		})
+		return
+	}
+	data, err := service.AnalyzeThirdBuyCode(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.H{
+			"message": fmt.Sprintf("internal server error: %v", err),
+		})
+		return
+	}
+	c.JSON(consts.StatusOK, data)
+	return
+}
+
+func FilterThirdBuyCode(ctx context.Context, c *app.RequestContext) {
+	var req model.FilterThirdBuyCodeReq
+	if c.BindJSON(&req) != nil {
+		c.JSON(http.StatusBadRequest, utils.H{
+			"message": "bad request",
+		})
+		return
+	}
+	data, err := service.FilterThirdBuyCode(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.H{
+			"message": fmt.Sprintf("internal server error: %v", err),
+		})
+		return
+	}
+	c.JSON(consts.StatusOK, data)
+	return
+}

@@ -320,3 +320,19 @@ type StockInfo struct {
 type GetStockInfoReq struct {
 	Name string `json:"name" query:"name"`
 }
+
+type AnalyzeThirdBuyCodeReq struct {
+	StockCode string `json:"stock_code" query:"stock_code"`
+	StartDate string `json:"start_date,omitempty" query:"start_date"`
+	Days      int    `json:"days,omitempty" query:"days"`
+}
+
+type FilterThirdBuyCodeReq struct {
+	IndustryName       string  `json:"industry_name"`
+	StartDate          string  `json:"start_date"`
+	Days               int     `json:"days"`
+	ThresholdUp        float64 `json:"threshold_up"`
+	ThresholdPullback  float64 `json:"threshold_pullback"`
+	ThresholdDeviation float64 `json:"threshold_deviation"`
+	ThresholdProfit    float64 `json:"threshold_profit"`
+}

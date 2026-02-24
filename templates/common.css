@@ -2,10 +2,13 @@
     --primary-color: #1e3a8a;
     --secondary-color: #3b82f6;
     --accent-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
     --dark-color: #0f172a;
     --light-color: #f8fafc;
     --border-radius: 8px;
     --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
     --transition: all 0.3s ease;
 }
 
@@ -403,7 +406,7 @@ body {
 
 /* 表单样式 */
 .form-group {
-    margin-bottom: 25px;
+    margin-bottom: 5px;
 }
 
 .form-label {
@@ -487,7 +490,7 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-top: 20px;
+    margin-top: 35px;
 }
 
 .submit-btn:hover {
@@ -632,6 +635,12 @@ body {
     margin-bottom: 20px;
     flex-wrap: wrap;
     gap: 15px;
+}
+
+.table-header-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .table-title {
@@ -805,21 +814,81 @@ body {
     transition: var(--transition);
 }
 
+.action-btn2 {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    background-color: white;
+    color: var(--dark-color);
+    box-shadow: var(--shadow);
+}
+
 .action-btn:hover {
     background-color: #e2e8f0;
     color: var(--dark-color);
 }
 
-.action-btn.view {
+.action-btn2:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.action-btn.view, .action-btn2.view {
     color: var(--secondary-color);
 }
 
-.action-btn.edit {
+.action-btn.edit, .action-btn2.edit {
     color: var(--accent-color);
 }
 
-.action-btn.delete {
+.action-btn.delete, .action-btn2.delete {
     color: var(--danger-color);
+}
+
+.action-btn.primary, .action-btn2.primary {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.action-btn.warning, .action-btn2.warning {
+    background-color: var(--warning-color);
+    color: white;
+}
+
+.stock-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    background-color: #f1f5f9;
+    color: var(--dark-color);
+}
+
+.stock-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.stock-action-btn.subscribed {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.stock-action-btn i {
+    font-size: 0.75rem;
 }
 
 /* 空状态 */
@@ -1076,4 +1145,184 @@ body {
 
 .refresh-all-btn.loading i {
     animation: spin 1s linear infinite;
+}
+
+.page-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* 表单卡片样式 */
+.form-container {
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: 30px;
+    margin-bottom: 30px;
+    transition: var(--transition);
+}
+
+.form-container:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+.form-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.form-header i {
+    color: var(--primary-color);
+    font-size: 1.8rem;
+    background-color: rgba(30, 58, 138, 0.1);
+    padding: 12px;
+    border-radius: 50%;
+}
+
+.form-header h2 {
+    color: var(--dark-color);
+    font-size: 1.6rem;
+}
+
+/* 表单布局 */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--dark-color);
+}
+
+.form-label i {
+    color: var(--secondary-color);
+    width: 20px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    transition: var(--transition);
+    background-color: #f8fafc;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background-color: white;
+}
+
+.form-control:disabled {
+    background-color: #e2e8f0;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.form-hint {
+    margin-top: 6px;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+/* 单选按钮组 */
+.radio-group {
+    display: flex;
+    gap: 20px;
+    margin-top: 8px;
+}
+
+.radio-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.radio-item input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--secondary-color);
+    cursor: pointer;
+}
+
+/* 标的名称和代码 */
+.stock-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stock-name {
+    font-weight: 600;
+    color: var(--dark-color);
+}
+
+.stock-code {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+/* 周期卡片样式（单元格内） */
+.period-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.period-rate {
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.period-date {
+    font-size: 0.8rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.period-price {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    background-color: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.positive {
+    color: var(--accent-color);
+}
+
+.negative {
+    color: var(--danger-color);
 }

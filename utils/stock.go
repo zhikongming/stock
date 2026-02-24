@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 func IsStockNumber(code string) bool {
@@ -31,4 +32,18 @@ func GetFullStockCodeOfNumber(code string) string {
 		}
 	}
 	return code
+}
+
+func GetStockCodeNumber(code string) string {
+	if IsStockNumber(code) {
+		return code
+	}
+	if len(code) == 8 {
+		return code[2:]
+	}
+	return code
+}
+
+func RemoveIndustryNumberSuffix(name string) string {
+	return strings.TrimRightFunc(name, unicode.IsNumber)
 }

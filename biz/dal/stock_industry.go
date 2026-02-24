@@ -50,6 +50,10 @@ func AddStockIndustry(ctx context.Context, industry *StockIndustry) error {
 	return nil
 }
 
+func DeleteStockIndustry(ctx context.Context, industry *StockIndustry) error {
+	return db.WithContext(ctx).Delete(industry).Error
+}
+
 type StockIndustryRelation struct {
 	ID           uint   `json:"id" gorm:"primaryKey"`
 	CompanyCode  string `json:"company_code" gorm:"column:company_code"`

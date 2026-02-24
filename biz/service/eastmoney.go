@@ -29,7 +29,10 @@ const (
 
 var (
 	NidList = []string{
+		"",
+		"nid18=0cfe7939fce0dc8345a1cfa0f070d98c;",
 		"nid18=04f8a68737c7fe9b73c36e870f1788eb;",
+		"nid18=01cf360e98c63eceacc1f7098d943859;",
 	}
 )
 
@@ -74,7 +77,9 @@ func (c *EastMoneyClient) GetRemoteStockCode(ctx context.Context, code string) (
 		"columns":    "ALL",
 		"filter":     fmt.Sprintf("(SECUCODE=\"%s\")", c.GetEastMoneyCode(code)),
 	}
-	headers := map[string]string{}
+	headers := map[string]string{
+		"Cookie": NidList[len(NidList)-1],
+	}
 	resp, err := DoGet(ctx, path, params, headers)
 	if err != nil {
 		return nil, err
@@ -104,7 +109,9 @@ func (c *EastMoneyClient) GetRemoteStockRelation(ctx context.Context, code strin
 		"fields": "f57%2Cf58%2Cf256",
 		"secid":  c.GetEastMoneyId(code),
 	}
-	headers := map[string]string{}
+	headers := map[string]string{
+		"Cookie": NidList[len(NidList)-1],
+	}
 	resp, err := DoGet(ctx, path, params, headers)
 	if err != nil {
 		return nil, err
@@ -158,7 +165,7 @@ func (c *EastMoneyClient) GetRemoteStockBasic(ctx context.Context, code string, 
 		"fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61",
 		"klt":     kLintType,
 		"fqt":     "1",
-		"lmt":     "30",
+		"lmt":     "300",
 	}
 	var resp []byte
 	var err error
@@ -237,36 +244,46 @@ func (c *EastMoneyClient) GetRemoteStockByKLineType(ctx context.Context, code st
 func (c *EastMoneyClient) GetRemoteStockIndustry(ctx context.Context) ([]*model.IndustryItem, error) {
 	path := fmt.Sprintf("%s%s", EastMoneyDomain2, EastMoneyIndustryPath)
 	params := map[string]string{
-		"fs":     "m:90+t:2+f:!50",
+		"fs":     "m:90+s:4+f:!50",
 		"fields": "f12,f14",
 		"fid":    "f13",
 		"pn":     "1",
 		"pz":     "200",
 	}
 	headers := map[string]string{}
-	resp, err := DoGet(ctx, path, params, headers)
-	if err != nil {
-		return nil, err
-	}
-
-	var ret model.EMGetRemoteStockIndustryResp
-	err = json.Unmarshal(resp, &ret)
-	if err != nil {
-		log.Printf("json unmarshal failed: %v", err)
-		return nil, err
-	}
-
+	pn := 1
+	count := 0
 	data := make([]*model.IndustryItem, 0)
-	if ret.Data != nil && ret.Data.Total > 0 {
-		for _, item := range ret.Data.Diff {
-			d := &model.IndustryItem{}
-			if code, ok := item["f12"]; ok {
-				d.Code = fmt.Sprintf("%v", code)
+	for {
+		params["pn"] = fmt.Sprintf("%d", pn)
+		pn++
+		resp, err := DoGet(ctx, path, params, headers)
+		if err != nil {
+			return nil, err
+		}
+
+		var ret model.EMGetRemoteStockIndustryResp
+		err = json.Unmarshal(resp, &ret)
+		if err != nil {
+			log.Printf("json unmarshal failed: %v", err)
+			return nil, err
+		}
+
+		if ret.Data != nil && ret.Data.Total > 0 {
+			for _, item := range ret.Data.Diff {
+				d := &model.IndustryItem{}
+				if code, ok := item["f12"]; ok {
+					d.Code = fmt.Sprintf("%v", code)
+				}
+				if name, ok := item["f14"]; ok {
+					d.Name = fmt.Sprintf("%v", name)
+				}
+				data = append(data, d)
 			}
-			if name, ok := item["f14"]; ok {
-				d.Name = fmt.Sprintf("%v", name)
-			}
-			data = append(data, d)
+		}
+		count += len(ret.Data.Diff)
+		if count >= ret.Data.Total {
+			break
 		}
 	}
 
@@ -281,35 +298,47 @@ func (c *EastMoneyClient) GetRemoteStockIndustryDetail(ctx context.Context, code
 		"pn":     "1",
 		"pz":     "1000",
 	}
-	headers := map[string]string{}
-	resp, err := DoGet(ctx, path, params, headers)
-	if err != nil {
-		return nil, err
-	}
-
-	var ret model.EMGetRemoteStockIndustryResp
-	err = json.Unmarshal(resp, &ret)
-	if err != nil {
-		log.Printf("json unmarshal failed: %v", err)
-		return nil, err
-	}
-
+	count := 0
+	pn := 1
 	data := make([]*model.StockItem, 0)
-	if ret.Data != nil && ret.Data.Total > 0 {
-		for _, item := range ret.Data.Diff {
-			d := &model.StockItem{}
-			if code, ok := item["f12"]; ok {
-				codeStr := fmt.Sprintf("%v", code)
-				// 200开头的属于港股，忽略板块走势内
-				if strings.HasPrefix(codeStr, utils.IgnoreCode) {
-					continue
+	for {
+		params["pn"] = fmt.Sprintf("%d", pn)
+		pn++
+		headers := map[string]string{}
+		resp, err := DoGet(ctx, path, params, headers)
+		if err != nil {
+			return nil, err
+		}
+		var ret model.EMGetRemoteStockIndustryResp
+		err = json.Unmarshal(resp, &ret)
+		if err != nil {
+			log.Printf("json unmarshal failed: %v", err)
+			return nil, err
+		}
+
+		if ret.Data != nil && ret.Data.Total > 0 {
+			for _, item := range ret.Data.Diff {
+				d := &model.StockItem{}
+				if code, ok := item["f12"]; ok {
+					codeStr := fmt.Sprintf("%v", code)
+					// 200开头的属于港股，忽略板块走势内
+					if strings.HasPrefix(codeStr, utils.IgnoreCode) {
+						continue
+					}
+					d.Code = c.GetFullStockCode(codeStr)
 				}
-				d.Code = c.GetFullStockCode(codeStr)
+				if name, ok := item["f14"]; ok {
+					d.Name = fmt.Sprintf("%v", name)
+				}
+				data = append(data, d)
 			}
-			if name, ok := item["f14"]; ok {
-				d.Name = fmt.Sprintf("%v", name)
+
+			count += len(ret.Data.Diff)
+			if count >= ret.Data.Total {
+				break
 			}
-			data = append(data, d)
+		} else {
+			break
 		}
 	}
 
