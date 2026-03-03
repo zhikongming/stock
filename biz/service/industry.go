@@ -273,10 +273,11 @@ func WrapGetIndustryTrendDetail(ctx context.Context, req *model.GetIndustryTrend
 			diff := utils.Float64KeepDecimal(100*(stockPrice.PriceClose-nextStockPrice.PriceClose)/nextStockPrice.PriceClose, 4)
 			price := utils.Float64KeepDecimal(100*(stockPrice.PriceClose-lastStockPrice.PriceClose)/lastStockPrice.PriceClose, 4)
 			industryDateMap[industryCode] = append(industryDateMap[industryCode], &model.CodeDiffPrice{
-				Date:  date,
-				Diff:  diff,
-				Price: price,
-				Code:  stockCode,
+				Date:   date,
+				Diff:   diff,
+				Price:  price,
+				Code:   stockCode,
+				Amount: stockPrice.Amount,
 			})
 		}
 		// 计算资金流入数据, 这里采用折中的方案, 如果几乎所有的股票都没有这个数据的话, 则不予计算
@@ -325,6 +326,7 @@ func WrapGetIndustryTrendDetail(ctx context.Context, req *model.GetIndustryTrend
 		}
 		diffMap := make(map[string][]float64)
 		priceMap := make(map[string][]float64)
+		amountMap := make(map[string][]int64)
 		mainInflowMap := make(map[string][]int64)
 		extremeLargeInflowMap := make(map[string][]int64)
 		largeInflowMap := make(map[string][]int64)
@@ -338,6 +340,7 @@ func WrapGetIndustryTrendDetail(ctx context.Context, req *model.GetIndustryTrend
 			largeInflowMap[p.Date] = append(largeInflowMap[p.Date], p.LargeInflowAmount)
 			mediumInflowMap[p.Date] = append(mediumInflowMap[p.Date], p.MediumInflowAmount)
 			smallInflowMap[p.Date] = append(smallInflowMap[p.Date], p.SmallInflowAmount)
+			amountMap[p.Date] = append(amountMap[p.Date], p.Amount)
 		}
 		for date, dl := range diffMap {
 			d.PriceTrendList = append(d.PriceTrendList, &model.PriceTrend{
@@ -352,6 +355,7 @@ func WrapGetIndustryTrendDetail(ctx context.Context, req *model.GetIndustryTrend
 					MediumInflowAmount:       utils.ListSum(mediumInflowMap[date]),
 					SmallInflowAmount:        utils.ListSum(smallInflowMap[date]),
 				},
+				Amount: utils.ListSum(amountMap[date]),
 			})
 		}
 		sort.Sort(model.SortPriceTrend(d.PriceTrendList))
