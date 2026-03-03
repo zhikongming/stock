@@ -223,6 +223,20 @@
             daysInput.value = '';
         }
 
+        function initParamEvents() {
+            const paramsMap = getUrlParamsMap();
+            if (paramsMap.has('sector-name')) {
+                sectorName.value = paramsMap.get('sector-name');
+            }
+            if (paramsMap.has('days')) {
+                daysInput.disabled = false;
+                startDateInput.disabled = true;
+                startDateInput.value = "";
+                daysInput.value = paramsMap.get('days');
+                typeDays.checked = true;
+            }
+        }
+
         // 表单提交
         form.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -264,7 +278,7 @@
             let resp = filterThirdBuyCode(params);
             resp.then(data => {
                 stockList = data;
-                renderTable(data);
+                renderTable(data, true);
             });
         });
 
@@ -310,12 +324,14 @@
             return `💰 ${formatNumber(period.startPrice)}`;
         }
 
-        function renderTable(data) {
+        function renderTable(data, doFocus) {
             let rows = data.data;
             tableContainer.style.display = 'block';
             tableContainer.setAttribute('tabindex', '-1');
-            tableContainer.focus();
-            tableContainer.scrollIntoView({ behavior: 'smooth' });
+            if (doFocus) {
+                tableContainer.focus();
+                tableContainer.scrollIntoView({ behavior: 'smooth' });
+            }
             resultTbody.innerHTML = '';
 
             // 过滤订阅股票
@@ -459,7 +475,7 @@
             } else {
                 btn.innerHTML = '<i class="fas fa-eye"></i><span>只看订阅</span>';
             }
-            renderTable(stockList);
+            renderTable(stockList, true);
         }
 
         // 清除所有订阅
@@ -469,7 +485,7 @@
                 // 如果当前是只看订阅模式，则退出该模式
                 showSubscribedOnly = false;
                 document.getElementById('show-subscribed-btn').innerHTML = '<i class="fas fa-eye"></i><span>只看订阅</span>';
-                renderTable(stockList);
+                renderTable(stockList, true);
             }
         }
 
@@ -486,7 +502,7 @@
             }
             saveSubscribedStocks(subscribed);
             // 刷新表格（保持当前筛选模式）
-            renderTable(stockList);
+            renderTable(stockList, false);
         }
 
         // 获取订阅列表（从 localStorage 读取）
@@ -528,5 +544,6 @@
 
         generateIndustryData();
         initQueryType();
+        initParamEvents();
     </script>
 </body>

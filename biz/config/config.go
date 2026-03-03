@@ -29,6 +29,14 @@ type Config struct {
 	DB      *DBConfig      `yaml:"DB"`
 	Server  *ServerConfig  `yaml:"Server"`
 	Replace *ReplaceConfig `yaml:"Replace"`
+	Lark    *LarkConfig    `yaml:"Lark"`
+}
+
+type LarkConfig struct {
+	AppID         string `yaml:"app_id"`
+	AppSecret     string `yaml:"app_secret"`
+	TestReceiveID string `yaml:"test_receive_id"`
+	GroupRobotURL string `yaml:"group_robot_url"`
 }
 
 var conf *Config
@@ -43,8 +51,29 @@ func InitConfig() {
 	if err := yaml.Unmarshal(data, &conf); err != nil {
 		panic(fmt.Sprintf("解析配置文件失败: %v", err))
 	}
+
+	// 初始化 Lark 配置
+	larkConfigPath := "./lark.yaml"
+	larkData, err := os.ReadFile(larkConfigPath)
+	if err != nil {
+		return
+	}
+	if err := yaml.Unmarshal(larkData, &conf); err != nil {
+		panic(fmt.Sprintf("解析配置文件失败: %v", err))
+	}
 }
 
 func GetConfig() *Config {
 	return conf
+}
+
+func GetLarkConfig() *LarkConfig {
+	return conf.Lark
+}
+
+func GetLocalHost() string {
+	if conf.Replace == nil {
+		return "http://localhost:6789"
+	}
+	return fmt.Sprintf("http://%s", conf.Replace.ReplacedDomain)
 }

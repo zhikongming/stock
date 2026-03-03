@@ -35,6 +35,9 @@ func InitCron() {
 		if err != nil {
 			hlog.Errorf("SyncFundFlow failed, err: %v", err)
 		}
+
+		// 计算报告数据
+		service.GetAnalyzeReport(ctx)
 	})
 
 	c.Start()

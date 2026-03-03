@@ -121,14 +121,14 @@ func SyncStockBasic(ctx context.Context, req *model.SyncStockCodeReq) error {
 	}
 
 	// 	获取相关股票，以确定HK代码
-	stockRelationList, err := client.GetRemoteStockRelation(ctx, req.Code)
-	if err != nil {
-		return err
-	}
-	if len(stockRelationList) > 0 {
-		stockCode.CompanyCodeHK = stockRelationList[0].Symbol
-		stockCode.CompanyNameHK = stockRelationList[0].Name
-	}
+	// stockRelationList, err := client.GetRemoteStockRelation(ctx, req.Code)
+	// if err != nil {
+	// 	return err
+	// }
+	// if len(stockRelationList) > 0 {
+	// 	stockCode.CompanyCodeHK = stockRelationList[0].Symbol
+	// 	stockCode.CompanyNameHK = stockRelationList[0].Name
+	// }
 
 	err = dal.CreateStockCode(ctx, stockCode)
 	return err

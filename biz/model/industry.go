@@ -15,6 +15,12 @@ type CodeBasic struct {
 	Name string `json:"name"`
 }
 
+type CodeChange struct {
+	Code   string  `json:"code"`
+	Name   string  `json:"name"`
+	Change float64 `json:"change"`
+}
+
 type IndustryBasicData struct {
 	IndustryCode    string       `json:"industry_code"`
 	IndustryName    string       `json:"industry_name"`
@@ -65,6 +71,7 @@ type PriceTrend struct {
 	Diff       float64   `json:"diff"`
 	Price      float64   `json:"price"`
 	Date       time.Time `json:"-"`
+	Amount     int64     `json:"amount"`
 }
 
 type DatePrice struct {
@@ -160,10 +167,11 @@ func (s SortIndustryRelation) Swap(i, j int) {
 
 type CodeDiffPrice struct {
 	FundInflowItem
-	Date  string
-	Code  string
-	Diff  float64
-	Price float64
+	Date   string
+	Code   string
+	Diff   float64
+	Price  float64
+	Amount int64
 }
 
 type ValidFuncInflowCounter struct {

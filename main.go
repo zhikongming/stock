@@ -7,8 +7,7 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/zhikongming/stock/biz/config"
-
-	// "github.com/zhikongming/stock/biz/cron"
+	"github.com/zhikongming/stock/biz/cron"
 	"github.com/zhikongming/stock/biz/dal"
 )
 
@@ -19,7 +18,7 @@ func main() {
 	// 初始化配置
 	dal.InitMysql(conf)
 	// 初始化定时器
-	// cron.InitCron()
+	cron.InitCron()
 
 	h := server.Default(
 		server.WithHostPorts(fmt.Sprintf(":%d", conf.Server.Port)),

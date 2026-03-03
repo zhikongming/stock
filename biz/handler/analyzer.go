@@ -158,3 +158,14 @@ func FilterThirdBuyCode(ctx context.Context, c *app.RequestContext) {
 	c.JSON(consts.StatusOK, data)
 	return
 }
+
+func GetAnalyzeReport(ctx context.Context, c *app.RequestContext) {
+	data, err := service.GetAnalyzeReport(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.H{
+			"message": fmt.Sprintf("%v", err),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
