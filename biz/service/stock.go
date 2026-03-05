@@ -210,9 +210,9 @@ func SyncStockDailyPrice(ctx context.Context, req *model.SyncStockCodeReq) error
 		}
 		// 如果更新时间在昨天下午之后, 但是当前时间在今天下午之前, 则dateTime设置为昨天下午
 		preDay := utils.FormatDate(time.Now().AddDate(0, 0, -1))
-		preDayStartTime := fmt.Sprintf("%s 16:00:00", preDay)
+		preDayStartTime := fmt.Sprintf("%s 15:00:00", preDay)
 		preDayEndTime := fmt.Sprintf("%s 23:59:59", preDay)
-		todayStartTime := fmt.Sprintf("%s 16:00:00", utils.FormatDate(time.Now()))
+		todayStartTime := fmt.Sprintf("%s 15:00:00", utils.FormatDate(time.Now()))
 		if localStockDailyData.UpdateTime.After(utils.ParseTime(preDayStartTime)) &&
 			localStockDailyData.UpdateTime.Before(utils.ParseTime(preDayEndTime)) &&
 			time.Now().Before(utils.ParseTime(todayStartTime)) {
@@ -295,7 +295,7 @@ func SyncStockDailyPrice(ctx context.Context, req *model.SyncStockCodeReq) error
 			}
 			continue
 		}
-		closeTime := fmt.Sprintf("%s 16:00:00", utils.FormatDate(item.Date))
+		closeTime := fmt.Sprintf("%s 15:00:00", utils.FormatDate(item.Date))
 		closeTimeStamp := utils.ParseTime(closeTime)
 		if currentTime.After(closeTimeStamp) {
 			err = dal.CreateStockPrice(ctx, item)

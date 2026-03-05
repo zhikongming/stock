@@ -7,6 +7,7 @@ import (
 	"github.com/robfig/cron/v3"
 	"github.com/zhikongming/stock/biz/model"
 	"github.com/zhikongming/stock/biz/service"
+	"github.com/zhikongming/stock/utils"
 )
 
 func InitCron() {
@@ -14,7 +15,13 @@ func InitCron() {
 	c := cron.New()
 
 	// 每天下午同步股票价格数据, 规则: 分 时 日 月 周
-	c.AddFunc("0 17 * * *", func() {
+	// 记得必须在下午三点后执行
+	c.AddFunc("10 15 * * *", func() {
+		// 如果是周六或者周日, 则不执行
+		if utils.IsNowWeekend() {
+			hlog.Infof("Today is weekend, skip sync stock price")
+			return
+		}
 		// 同步板块数据
 		req1 := &model.SyncStockIndustryReq{}
 		err := service.SyncStockIndustry(ctx, req1)

@@ -1,6 +1,8 @@
 package utils
 
-import "time"
+import (
+	"time"
+)
 
 const (
 	DateFormat      = "2006-01-02"
@@ -78,4 +80,9 @@ func Before(date1 string, date2 string) bool {
 	t1, _ := time.Parse(DateFormat, date1)
 	t2, _ := time.Parse(DateFormat, date2)
 	return t1.Before(t2)
+}
+
+func IsNowWeekend() bool {
+	weekday := time.Now().Weekday()
+	return weekday == time.Saturday || weekday == time.Sunday
 }
