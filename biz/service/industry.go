@@ -485,7 +485,7 @@ func getStockPrice(ctx context.Context, stockCodeList []string, req *model.GetIn
 	var lastDate string
 	var remoteLastDate string
 	dateOfToday := utils.GetDateOfToday()
-	closeTime := fmt.Sprintf("%s 16:00:00", dateOfToday)
+	closeTime := fmt.Sprintf("%s 15:00:00", dateOfToday)
 	if time.Now().After(utils.ParseTime(closeTime)) {
 		lastDate = dateOfToday
 	} else {
