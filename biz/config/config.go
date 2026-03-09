@@ -30,6 +30,14 @@ type Config struct {
 	Server  *ServerConfig  `yaml:"Server"`
 	Replace *ReplaceConfig `yaml:"Replace"`
 	Lark    *LarkConfig    `yaml:"Lark"`
+	Coze    *CozeConfig    `yaml:"Coze"`
+}
+
+type CozeConfig struct {
+	GetSimilarCompanyUrl   string `yaml:"get_similar_company_url"`
+	GetSimilarCompanyToken string `yaml:"get_similar_company_token"`
+	GetVolumePriceUrl      string `yaml:"get_volume_price_url"`
+	GetVolumePriceToken    string `yaml:"get_volume_price_token"`
 }
 
 type LarkConfig struct {
@@ -69,6 +77,10 @@ func GetConfig() *Config {
 
 func GetLarkConfig() *LarkConfig {
 	return conf.Lark
+}
+
+func GetCozeConfig() *CozeConfig {
+	return conf.Coze
 }
 
 func GetLocalHost() string {

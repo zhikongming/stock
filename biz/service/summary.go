@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
 	"sort"
 
 	"github.com/zhikongming/stock/biz/config"
+	"github.com/zhikongming/stock/biz/dal"
 	"github.com/zhikongming/stock/biz/model"
 	"github.com/zhikongming/stock/utils"
 )
@@ -23,10 +25,97 @@ func GetAnalyzeReport(ctx context.Context) ([]*model.ScoreResult, error) {
 	}
 	// 计算综合得分
 	res := calculateScore(ctx, industryTrendList)
+	// 获取上一个分数并计算diff
+	scoreDiff := getScoreDiff(ctx, res, industryTrendList[0].PriceTrendList[len(industryTrendList[0].PriceTrendList)-2].DateString)
 	// 发送信息通知
-	message := BuildSummaryMessage(res, industryTrendList[0].PriceTrendList[0].DateString, industryTrendList[0].PriceTrendList[len(industryTrendList[0].PriceTrendList)-1].DateString)
+	message := BuildSummaryMessage(res, industryTrendList[0].PriceTrendList[0].DateString, industryTrendList[0].PriceTrendList[len(industryTrendList[0].PriceTrendList)-1].DateString, scoreDiff)
 	_ = SendLarkMessage(ctx, message)
+	setScoreCache(ctx, res, industryTrendList[0].PriceTrendList[len(industryTrendList[0].PriceTrendList)-1].DateString)
 	return res, nil
+}
+
+func setScoreCache(ctx context.Context, scoreList []*model.ScoreResult, date string) {
+	// 获取上一个交易日的缓存数据
+	cache, err := dal.GetCacheByTypeDate(ctx, string(dal.CacheKeyScoreResult), dal.CacheTypeScoreResult, date)
+	if err != nil || cache != nil {
+		return
+	}
+	// 缓存数据
+	data := make([]*model.SimpleScoreResult, 0, len(scoreList))
+	for _, score := range scoreList {
+		data = append(data, &model.SimpleScoreResult{
+			Code:  score.Code,
+			Name:  score.Name,
+			Score: score.Score,
+		})
+	}
+	scoreByte, _ := json.Marshal(data)
+	cache = &dal.Cache{
+		DataKey:   string(dal.CacheKeyScoreResult),
+		DataType:  int8(dal.CacheTypeScoreResult),
+		Date:      date,
+		DataValue: string(scoreByte),
+	}
+	dal.CreateCache(ctx, cache)
+	return
+}
+
+func getScoreDiff(ctx context.Context, scoreList []*model.ScoreResult, date string) map[string]*model.ScoreResultDiff {
+	diffMap := make(map[string]*model.ScoreResultDiff)
+	for _, score := range scoreList {
+		diffMap[score.Code] = &model.ScoreResultDiff{
+			ScoreDiff: "-",
+			OrderDiff: "-",
+		}
+	}
+	// 获取上一个交易日的缓存数据
+	cache, err := dal.GetCacheByTypeDate(ctx, string(dal.CacheKeyScoreResult), dal.CacheTypeScoreResult, date)
+	if err != nil || cache == nil {
+		return diffMap
+	}
+	// 解析缓存数据
+	var prevScoreList []*model.SimpleScoreResult
+	err = json.Unmarshal([]byte(cache.DataValue), &prevScoreList)
+	if err != nil {
+		return diffMap
+	}
+	// 计算diff
+	for idx, score := range scoreList {
+		match := false
+		for preIdx, preScore := range prevScoreList {
+			if preScore.Code == score.Code {
+				diffMap[score.Code].ScoreDiff = getScoreDiffMessage(preScore.Score, score.Score)
+				diffMap[score.Code].OrderDiff = getOrderDiffMessage(preIdx, idx)
+				match = true
+				break
+			}
+		}
+		if !match {
+			diffMap[score.Code].ScoreDiff = "-"
+			diffMap[score.Code].OrderDiff = "新进"
+		}
+	}
+	return diffMap
+}
+
+func getScoreDiffMessage(originScore float64, newScore float64) string {
+	if originScore == newScore {
+		return "-"
+	}
+	if newScore > originScore {
+		return fmt.Sprintf("+%.2f", newScore-originScore)
+	}
+	return fmt.Sprintf("-%.2f", originScore-newScore)
+}
+
+func getOrderDiffMessage(originOrder int, newOrder int) string {
+	if originOrder == newOrder {
+		return "-"
+	}
+	if originOrder > newOrder {
+		return fmt.Sprintf("上升 %d 位", originOrder-newOrder)
+	}
+	return fmt.Sprintf("下降 %d 位", newOrder-originOrder)
 }
 
 /*
@@ -423,7 +512,7 @@ func CalculateChangeRankScore(codeScoreList []*model.CodeScore) map[string]float
 	return result
 }
 
-func BuildSummaryMessage(scoreResultList []*model.ScoreResult, dateStart, dateEnd string) *model.LarkMessage {
+func BuildSummaryMessage(scoreResultList []*model.ScoreResult, dateStart, dateEnd string, scoreDiff map[string]*model.ScoreResultDiff) *model.LarkMessage {
 	// 只取前15个最强板块
 	if len(scoreResultList) > 15 {
 		scoreResultList = scoreResultList[:15]
@@ -461,6 +550,20 @@ func BuildSummaryMessage(scoreResultList []*model.ScoreResult, dateStart, dateEn
 				Width:           "auto",
 			},
 			{
+				DataType:        "text",
+				Name:            "score_change",
+				DisplayName:     "得分变化",
+				HorizontalAlign: "left",
+				Width:           "auto",
+			},
+			{
+				DataType:        "text",
+				Name:            "order_change",
+				DisplayName:     "排名变化",
+				HorizontalAlign: "left",
+				Width:           "auto",
+			},
+			{
 				DataType:        "markdown",
 				Name:            "operation",
 				DisplayName:     "三类买点分析",
@@ -472,10 +575,12 @@ func BuildSummaryMessage(scoreResultList []*model.ScoreResult, dateStart, dateEn
 	}
 	for _, scoreResult := range scoreResultList {
 		industryTableElement.Rows = append(industryTableElement.Rows, map[string]interface{}{
-			"name":      scoreResult.Name,
-			"score":     scoreResult.Score,
-			"price":     fmt.Sprintf("%.2f%%", scoreResult.Price),
-			"operation": fmt.Sprintf("[查看](%s/third_buy.html?sector-name=%s&days=%d)", config.GetLocalHost(), scoreResult.Name, 30),
+			"name":         scoreResult.Name,
+			"score":        scoreResult.Score,
+			"price":        fmt.Sprintf("%.2f%%", scoreResult.Price),
+			"score_change": scoreDiff[scoreResult.Code].ScoreDiff,
+			"order_change": scoreDiff[scoreResult.Code].OrderDiff,
+			"operation":    fmt.Sprintf("[查看](%s/third_buy.html?sector-name=%s&days=%d)", config.GetLocalHost(), scoreResult.Name, 30),
 		})
 	}
 

@@ -36,9 +36,9 @@ func GetWatcher(ctx context.Context, id uint) (*Watcher, error) {
 	err := db.WithContext(ctx).Where("id = ? and status = ?", id, StatusEnabled).First(&watcher).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, err
+			return nil, nil
 		}
-		return nil, nil
+		return nil, err
 	}
 	return &watcher, nil
 }

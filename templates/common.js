@@ -436,10 +436,12 @@ async function deleteSubscribeStrategyData(id) {
     return response;
 }
 
-async function getStockInfoData(name) {
+async function getStockInfoData(name, similarChecked, volumeChecked) {
     const url = domain + getStockInfoUrl;
     const params = {
-        "name": name
+        "name": name,
+        "similar_checked": similarChecked,
+        "volume_price_checked": volumeChecked
     };
 
     const baseUrl = new URL(url);
@@ -452,7 +454,7 @@ async function getStockInfoData(name) {
             'Content-Type': 'application/json'
         }
     });
-    return response;
+    return response.json();
 }
 
 async function addWatcherData(name, stocks) {

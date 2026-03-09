@@ -22,3 +22,13 @@ CREATE TABLE `watcher` (
   `status` int NOT NULL DEFAULT '0' COMMENT '状态',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='盯盘配置数据';
+
+CREATE TABLE `cache` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'id',
+  `data_key` varchar(255) NOT NULL DEFAULT '' COMMENT '缓存key',
+  `data_type` tinyint NOT NULL DEFAULT '0' COMMENT '缓存类型',
+  `date` varchar(255) NOT NULL DEFAULT '2020-01-01' COMMENT '缓存日期',
+  `data_value` text DEFAULT NULL COMMENT '缓存值',
+  PRIMARY KEY (`id`),
+  KEY `idx_type_date` (`data_type`, `date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='缓存数据';
