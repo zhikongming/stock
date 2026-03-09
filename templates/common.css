@@ -1326,3 +1326,139 @@ body {
 .negative {
     color: var(--danger-color);
 }
+
+/* 基本信息卡片 */
+.info-card {
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: 25px;
+    margin-bottom: 25px;
+    transition: var(--transition);
+}
+
+.info-card:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+.info-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.info-header i {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    background-color: rgba(30, 58, 138, 0.1);
+    padding: 10px;
+    border-radius: 50%;
+}
+
+.info-header h3 {
+    color: var(--dark-color);
+    font-size: 1.3rem;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-label {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-bottom: 5px;
+}
+
+.info-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--dark-color);
+}
+
+.info-value small {
+    font-size: 0.9rem;
+    font-weight: normal;
+    color: #64748b;
+    margin-left: 5px;
+}
+
+/* 相似公司表格 */
+.table-container {
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: 25px;
+    margin-bottom: 25px;
+    transition: var(--transition);
+    overflow-x: auto;
+}
+
+.table-colume-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--accent-color);
+}
+
+/* 日期范围行 */
+.date-range {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 10px 15px;
+    background-color: #f8fafc;
+    border-radius: var(--border-radius);
+    color: var(--dark-color);
+    font-size: 0.95rem;
+}
+
+.date-range i {
+    color: var(--secondary-color);
+}
+
+.safety-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 40px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.safety-badge.safe {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--accent-color);
+}
+
+.safety-badge.unsafe {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+}
+
+.analysis-result {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #334155;
+    background-color: #f8fafc;
+    padding: 15px;
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--secondary-color);
+    white-space: pre-line;  /* 保留换行符 */
+}

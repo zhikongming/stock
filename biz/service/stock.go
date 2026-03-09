@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -891,6 +892,34 @@ func GetStockInfo(ctx context.Context, req *model.GetStockInfoReq) (*model.Stock
 	stockInfo.IndustryInfo = &model.IndustryInfo{
 		Code: industryBasic.Code,
 		Name: industryBasic.Name,
+	}
+
+	// 获取相似业务公司
+	if req.SimilarChecked {
+		cozeCache := GetCozeCache()
+		cache, err := cozeCache.GetAndSetSimilarCompany(ctx, stockCode.CompanyCode, stockCode.CompanyName)
+		if err == nil {
+			var similarCompanies []*model.SimilarCompany
+			err = json.Unmarshal([]byte(cache.DataValue), &similarCompanies)
+			if err != nil {
+				return nil, err
+			}
+			stockInfo.SimilarCompaniesInfo = similarCompanies
+		}
+	}
+
+	// 获取量价关系分析
+	if req.VolumePriceChecked {
+		cozeCache := GetCozeCache()
+		cache, err := cozeCache.GetAndSetVolumePrice(ctx, stockCode.CompanyCode, stockCode.CompanyName)
+		if err == nil {
+			var volumePriceResp *model.GetVolumePriceResp
+			err = json.Unmarshal([]byte(cache.DataValue), &volumePriceResp)
+			if err != nil {
+				return nil, err
+			}
+			stockInfo.VolumePriceInfo = volumePriceResp
+		}
 	}
 	return stockInfo, nil
 }

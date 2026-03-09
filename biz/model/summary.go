@@ -19,6 +19,12 @@ func (s CodeScoreSorter) Less(i, j int) bool {
 	return s[i].Value > s[j].Value
 }
 
+type SimpleScoreResult struct {
+	Code  string  `json:"code"`
+	Name  string  `json:"name"`
+	Score float64 `json:"score"`
+}
+
 type ScoreResult struct {
 	Code           string                            `json:"code"`
 	Name           string                            `json:"name"`
@@ -51,4 +57,9 @@ func (s ScoreResultSorter) Swap(i, j int) {
 }
 func (s ScoreResultSorter) Less(i, j int) bool {
 	return s[i].Score > s[j].Score
+}
+
+type ScoreResultDiff struct {
+	ScoreDiff string `json:"score_diff"`
+	OrderDiff string `json:"order_diff"`
 }
