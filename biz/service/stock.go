@@ -894,6 +894,20 @@ func GetStockInfo(ctx context.Context, req *model.GetStockInfoReq) (*model.Stock
 		Name: industryBasic.Name,
 	}
 
+	// 获取业务分析
+	if req.BusinessChecked {
+		cozeCache := GetCozeCache()
+		cache, err := cozeCache.GetAndSetBusinessAnalysis(ctx, stockCode.CompanyCode, stockCode.CompanyName)
+		if err == nil {
+			var businessAnalysisResp *model.GetBusinessAnalysisResp
+			err = json.Unmarshal([]byte(cache.DataValue), &businessAnalysisResp)
+			if err != nil {
+				return nil, err
+			}
+			stockInfo.BusinessAnalysisInfo = businessAnalysisResp
+		}
+	}
+
 	// 获取相似业务公司
 	if req.SimilarChecked {
 		cozeCache := GetCozeCache()
@@ -921,5 +935,6 @@ func GetStockInfo(ctx context.Context, req *model.GetStockInfoReq) (*model.Stock
 			stockInfo.VolumePriceInfo = volumePriceResp
 		}
 	}
+
 	return stockInfo, nil
 }

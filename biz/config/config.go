@@ -34,10 +34,12 @@ type Config struct {
 }
 
 type CozeConfig struct {
-	GetSimilarCompanyUrl   string `yaml:"get_similar_company_url"`
-	GetSimilarCompanyToken string `yaml:"get_similar_company_token"`
-	GetVolumePriceUrl      string `yaml:"get_volume_price_url"`
-	GetVolumePriceToken    string `yaml:"get_volume_price_token"`
+	GetSimilarCompanyUrl     string `yaml:"get_similar_company_url"`
+	GetSimilarCompanyToken   string `yaml:"get_similar_company_token"`
+	GetVolumePriceUrl        string `yaml:"get_volume_price_url"`
+	GetVolumePriceToken      string `yaml:"get_volume_price_token"`
+	GetBusinessAnalysisUrl   string `yaml:"get_business_analysis_url"`
+	GetBusinessAnalysisToken string `yaml:"get_business_analysis_token"`
 }
 
 type LarkConfig struct {

@@ -11,9 +11,10 @@ type CacheType int8
 type KeyType string
 
 const (
-	CacheTypeSimilarCompany CacheType = 0
-	CacheTypeVolumePrice    CacheType = 1
-	CacheTypeScoreResult    CacheType = 2
+	CacheTypeSimilarCompany   CacheType = 0
+	CacheTypeVolumePrice      CacheType = 1
+	CacheTypeScoreResult      CacheType = 2
+	CacheTypeBusinessAnalysis CacheType = 3
 
 	CacheKeyScoreResult KeyType = "score_result"
 )
@@ -59,4 +60,9 @@ func GetCacheByTypeDate(ctx context.Context, key string, cacheType CacheType, da
 func CreateCache(ctx context.Context, cache *Cache) error {
 	db := GetDB()
 	return db.WithContext(ctx).Create(cache).Error
+}
+
+func DeleteCache(ctx context.Context, id uint64) error {
+	db := GetDB()
+	return db.WithContext(ctx).Delete(&Cache{}, id).Error
 }

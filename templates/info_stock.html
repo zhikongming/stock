@@ -47,7 +47,11 @@
                             <span>AI分析选项</span>
                         </label>
                         <div class="checkbox-group">
-                            <label class="checkbox-item">
+                            <label class="checkbox-item" style="margin-right: 10px;">
+                                <input type="checkbox" id="business-analysis-checkbox">
+                                <span>展示AI分析财报业务</span>
+                            </label>
+                            <label class="checkbox-item" style="margin-right: 10px;">
                                 <input type="checkbox" id="similar-checkbox">
                                 <span>展示相似业务公司的AI推荐</span>
                             </label>
@@ -97,6 +101,23 @@
             </div>
         </div>
         
+        <!-- AI分析业务卡片（动态显示/隐藏） -->
+        <div class="table-container" id="business-analysis-container">
+            <div class="table-header">
+                <h3 class="table-title">
+                    <i class="fas fa-briefcase"></i>
+                    <span>AI分析业务</span>
+                </h3>
+            </div>
+            <div id="business-analysis-content">
+                <!-- 动态内容 -->
+            </div>
+            <div id="business-analysis-empty" class="empty-state" style="display: none;">
+                <i class="fas fa-briefcase"></i>
+                <h3>未选择业务分析</h3>
+            </div>
+        </div>
+
         <!-- 相似业务公司表格（动态显示/隐藏） -->
         <div class="table-container" id="similar-container">
             <div class="table-header">
@@ -149,6 +170,7 @@
         const companyInput = document.getElementById("company-name");
         const similarCheck = document.getElementById('similar-checkbox');
         const volumeCheck = document.getElementById('volume-price-checkbox');
+        const businessCheck = document.getElementById('business-analysis-checkbox');
         const resultsSection = document.getElementById('results-section');
         const stockCode = document.getElementById('stock-code');
         const stockName = document.getElementById('stock-name');
@@ -161,6 +183,9 @@
         const volumeContainer = document.getElementById('volume-price-container');
         const volumeContent = document.getElementById('volume-price-content');
         const volumeEmpty = document.getElementById('volume-price-empty');
+        const businessContainer = document.getElementById('business-analysis-container');
+        const businessContent = document.getElementById('business-analysis-content');
+        const businessEmpty = document.getElementById('business-analysis-empty');
 
         let stockList = [];
 
@@ -193,8 +218,9 @@
             }
             const similarChecked = similarCheck.checked;
             const volumeChecked = volumeCheck.checked;
+            const businessChecked = businessCheck.checked;
             
-            let resp = getStockInfoData(companyName, similarChecked, volumeChecked);
+            let resp = getStockInfoData(companyName, similarChecked, volumeChecked, businessChecked);
             resp.then(data => {
                 // 显示结果区域
                 resultsSection.style.display = 'block';
@@ -204,6 +230,8 @@
                 renderSimilarStocks(data);
                 // 渲染量价关系分析
                 renderVolumePriceAnalysis(data);
+                // 渲染AI分析业务
+                renderBusinessAnalysis(data);
             });
         })
 
@@ -238,6 +266,65 @@
             
             // 聚焦到结果区域
             resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function renderBusinessAnalysis(data) {
+            const showBusiness = businessCheck.checked;
+            if (showBusiness && data.business_analysis_info !== null) {
+                businessContainer.style.display = 'block';
+                businessEmpty.style.display = 'none';
+                let analysis = data.business_analysis_info;
+                let revenueAnalysis = analysis.revenue_analysis;
+
+                // 构建新内容
+                businessContent.innerHTML = `
+                    <!-- 报告期信息 -->
+                    <div class="date-range" style="margin-bottom: 20px;">
+                        <i class="fas fa-calendar-alt" style="color: var(--secondary-color);"></i>
+                        <span style="font-weight: 600; color: var(--dark-color);">报告期：${revenueAnalysis.reporting_period}</span>
+                    </div>
+                    
+                    <!-- 分析摘要 -->
+                    <div style="background-color: #f8fafc; border-radius: var(--border-radius); padding: 20px; margin-bottom: 25px; border-left: 4px solid var(--secondary-color);">
+                        <h4 style="color: var(--dark-color); margin-bottom: 15px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-file-alt" style="color: var(--secondary-color);"></i>
+                            分析摘要
+                        </h4>
+                        <div style="color: #334155; line-height: 1.8; font-size: 1rem;">
+                            ${revenueAnalysis.summary.replace(/。/g, '。<br><br>')}
+                        </div>
+                    </div>
+                    
+                    <!-- 业务板块分析 -->
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: var(--dark-color); margin-bottom: 20px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-chart-pie" style="color: var(--secondary-color);"></i>
+                            业务板块分析
+                        </h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+                            ${revenueAnalysis.business_segments.map((segment, index) => `
+                                <div style="background-color: white; border-radius: var(--border-radius); padding: 20px; box-shadow: var(--shadow); border-top: 4px solid ${getSegmentColor(index)}; transition: all 0.3s ease;">
+                                    <h5 style="color: var(--primary-color); margin-bottom: 15px; font-size: 1.1rem;">${segment.segment_name}</h5>
+                                    <div style="margin-bottom: 10px;">
+                                        <span style="color: #64748b; font-size: 0.9rem;">营收：</span>
+                                        <span style="color: var(--dark-color); font-weight: 600;">${segment.revenue}</span>
+                                    </div>
+                                    <div style="margin-bottom: 15px;">
+                                        <span style="color: #64748b; font-size: 0.9rem;">占比：</span>
+                                        <span style="color: var(--dark-color); font-weight: 600;">${segment.percentage}</span>
+                                    </div>
+                                    <div style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+                                        ${segment.description}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                businessContainer.style.display = 'none';
+                businessEmpty.style.display = 'block';
+            }
         }
 
         function renderSimilarStocks(data) {

@@ -436,12 +436,13 @@ async function deleteSubscribeStrategyData(id) {
     return response;
 }
 
-async function getStockInfoData(name, similarChecked, volumeChecked) {
+async function getStockInfoData(name, similarChecked, volumeChecked, businessChecked) {
     const url = domain + getStockInfoUrl;
     const params = {
         "name": name,
         "similar_checked": similarChecked,
-        "volume_price_checked": volumeChecked
+        "volume_price_checked": volumeChecked,
+        "business_checked": businessChecked
     };
 
     const baseUrl = new URL(url);
@@ -652,4 +653,19 @@ function formatChange(value) {
     } else {
         return `0.00%`;
     }
+}
+
+// 获取业务板块颜色
+function getSegmentColor(index) {
+    const colors = [
+        '#3b82f6', // 蓝色
+        '#10b981', // 绿色
+        '#f59e0b', // 橙色
+        '#ef4444', // 红色
+        '#8b5cf6', // 紫色
+        '#06b6d4', // 青色
+        '#f97316', // 橙红色
+        '#84cc16'  // 浅绿色
+    ];
+    return colors[index % colors.length];
 }
