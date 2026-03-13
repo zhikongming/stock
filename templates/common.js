@@ -144,7 +144,7 @@ async function getIndustryBasicData() {
     return response.json();
 }
 
-async function getIndustryTrendData(industry, stock, days, endDate) {
+async function getIndustryTrendData(industry, days, endDate) {
     const url = domain + getIndustryTrendUrl;
     const urlObj = new URL(url);
     urlObj.searchParams.set("days", days);
@@ -620,4 +620,36 @@ function getEastmoneyIndustryChartUrlWithTime(oldUrl) {
     const params = url.searchParams;
     params.set('time', Date.now());
     return url.toString();
+}
+
+// 格式化金额（带正负号）
+function formatMoney(value) {
+    const num = parseFloat(value);
+    const absVal = Math.abs(num).toFixed(2);
+    if (num > 0) {
+        return `<span class="positive">+${absVal}</span>`;
+    } else if (num < 0) {
+        return `<span class="negative">-${absVal}</span>`;
+    } else {
+        return `0.00`;
+    }
+}
+
+function formatMoney2(value) {
+    if (value[0] === '-') {
+        return `<span class="negative">${value}</span>`;
+    }
+    return `<span class="positive">+${value}</span>`;
+}
+
+// 格式化涨跌幅
+function formatChange(value) {
+    const num = parseFloat(value);
+    if (num > 0) {
+        return `<span class="positive">+${num.toFixed(2)}%</span>`;
+    } else if (num < 0) {
+        return `<span class="negative">${num.toFixed(2)}%</span>`;
+    } else {
+        return `0.00%`;
+    }
 }
