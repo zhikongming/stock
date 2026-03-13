@@ -134,3 +134,48 @@ func (c *CozeCache) GetAndSetVolumePrice(ctx context.Context, companyCode string
 	}
 	return cache, nil
 }
+
+func (c *CozeCache) GetAndSetBusinessAnalysis(ctx context.Context, companyCode string, companyName string) (*dal.Cache, error) {
+	// 尝试从缓存中获取数据
+	cache, err := dal.GetCacheByType(ctx, companyCode, dal.CacheTypeBusinessAnalysis)
+	if err != nil {
+		return nil, err
+	}
+	if cache != nil {
+		// 解析缓存日期
+		cacheDate := utils.ParseDate(cache.Date)
+		// 如果缓存时间超过一个月，删除缓存并重新获取
+		if time.Since(cacheDate) > 30*24*time.Hour {
+			err = dal.DeleteCache(ctx, cache.ID)
+			if err == nil {
+				cache = nil
+			}
+		}
+		if cache != nil {
+			return cache, nil
+		}
+	}
+
+	// 调用远端接口, 从接口中获取数据
+	client := NewCozeClient()
+	if client == nil {
+		return nil, errors.New("coze client not found")
+	}
+	businessAnalysis, err := client.GetBusinessAnalysis(ctx, companyName)
+	if err != nil {
+		return nil, err
+	}
+	// 缓存数据
+	businessAnalysisByte, _ := json.Marshal(businessAnalysis)
+	cache = &dal.Cache{
+		DataKey:   companyCode,
+		DataType:  int8(dal.CacheTypeBusinessAnalysis),
+		Date:      utils.FormatDate(time.Now()),
+		DataValue: string(businessAnalysisByte),
+	}
+	err = dal.CreateCache(ctx, cache)
+	if err != nil {
+		return nil, err
+	}
+	return cache, nil
+}

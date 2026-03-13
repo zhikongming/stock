@@ -11,10 +11,12 @@ import (
 )
 
 type CozeClient struct {
-	GetSimilarCompanyUrl   string
-	GetSimilarCompanyToken string
-	GetVolumePriceUrl      string
-	GetVolumePriceToken    string
+	GetSimilarCompanyUrl     string
+	GetSimilarCompanyToken   string
+	GetVolumePriceUrl        string
+	GetVolumePriceToken      string
+	GetBusinessAnalysisUrl   string
+	GetBusinessAnalysisToken string
 }
 
 var cozeClient *CozeClient
@@ -30,6 +32,8 @@ func NewCozeClient() *CozeClient {
 		cozeClient.GetSimilarCompanyToken = conf.GetSimilarCompanyToken
 		cozeClient.GetVolumePriceUrl = conf.GetVolumePriceUrl
 		cozeClient.GetVolumePriceToken = conf.GetVolumePriceToken
+		cozeClient.GetBusinessAnalysisUrl = conf.GetBusinessAnalysisUrl
+		cozeClient.GetBusinessAnalysisToken = conf.GetBusinessAnalysisToken
 	}
 	return cozeClient
 }
@@ -77,6 +81,25 @@ func (c *CozeClient) GetVolumePrice(ctx context.Context, companyName string, sto
 		return nil, err
 	}
 	var respBody model.GetVolumePriceResp
+	err = json.Unmarshal(resp, &respBody)
+	if err != nil {
+		return nil, err
+	}
+	return &respBody, nil
+}
+
+func (c *CozeClient) GetBusinessAnalysis(ctx context.Context, companyName string) (*model.GetBusinessAnalysisResp, error) {
+	req := &model.GetBusinessAnalysisReq{
+		CompanyName: companyName,
+	}
+	resp, err := DoPost(ctx, c.GetBusinessAnalysisUrl, nil, map[string]string{
+		"Authorization": "Bearer " + c.GetBusinessAnalysisToken,
+		"Content-Type":  "application/json",
+	}, req)
+	if err != nil {
+		return nil, err
+	}
+	var respBody model.GetBusinessAnalysisResp
 	err = json.Unmarshal(resp, &respBody)
 	if err != nil {
 		return nil, err

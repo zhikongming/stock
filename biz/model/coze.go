@@ -34,3 +34,26 @@ type GetVolumePriceResp struct {
 	IsSafe         string `json:"is_safe"`
 	AnalysisResult string `json:"analysis_result"`
 }
+
+type GetBusinessAnalysisReq struct {
+	CompanyName string `json:"company_name"`
+}
+
+type BusinessSegment struct {
+	SegmentName string `json:"segment_name"`
+	Revenue     string `json:"revenue"`
+	Percentage  string `json:"percentage"`
+	Description string `json:"description"`
+}
+
+type RevenueAnalysis struct {
+	CompanyName      string             `json:"company_name"`
+	TotalRevenue     string             `json:"total_revenue"`
+	ReportingPeriod  string             `json:"reporting_period"`
+	BusinessSegments []*BusinessSegment `json:"business_segments"`
+	Summary          string             `json:"summary"`
+}
+
+type GetBusinessAnalysisResp struct {
+	RevenueAnalysis *RevenueAnalysis `json:"revenue_analysis"`
+}
