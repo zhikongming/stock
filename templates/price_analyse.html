@@ -294,8 +294,8 @@
                         tr.innerHTML = `
                             <td>
                                 <div class="stock-info">
-                                    <span class="stock-name">${item.company_name}</span>
-                                    <span class="stock-code">${item.company_code}</span>
+                                    <span class="stock-name" onclick="jumpToXueqiu('${item.company_code}')">${item.company_name}</span>
+                                    <span class="stock-code" onclick="jumpToXueqiu('${item.company_code}')">${item.company_code}</span>
                                 </div>
                             </td>
                             <td>${item.start_date}</td>
