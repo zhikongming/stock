@@ -45,6 +45,10 @@ func InitCron() {
 
 		// 计算报告数据
 		service.GetAnalyzeReport(ctx)
+
+		// 分析量价关系并发送报告
+		service.GetPriceAnalyse(ctx, &model.GetPriceAnalyseReq{})
+		service.GetPriceAnalyseReport(ctx)
 	})
 
 	c.Start()

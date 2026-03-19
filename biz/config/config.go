@@ -40,6 +40,8 @@ type CozeConfig struct {
 	GetVolumePriceToken      string `yaml:"get_volume_price_token"`
 	GetBusinessAnalysisUrl   string `yaml:"get_business_analysis_url"`
 	GetBusinessAnalysisToken string `yaml:"get_business_analysis_token"`
+	GetMultiVolumePriceUrl   string `yaml:"get_multi_volume_price_url"`
+	GetMultiVolumePriceToken string `yaml:"get_multi_volume_price_token"`
 }
 
 type LarkConfig struct {

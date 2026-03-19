@@ -72,3 +72,19 @@ func Index[T comparable](item T, list []T) int {
 	}
 	return -1
 }
+
+func MostCommon[T comparable](list []T) T {
+	localMap := make(map[T]int)
+	for _, item := range list {
+		localMap[item]++
+	}
+	var mostCommon T
+	maxCount := 0
+	for item, count := range localMap {
+		if count > maxCount {
+			mostCommon = item
+			maxCount = count
+		}
+	}
+	return mostCommon
+}

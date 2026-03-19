@@ -35,6 +35,23 @@ type GetVolumePriceResp struct {
 	AnalysisResult string `json:"analysis_result"`
 }
 
+type MultiVolumePrice struct {
+	StartDate      string `json:"start_date"`
+	EndDate        string `json:"end_date"`
+	IsSafe         string `json:"is_safe"`
+	AnalysisResult string `json:"analysis_result"`
+	CompanyName    string `json:"company_name"`
+	CompanyCode    string `json:"company_code"`
+}
+
+type GetMultiVolumePriceReq struct {
+	Stocks []*GetVolumePriceReq `json:"stocks"`
+}
+
+type GetMultiVolumePriceResp struct {
+	Results []*MultiVolumePrice `json:"results"`
+}
+
 type GetBusinessAnalysisReq struct {
 	CompanyName string `json:"company_name"`
 }

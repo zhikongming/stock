@@ -17,6 +17,8 @@ type CozeClient struct {
 	GetVolumePriceToken      string
 	GetBusinessAnalysisUrl   string
 	GetBusinessAnalysisToken string
+	GetMultiVolumePriceUrl   string
+	GetMultiVolumePriceToken string
 }
 
 var cozeClient *CozeClient
@@ -34,6 +36,8 @@ func NewCozeClient() *CozeClient {
 		cozeClient.GetVolumePriceToken = conf.GetVolumePriceToken
 		cozeClient.GetBusinessAnalysisUrl = conf.GetBusinessAnalysisUrl
 		cozeClient.GetBusinessAnalysisToken = conf.GetBusinessAnalysisToken
+		cozeClient.GetMultiVolumePriceUrl = conf.GetMultiVolumePriceUrl
+		cozeClient.GetMultiVolumePriceToken = conf.GetMultiVolumePriceToken
 	}
 	return cozeClient
 }
@@ -100,6 +104,25 @@ func (c *CozeClient) GetBusinessAnalysis(ctx context.Context, companyName string
 		return nil, err
 	}
 	var respBody model.GetBusinessAnalysisResp
+	err = json.Unmarshal(resp, &respBody)
+	if err != nil {
+		return nil, err
+	}
+	return &respBody, nil
+}
+
+func (c *CozeClient) GetMultiVolumePrice(ctx context.Context, params []*model.GetVolumePriceReq) (*model.GetMultiVolumePriceResp, error) {
+	req := &model.GetMultiVolumePriceReq{
+		Stocks: params,
+	}
+	resp, err := DoPost(ctx, c.GetMultiVolumePriceUrl, nil, map[string]string{
+		"Authorization": "Bearer " + c.GetMultiVolumePriceToken,
+		"Content-Type":  "application/json",
+	}, req)
+	if err != nil {
+		return nil, err
+	}
+	var respBody model.GetMultiVolumePriceResp
 	err = json.Unmarshal(resp, &respBody)
 	if err != nil {
 		return nil, err

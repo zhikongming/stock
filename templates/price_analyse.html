@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>量价关系分析</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="./common.css">
+    <script src="./common.js"></script>
+</head>
+<body>
+    <div class="container">
+        <main class="main-content">
+            <div class="header">
+                <h1>量价关系分析</h1>
+                <p>添加要分析的股票，点击分析按钮获取量价关系分析结果</p>
+            </div>
+            
+            <!-- 提交表单 -->
+            <div class="form-container">
+                <div class="form-header">
+                    <i class="fas fa-chart-line"></i>
+                    <h2>添加分析股票</h2>
+                </div>
+                
+                <form id="analysis-form">
+                    <div class="form-group">
+                        <label class="form-label" for="stock-codes">
+                            <i class="fas fa-list-ol"></i>
+                            <span>股票代码</span>
+                        </label>
+                        <div class="stock-input-container">
+                            <div id="stock-tags-container"></div>
+                            <input 
+                                list="stock-options" 
+                                type="text" 
+                                id="stock-codes" 
+                                class="form-control" 
+                                placeholder="输入股票代码，按回车或逗号添加多个（例如：000001, 600036）"
+                            >
+                            <datalist id="stock-options">
+                                <!-- javascript来生成数据 -->
+                            </datalist>
+                        </div>
+                        <span class="form-hint">可输入多个股票代码，用逗号、空格或回车分隔。已添加：<span id="stock-count">0</span> 个股票</span>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                            <button type="submit" class="submit-btn">
+                                <i class="fas fa-plus-circle"></i>
+                                <span>新增股票</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- 分析结果表格 -->
+            <div id="result-container" class="table-container" style="margin-top: 30px; display: block;">
+                <div class="table-header">
+                    <h2 class="table-title">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>分析结果</span>
+                    </h2>
+                    <!-- 表格顶部按钮 -->
+                    <div class="table-actions">
+                        <button id="analyze-btn" class="table-action-btn">
+                            <i class="fas fa-search"></i>
+                            <span>分析</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <table class="table-content-header">
+                    <thead>
+                        <tr>
+                            <th>股票信息</th>
+                            <th>开始日期</th>
+                            <th>结束日期</th>
+                            <th>是否安全</th>
+                            <th>分析结果</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analysis-result">
+                        <!-- 动态生成 -->
+                    </tbody>
+                </table>
+                
+                <div id="empty-result" class="empty-state" style="display: block;">
+                    <i class="fas fa-database"></i>
+                    <h3>暂无数据</h3>
+                    <p>请添加股票并点击分析按钮获取结果</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 存储股票代码数组
+        let stockCodes = [];
+        let stockList = [];
+        let stockMap = {};
+        
+            const stockInput = document.getElementById('stock-codes');
+            const stockTagsContainer = document.getElementById('stock-tags-container');
+            const stockCount = document.getElementById('stock-count');
+            const analysisForm = document.getElementById('analysis-form');
+            const analyzeBtn = document.getElementById('analyze-btn');
+            const resultContainer = document.querySelector('.result-container');
+            const analysisResult = document.getElementById('analysis-result');
+            const stockOptions = document.getElementById("stock-options");
+            
+            // 生成股票数据
+            generateStockData();
+            
+            // 股票代码输入处理
+            stockInput.addEventListener('keydown', function(e) {
+                // 回车键添加股票代码
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addStockCode(this.value.trim());
+                    this.value = '';
+                }
+                
+                // 逗号分隔添加股票代码
+                if (e.key === ',' || e.key === ' ') {
+                    const value = this.value.trim();
+                    if (value) {
+                        e.preventDefault();
+                        addStockCode(value.replace(',', ''));
+                        this.value = '';
+                    }
+                }
+            });
+            
+            // 输入框失去焦点时也处理
+            stockInput.addEventListener('blur', function() {
+                const value = this.value.trim();
+                if (value) {
+                    addStockCode(value);
+                    this.value = '';
+                }
+            });
+            
+            // 添加股票代码函数
+            function addStockCode(code) {
+                if (!code) return;
+                
+                // 检查是否已存在
+                if (stockCodes.includes(code)) {
+                    alert(`股票代码 ${code} 已添加`);
+                    return;
+                }
+                
+                // 添加到数组
+                stockCodes.push(code);
+                
+                // 更新显示
+                updateStockTags();
+                updateStockCount();
+            }
+            
+            // 移除股票代码函数
+            function removeStockCode(code) {
+                stockCodes = stockCodes.filter(item => item !== code);
+                updateStockTags();
+                updateStockCount();
+            }
+            
+            // 更新股票标签显示
+            function updateStockTags() {
+                stockTagsContainer.innerHTML = '';
+                
+                stockCodes.forEach(code => {
+                    const tag = document.createElement('div');
+                    tag.className = 'stock-tag';
+                    tag.innerHTML = `
+                        ${code}
+                        <span class="stock-tag-remove" data-code="${code}">
+                            <i class="fas fa-times"></i>
+                        </span>
+                    `;
+                    stockTagsContainer.appendChild(tag);
+                });
+                
+                // 为移除按钮添加事件
+                document.querySelectorAll('.stock-tag-remove').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const code = this.getAttribute('data-code');
+                        removeStockCode(code);
+                    });
+                });
+            }
+            
+            // 更新股票计数
+            function updateStockCount() {
+                stockCount.textContent = stockCodes.length;
+            }
+            
+            // 表单提交处理（新增股票）
+            analysisForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                if (stockCodes.length === 0) {
+                    alert('请至少添加一个股票代码');
+                    return;
+                }
+                
+                // 调用接口添加股票到分析池子
+                addStocksToPool(stockCodes);
+            });
+            
+            // 分析按钮点击处理
+            analyzeBtn.addEventListener('click', function() {
+                // 调用接口获取分析结果
+                getAnalysisResult();
+            });
+            
+            // 生成股票数据
+            function generateStockData() {
+                let resp = getCodeData();
+                resp.then(data => {
+                    data.forEach(item => {
+                        stockList.push(item);
+                        stockMap[item.company_name] = item.company_code;
+                    });
+                    generateStockOptions();
+                });
+            }
+            
+            // 生成股票选项
+            function generateStockOptions() {
+                stockList.forEach(item => {
+                    let option = document.createElement("option");
+                    option.value = item.company_name;
+                    stockOptions.appendChild(option);
+                });
+            }
+            
+            // 添加股票到分析池子
+            function addStocksToPool(stocks) {
+                // 这里应该调用接口添加股票到分析池子
+                // 模拟接口调用
+                let localStockCodes = stocks.map(name => stockMap[name]);
+                // 调用接口添加股票到分析池子
+                updatePriceAnalyse({
+                    "price_analyse_type": 0,
+                    "code_list": localStockCodes,
+                });
+                stockCodes = [];
+                updateStockTags();
+                updateStockCount();
+                alert('股票添加成功');
+            }
+            
+            // 更新股票池子
+            function updateStockPool(code) {
+                // 这里应该调用接口更新股票池子
+                param = {
+                    "price_analyse_type": 1,
+                    "code_list": [code],
+                }
+                let resp = updatePriceAnalyse(param);
+                resp.then(data => {
+                    getAnalysisResult();
+                });
+            }
+            
+            // 获取分析结果
+            function getAnalysisResult() {
+                // 这里应该调用接口获取分析结果
+                let resp = getPriceAnalyseResult(stockCodes);
+                resp.then(data => {
+                    displayAnalysisResult(data.data);
+                });
+            }
+            
+            // 显示分析结果
+            function displayAnalysisResult(data) {
+                analysisResult.innerHTML = '';
+                const emptyResult = document.getElementById('empty-result');
+                
+                if (data.length === 0) {
+                    emptyResult.style.display = 'block';
+                } else {
+                    emptyResult.style.display = 'none';
+                    data.forEach(item => {
+                        const safeClass = item.is_safe === '安全' ? 'safe' : 'unsafe';
+                        const icon = item.is_safe === '安全' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>
+                                <div class="stock-info">
+                                    <span class="stock-name">${item.company_name}</span>
+                                    <span class="stock-code">${item.company_code}</span>
+                                </div>
+                            </td>
+                            <td>${item.start_date}</td>
+                            <td>${item.end_date}</td>
+                            <td>
+                                <div class="safety-badge2 ${safeClass}">
+                                    <i class="fas ${icon}"></i>
+                                    <span>${item.is_safe}</span>
+                                </div>
+                            </td>
+                            <td class="max-width-400 analysis_result_truncate" content="${item.analysis_result}">${truncateAnalysisResult(item.analysis_result)}</td>
+                            <td class="action-links">
+                                <a class="delete-btn" onclick="updateStockPool('${item.company_code}')">
+                                    <i class="fas fa-trash"></i>删除
+                                </a>
+                            </td>
+                        `;
+                        analysisResult.appendChild(tr);
+                        // 添加鼠标事件
+                        addAnalysisResultTruncateEvent();
+                    });
+                }
+            }
+
+            function addAnalysisResultTruncateEvent() {
+                const tds = document.querySelectorAll('.analysis_result_truncate');
+                tds.forEach(td => {
+                    td.addEventListener('mouseenter', function() {
+                        this.innerHTML = this.getAttribute('content').replace(/。/g, '。<br>');
+                    });
+                    td.addEventListener('mouseleave', function() {
+                        this.innerHTML = truncateAnalysisResult(this.getAttribute('content'));
+                    });
+                });
+            }
+
+            function truncateAnalysisResult(content) {
+                return content.length > 100 ? content.substring(0, 100) + '...' : content;
+            }
+    </script>
+</body>
+</html>

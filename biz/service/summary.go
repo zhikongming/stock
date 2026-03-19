@@ -713,3 +713,162 @@ func BuildSummaryMessage(scoreResultList []*model.ScoreResult, dateStart, dateEn
 	message.Card.Body.Elements = append(message.Card.Body.Elements, stockTableElement)
 	return message
 }
+
+func GetPriceAnalyseReport(ctx context.Context) (*model.PriceAnalyseReport, error) {
+	// 获取缓存中的最后几个分析结果
+	cozeCache := GetCozeCache()
+	cacheList, err := cozeCache.GetLastNMultiVolumePrice(ctx, AnalyzeVolumePriceReportLimit)
+	if err != nil {
+		return nil, err
+	}
+	if len(cacheList) == 0 {
+		return nil, fmt.Errorf("no analyze result found")
+	}
+	// 获取需要分析的股票列表
+	stockCodeList, err := dal.GetStockCodeByParsedPrice(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	codeMap := make(map[string][]string)
+	for _, stockCode := range stockCodeList {
+		codeMap[stockCode.CompanyName] = make([]string, 0)
+	}
+	// 解析数据
+	for _, cache := range cacheList {
+		// 解析缓存数据
+		var results []*model.MultiVolumePrice
+		err = json.Unmarshal([]byte(cache.DataValue), &results)
+		if err != nil {
+			return nil, err
+		}
+		for _, result := range results {
+			if _, ok := codeMap[result.CompanyName]; !ok {
+				continue
+			}
+			codeMap[result.CompanyName] = append(codeMap[result.CompanyName], result.IsSafe)
+		}
+	}
+	result := &model.PriceAnalyseReport{
+		EndDate: cacheList[0].Date,
+		Items:   make([]*model.PriceAnalyseReportItem, 0),
+	}
+	// 统计每只股票连续状态的天数
+	for companyName, isSafeList := range codeMap {
+		isSafeResult := "-"
+		if len(isSafeList) > 0 {
+			isSafeResult = isSafeList[0]
+		}
+		count := 1
+		for idx := 1; idx < len(isSafeList); idx++ {
+			if isSafeList[idx] == isSafeResult {
+				count++
+			} else {
+				break
+			}
+		}
+		result.Items = append(result.Items, &model.PriceAnalyseReportItem{
+			Name:   companyName,
+			IsSafe: isSafeResult,
+			Count:  count,
+		})
+	}
+	// 发送信息通知
+	message := BuildPriceAnalyseReportMessage(result)
+	_ = SendLarkMessage(ctx, message)
+	return result, nil
+}
+
+func BuildPriceAnalyseReportMessage(result *model.PriceAnalyseReport) *model.LarkMessage {
+	tableElement := model.TableElement{
+		Tag:       "table",
+		RowHeight: "middle",
+		HeaderStyle: model.HeaderStyle{
+			BackgroundStyle: "none",
+			Bold:            true,
+			Lines:           1,
+		},
+		Margin:   "0px 0px 0px 0px",
+		PageSize: len(result.Items),
+		Columns: []model.Column{
+			{
+				DataType:        "text",
+				Name:            "name",
+				DisplayName:     "股票名称",
+				HorizontalAlign: "left",
+				Width:           "auto",
+			},
+			{
+				DataType:        "text",
+				Name:            "is_safe",
+				DisplayName:     "最新状态",
+				HorizontalAlign: "left",
+				Width:           "auto",
+			},
+			{
+				DataType:        "number",
+				Name:            "count",
+				DisplayName:     "连续天数",
+				HorizontalAlign: "left",
+				Width:           "auto",
+			},
+		},
+		Rows: make([]map[string]interface{}, 0),
+	}
+	for _, item := range result.Items {
+		tableElement.Rows = append(tableElement.Rows, map[string]interface{}{
+			"name":    item.Name,
+			"is_safe": item.IsSafe,
+			"count":   item.Count,
+		})
+	}
+
+	message := &model.LarkMessage{
+		MsgType: "interactive",
+		Card: model.LarkCard{
+			Header: model.LarkHeader{
+				Title: model.LarkTitle{
+					Tag:     "plain_text",
+					Content: "股票量价关系分析总结",
+				},
+				Subtitle: model.LarkTitle{
+					Tag:     "plain_text",
+					Content: fmt.Sprintf("个股截止%s的量价关系分析结论", result.EndDate),
+				},
+				Template: "blue",
+				Padding:  "12px 12px 12px 12px",
+			},
+			Schema: "2.0",
+			Config: model.LarkConfig{
+				UpdateMulti: true,
+				Style: model.Style{
+					TextSize: model.TextSize{
+						NormalV2: model.NormalV2{
+							Default: "medium",
+							Pc:      "medium",
+							Mobile:  "heading",
+						},
+					},
+				},
+			},
+			Body: model.LarkBody{
+				Direction:         "vertical",
+				HorizontalSpacing: "8px",
+				VerticalSpacing:   "8px",
+				HorizontalAlign:   "left",
+				VerticalAlign:     "top",
+				Padding:           "12px 12px 12px 12px",
+				Elements: []model.Element{
+					model.MarkdownElement{
+						Tag:       "markdown",
+						Content:   fmt.Sprintf("根据个股近%d天的量价关系数据, 着重观察持续的天数, 如果持续天数为1表示状态转折, 如果持续天数较长, 则可以高优先级看下, 可能形成了趋势.", AnalyzeVolumePriceLimit),
+						TextAlign: "left",
+						TextSize:  "normal_v2",
+						Margin:    "0px 0px 0px 0px",
+					},
+				},
+			},
+		},
+	}
+	message.Card.Body.Elements = append(message.Card.Body.Elements, tableElement)
+	return message
+}

@@ -15,8 +15,10 @@ const (
 	CacheTypeVolumePrice      CacheType = 1
 	CacheTypeScoreResult      CacheType = 2
 	CacheTypeBusinessAnalysis CacheType = 3
+	CacheTypeMultiVolumePrice CacheType = 4
 
-	CacheKeyScoreResult KeyType = "score_result"
+	CacheKeyScoreResult      KeyType = "score_result"
+	CacheKeyMultiVolumePrice KeyType = "multi_volume_price"
 )
 
 type Cache struct {
@@ -55,6 +57,16 @@ func GetCacheByTypeDate(ctx context.Context, key string, cacheType CacheType, da
 		return nil, err
 	}
 	return &cache, nil
+}
+
+func GetCacheByTypeLimit(ctx context.Context, key string, cacheType CacheType, limit int) ([]*Cache, error) {
+	db := GetDB()
+	var caches []*Cache
+	err := db.WithContext(ctx).Where("data_key = ? and data_type = ?", key, cacheType).Order("id desc").Limit(limit).Find(&caches).Error
+	if err != nil {
+		return nil, err
+	}
+	return caches, nil
 }
 
 func CreateCache(ctx context.Context, cache *Cache) error {

@@ -8,7 +8,13 @@ import (
 	"time"
 
 	"github.com/zhikongming/stock/biz/dal"
+	"github.com/zhikongming/stock/biz/model"
 	"github.com/zhikongming/stock/utils"
+)
+
+const (
+	AnalyzeVolumePriceLimit       = 5
+	AnalyzeVolumePriceReportLimit = 10
 )
 
 type EMCache struct {
@@ -91,12 +97,11 @@ func (c *CozeCache) GetAndSetSimilarCompany(ctx context.Context, companyCode str
 
 func (c *CozeCache) GetAndSetVolumePrice(ctx context.Context, companyCode string, companyName string) (*dal.Cache, error) {
 	// 获取最后5个股价数据
-	limit := 5
-	stockPriceList, err := dal.GetLastNStockPrice(ctx, companyCode, "", limit)
+	stockPriceList, err := dal.GetLastNStockPrice(ctx, companyCode, "", AnalyzeVolumePriceLimit)
 	if err != nil {
 		return nil, err
 	}
-	if len(stockPriceList) != limit {
+	if len(stockPriceList) != AnalyzeVolumePriceLimit {
 		return nil, errors.New("stock price list not enough")
 	}
 	// 尝试从缓存中获取数据
@@ -174,6 +179,100 @@ func (c *CozeCache) GetAndSetBusinessAnalysis(ctx context.Context, companyCode s
 		DataValue: string(businessAnalysisByte),
 	}
 	err = dal.CreateCache(ctx, cache)
+	if err != nil {
+		return nil, err
+	}
+	return cache, nil
+}
+
+func (c *CozeCache) GetAndSetMultiVolumePrice(ctx context.Context, codeList, nameList []string) (*dal.Cache, error) {
+	// 根据多个股票代码来决定时间
+	stockPriceMap := make(map[string][]*dal.StockPrice)
+	dateList := make([]string, 0)
+	for _, code := range codeList {
+		stockPriceList, err := dal.GetLastNStockPrice(ctx, code, "", AnalyzeVolumePriceLimit)
+		if err != nil {
+			return nil, err
+		}
+		if len(stockPriceList) != AnalyzeVolumePriceLimit {
+			continue
+		}
+		stockPriceMap[code] = stockPriceList
+		dateList = append(dateList, utils.FormatDate(stockPriceList[0].Date))
+	}
+	// 取日期列表中出现最多的日期, 尝试从缓存中获取数据
+	mostCommonDate := utils.MostCommon(dateList)
+	cache, err := dal.GetCacheByTypeDate(ctx, string(dal.CacheKeyMultiVolumePrice), dal.CacheTypeMultiVolumePrice, mostCommonDate)
+	if err != nil {
+		return nil, err
+	}
+	if cache != nil {
+		return cache, nil
+	}
+
+	// 调用远端接口, 从接口中获取数据
+	client := NewCozeClient()
+	if client == nil {
+		return nil, errors.New("coze client not found")
+	}
+	params := make([]*model.GetVolumePriceReq, 0)
+	for idx, code := range codeList {
+		stockPriceList, ok := stockPriceMap[code]
+		if !ok {
+			continue
+		}
+		utils.ListSwap(stockPriceList)
+		stockDataList := make([]*model.StockData, 0)
+		for _, stockPrice := range stockPriceList {
+			stockDataList = append(stockDataList, &model.StockData{
+				Date:       utils.FormatDate(stockPrice.Date),
+				OpenPrice:  utils.ToString(stockPrice.PriceOpen),
+				ClosePrice: utils.ToString(stockPrice.PriceClose),
+				HighPrice:  utils.ToString(stockPrice.PriceHigh),
+				LowPrice:   utils.ToString(stockPrice.PriceLow),
+				Volume:     utils.ToString(stockPrice.Amount),
+			})
+		}
+		req := &model.GetVolumePriceReq{
+			CompanyName:   nameList[idx],
+			StockDataList: stockDataList,
+		}
+		params = append(params, req)
+	}
+	resp, err := client.GetMultiVolumePrice(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	// 构建映射数据
+	stockMap := make(map[string]string)
+	for idx := range nameList {
+		stockMap[nameList[idx]] = codeList[idx]
+	}
+	for _, item := range resp.Results {
+		item.CompanyCode = stockMap[item.CompanyName]
+		stockPriceList := stockPriceMap[item.CompanyCode]
+		item.StartDate = utils.FormatDate(stockPriceList[0].Date)
+		item.EndDate = utils.FormatDate(stockPriceList[len(stockPriceList)-1].Date)
+	}
+
+	// 缓存数据
+	volumePriceByte, _ := json.Marshal(resp.Results)
+	cache = &dal.Cache{
+		DataKey:   string(dal.CacheKeyMultiVolumePrice),
+		DataType:  int8(dal.CacheTypeMultiVolumePrice),
+		Date:      mostCommonDate,
+		DataValue: string(volumePriceByte),
+	}
+	err = dal.CreateCache(ctx, cache)
+	if err != nil {
+		return nil, err
+	}
+	return cache, nil
+}
+
+func (c *CozeCache) GetLastNMultiVolumePrice(ctx context.Context, limit int) ([]*dal.Cache, error) {
+	// 从缓存中获取数据
+	cache, err := dal.GetCacheByTypeLimit(ctx, string(dal.CacheKeyMultiVolumePrice), dal.CacheTypeMultiVolumePrice, limit)
 	if err != nil {
 		return nil, err
 	}
