@@ -3,9 +3,14 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/zhikongming/stock/biz/dal"
 	"github.com/zhikongming/stock/biz/model"
+)
+
+const (
+	IsSafeDirtyStatus = "无法判断"
 )
 
 // AddPriceAnalyse 添加量价分析股票
@@ -48,6 +53,18 @@ func GetPriceAnalyse(ctx context.Context, req *model.GetPriceAnalyseReq) ([]*mod
 	err = json.Unmarshal([]byte(cache.DataValue), &results)
 	if err != nil {
 		return nil, err
+	}
+	// 修复里面的脏数据
+	for _, item := range results {
+		if item.IsSafe == IsSafeDirtyStatus {
+			var result model.MultiVolumePrice
+			sanitized := strings.ReplaceAll(item.AnalysisResult, "\n", "\\n")
+			err = json.Unmarshal([]byte(sanitized), &result)
+			if err == nil {
+				item.IsSafe = result.IsSafe
+				item.AnalysisResult = result.AnalysisResult
+			}
+		}
 	}
 
 	// 填充没有获取到的数据和删除的数据.

@@ -694,3 +694,7 @@ function getSegmentColor(index) {
     ];
     return colors[index % colors.length];
 }
+
+function jumpToXueqiu(code) {
+    window.open(getXueqiuStockUrl(code), '_blank');
+}
