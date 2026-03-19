@@ -15,6 +15,7 @@ type StockCode struct {
 	ClassiName    string `json:"classi_name" gorm:"column:classi_name"`
 	BusinessType  int    `json:"business_type" gorm:"column:business_type"`
 	ListedDate    string `json:"listed_date" gorm:"column:listed_date"`
+	IsParsedPrice bool   `json:"is_parsed_price" gorm:"column:is_parsed_price"`
 }
 
 func (StockCode) TableName() string {
@@ -107,4 +108,25 @@ func GetStockCodeByName(ctx context.Context, name string) (*StockCode, error) {
 		return nil, nil
 	}
 	return &stockCode, nil
+}
+
+// GetStockCodeByParsedPrice 根据IsParsedPrice字段获取股票代码
+func GetStockCodeByParsedPrice(ctx context.Context, isParsedPrice bool) ([]*StockCode, error) {
+	db := GetDB()
+	var stockCodeList []*StockCode
+	err := db.WithContext(ctx).Where("is_parsed_price = ?", isParsedPrice).Find(&stockCodeList).Error
+	if err != nil {
+		return nil, err
+	}
+	return stockCodeList, nil
+}
+
+func AddParsedPriceCodeList(ctx context.Context, codeList []string) error {
+	db := GetDB()
+	return db.WithContext(ctx).Model(&StockCode{}).Where("company_code in ?", codeList).Update("is_parsed_price", true).Error
+}
+
+func DeleteParsedPriceCodeList(ctx context.Context, codeList []string) error {
+	db := GetDB()
+	return db.WithContext(ctx).Model(&StockCode{}).Where("company_code in ?", codeList).Update("is_parsed_price", false).Error
 }

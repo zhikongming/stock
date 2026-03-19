@@ -32,3 +32,6 @@ CREATE TABLE `cache` (
   PRIMARY KEY (`id`),
   KEY `idx_type_date` (`data_type`, `date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='缓存数据';
+
+ALTER TABLE `stock_code` 
+  ADD COLUMN `is_parsed_price` tinyint NOT NULL DEFAULT '0' COMMENT '是否开启量价分析';

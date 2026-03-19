@@ -19,6 +19,8 @@ const getWatcherUrl = "/stock/watcher"
 const deleteWatcherUrl = "/stock/watcher"
 const updateWatcherUrl = "/stock/watcher"
 const filterThirdBuyCodeUrl = "/filter/third/buy"
+const updatePriceAnalyseUrl = "/analyze/price"
+const getPriceAnalyseUrl = "/analyze/price"
 
 const ChartPropertyMap = {
     "shareholderNumber": {
@@ -317,6 +319,17 @@ async function updateStockReport(code, year, reportType, industryType, measureme
     return response;
 }
 
+async function getPriceAnalyseResult(stockCodeList) {
+    const url = domain + getPriceAnalyseUrl;
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    return response.json();
+}
+
 function getReportTypeString(reportType) {
     if (reportType == 1) {
         return "一季报";
@@ -518,6 +531,18 @@ async function getWatcherDataById(id) {
 
 async function filterThirdBuyCode(params) {
     const url = domain + filterThirdBuyCodeUrl;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(params)
+    });
+    return response.json();
+}
+
+async function updatePriceAnalyse(params) {
+    const url = domain + updatePriceAnalyseUrl;
     const response = await fetch(url, {
         method: 'POST',
         headers: {
