@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 
 	"github.com/zhikongming/stock/biz/config"
 	"github.com/zhikongming/stock/biz/dal"
@@ -741,11 +742,20 @@ func GetPriceAnalyseReport(ctx context.Context) (*model.PriceAnalyseReport, erro
 		if err != nil {
 			return nil, err
 		}
-		for _, result := range results {
-			if _, ok := codeMap[result.CompanyName]; !ok {
+		for _, item := range results {
+			if _, ok := codeMap[item.CompanyName]; !ok {
 				continue
 			}
-			codeMap[result.CompanyName] = append(codeMap[result.CompanyName], result.IsSafe)
+			if item.IsSafe == IsSafeDirtyStatus {
+				var result model.MultiVolumePrice
+				sanitized := strings.ReplaceAll(item.AnalysisResult, "\n", "\\n")
+				err = json.Unmarshal([]byte(sanitized), &result)
+				if err == nil {
+					item.IsSafe = result.IsSafe
+					item.AnalysisResult = result.AnalysisResult
+				}
+			}
+			codeMap[item.CompanyName] = append(codeMap[item.CompanyName], item.IsSafe)
 		}
 	}
 	result := &model.PriceAnalyseReport{

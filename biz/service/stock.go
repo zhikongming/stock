@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -931,6 +932,15 @@ func GetStockInfo(ctx context.Context, req *model.GetStockInfoReq) (*model.Stock
 			err = json.Unmarshal([]byte(cache.DataValue), &volumePriceResp)
 			if err != nil {
 				return nil, err
+			}
+			if volumePriceResp.IsSafe == IsSafeDirtyStatus {
+				var result model.MultiVolumePrice
+				sanitized := strings.ReplaceAll(volumePriceResp.AnalysisResult, "\n", "\\n")
+				err = json.Unmarshal([]byte(sanitized), &result)
+				if err == nil {
+					volumePriceResp.IsSafe = result.IsSafe
+					volumePriceResp.AnalysisResult = result.AnalysisResult
+				}
 			}
 			stockInfo.VolumePriceInfo = volumePriceResp
 		}
