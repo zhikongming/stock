@@ -63,7 +63,7 @@ func GetSubscribeStrategyData(ctx context.Context, strategy *model.GetSubscribeS
 		}
 
 		subscribeStrategyResultList = append(subscribeStrategyResultList, &model.SubscribeStrategyResult{
-			ID:             int(subscribe.ID),
+			ID:             subscribe.ID,
 			DateTime:       utils.FormatTime(subscribe.DateTime),
 			StrategyType:   req.StrategyType.String(),
 			Code:           parseResult.Code,
@@ -71,10 +71,45 @@ func GetSubscribeStrategyData(ctx context.Context, strategy *model.GetSubscribeS
 			Result:         parseResult.Result,
 			StrategyDetail: strategyParser.ToSubscribeStrategyDetail(),
 			LastDate:       parseResult.LastDate,
+			LastResult:     subscribe.LastResult,
+			Count:          subscribe.Count,
 		})
 	}
 
 	return subscribeStrategyResultList, nil
+}
+
+func GetSubscribeStrategyReport(ctx context.Context) error {
+	req := &model.GetSubscribeStrategyReq{}
+	subscribeList, err := GetSubscribeStrategyData(ctx, req)
+	if err != nil {
+		return err
+	}
+	// 生成报告
+	data := make([]*model.SubscribeStrategyResult, 0)
+	for _, subscribe := range subscribeList {
+		if subscribe.Result != subscribe.LastResult {
+			err = dal.UpdateSubscribeResultAndCount(ctx, subscribe.ID, subscribe.Result, 1)
+			if err != nil {
+				return err
+			}
+			subscribe.Count = 1
+		} else {
+			err = dal.UpdateSubscribeResultAndCount(ctx, subscribe.ID, subscribe.Result, subscribe.Count+1)
+			if err != nil {
+				return err
+			}
+			subscribe.Count++
+		}
+		if !subscribe.Result {
+			continue
+		}
+		data = append(data, subscribe)
+	}
+	// 发送信息通知
+	message := BuildSubscribeStrategyReportMessage(data)
+	_ = SendLarkMessage(ctx, message)
+	return nil
 }
 
 func DeleteSubscribeStrategyData(ctx context.Context, strategy *model.DeleteSubscribeStrategyReq) error {

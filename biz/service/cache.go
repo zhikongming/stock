@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"sync"
 	"time"
 
@@ -183,6 +184,83 @@ func (c *CozeCache) GetAndSetBusinessAnalysis(ctx context.Context, companyCode s
 		return nil, err
 	}
 	return cache, nil
+}
+
+func (c *CozeCache) GetMultiVolumePrice(ctx context.Context, codeList, nameList []string) ([]*model.MultiVolumePrice, error) {
+	// 根据多个股票代码来决定时间
+	stockPriceMap := make(map[string][]*dal.StockPrice)
+	dateList := make([]string, 0)
+	for _, code := range codeList {
+		stockPriceList, err := dal.GetLastNStockPrice(ctx, code, "", AnalyzeVolumePriceLimit)
+		if err != nil {
+			return nil, err
+		}
+		if len(stockPriceList) != AnalyzeVolumePriceLimit {
+			continue
+		}
+		stockPriceMap[code] = stockPriceList
+		dateList = append(dateList, utils.FormatDate(stockPriceList[0].Date))
+	}
+
+	// 调用远端接口, 从接口中获取数据
+	client := NewCozeClient()
+	if client == nil {
+		return nil, errors.New("coze client not found")
+	}
+	params := make([]*model.GetVolumePriceReq, 0)
+	for idx, code := range codeList {
+		stockPriceList, ok := stockPriceMap[code]
+		if !ok {
+			continue
+		}
+		utils.ListSwap(stockPriceList)
+		stockDataList := make([]*model.StockData, 0)
+		for _, stockPrice := range stockPriceList {
+			stockDataList = append(stockDataList, &model.StockData{
+				Date:       utils.FormatDate(stockPrice.Date),
+				OpenPrice:  utils.ToString(stockPrice.PriceOpen),
+				ClosePrice: utils.ToString(stockPrice.PriceClose),
+				HighPrice:  utils.ToString(stockPrice.PriceHigh),
+				LowPrice:   utils.ToString(stockPrice.PriceLow),
+				Volume:     utils.ToString(stockPrice.Amount),
+			})
+		}
+		req := &model.GetVolumePriceReq{
+			CompanyName:   nameList[idx],
+			StockDataList: stockDataList,
+		}
+		params = append(params, req)
+	}
+	resp, err := client.GetMultiVolumePrice(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	// 构建映射数据
+	stockMap := make(map[string]string)
+	for idx := range nameList {
+		stockMap[nameList[idx]] = codeList[idx]
+	}
+	for _, item := range resp.Results {
+		item.CompanyCode = stockMap[item.CompanyName]
+		stockPriceList := stockPriceMap[item.CompanyCode]
+		item.StartDate = utils.FormatDate(stockPriceList[0].Date)
+		item.EndDate = utils.FormatDate(stockPriceList[len(stockPriceList)-1].Date)
+	}
+
+	ret := make([]*model.MultiVolumePrice, 0)
+	for _, item := range resp.Results {
+		if item.IsSafe == IsSafeDirtyStatus {
+			var result model.MultiVolumePrice
+			sanitized := strings.ReplaceAll(item.AnalysisResult, "\n", "\\n")
+			err = json.Unmarshal([]byte(sanitized), &result)
+			if err == nil {
+				item.IsSafe = result.IsSafe
+				item.AnalysisResult = result.AnalysisResult
+			}
+		}
+		ret = append(ret, item)
+	}
+	return ret, nil
 }
 
 func (c *CozeCache) GetAndSetMultiVolumePrice(ctx context.Context, codeList, nameList []string) (*dal.Cache, error) {
