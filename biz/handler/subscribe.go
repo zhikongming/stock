@@ -53,6 +53,19 @@ func GetSubscribeStrategyData(ctx context.Context, c *app.RequestContext) {
 	})
 }
 
+func GetSubscribeStrategyReport(ctx context.Context, c *app.RequestContext) {
+	err := service.GetSubscribeStrategyReport(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.H{
+			"message": fmt.Sprintf("error: %v", err),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, utils.H{
+		"message": "success",
+	})
+}
+
 func DeleteSubscribeStrategyData(ctx context.Context, c *app.RequestContext) {
 	var strategy model.DeleteSubscribeStrategyReq
 	if err := c.BindJSON(&strategy); err != nil {

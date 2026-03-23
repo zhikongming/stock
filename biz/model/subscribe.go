@@ -31,7 +31,7 @@ type DeleteSubscribeStrategyReq struct {
 }
 
 type SubscribeStrategyResult struct {
-	ID             int    `json:"id"`
+	ID             uint   `json:"id"`
 	DateTime       string `json:"date_time"`
 	StrategyType   string `json:"strategy_type"`
 	Code           string `json:"code"`
@@ -39,6 +39,8 @@ type SubscribeStrategyResult struct {
 	Result         bool   `json:"result"`
 	StrategyDetail string `json:"strategy_detail"`
 	LastDate       string `json:"last_date"`
+	LastResult     bool   `json:"last_result"`
+	Count          int    `json:"count"`
 }
 
 func (s PriceChangeType) String() string {

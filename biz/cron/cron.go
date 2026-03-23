@@ -49,6 +49,9 @@ func InitCron() {
 		// 分析量价关系并发送报告
 		service.GetPriceAnalyse(ctx, &model.GetPriceAnalyseReq{})
 		service.GetPriceAnalyseReport(ctx)
+
+		// 分析策略并发送报告
+		service.GetSubscribeStrategyReport(ctx)
 	})
 
 	c.Start()

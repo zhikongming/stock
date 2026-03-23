@@ -28,11 +28,44 @@ func GetAnalyzeReport(ctx context.Context) ([]*model.ScoreResult, error) {
 	res := calculateScore(ctx, industryTrendList)
 	// 获取上一个分数并计算diff
 	scoreDiff := getScoreDiff(ctx, res, industryTrendList[0].PriceTrendList[len(industryTrendList[0].PriceTrendList)-2].DateString)
+	// 计算这些股票的量价关系
+	calculatePriceAnalyse(ctx, res)
 	// 发送信息通知
 	message := BuildSummaryMessage(res, industryTrendList[0].PriceTrendList[0].DateString, industryTrendList[0].PriceTrendList[len(industryTrendList[0].PriceTrendList)-1].DateString, scoreDiff)
 	_ = SendLarkMessage(ctx, message)
 	setScoreCache(ctx, res, industryTrendList[0].PriceTrendList[len(industryTrendList[0].PriceTrendList)-1].DateString)
 	return res, nil
+}
+
+func calculatePriceAnalyse(ctx context.Context, scoreList []*model.ScoreResult) error {
+	codeList := make([]string, 0, len(scoreList))
+	nameList := make([]string, 0, len(scoreList))
+	for _, score := range scoreList {
+		for _, thirdBuyPoint := range score.ThirdBuyPoint {
+			codeList = append(codeList, thirdBuyPoint.Code)
+			nameList = append(nameList, thirdBuyPoint.Name)
+		}
+	}
+	cozeCache := GetCozeCache()
+	volumePriceList, err := cozeCache.GetMultiVolumePrice(ctx, codeList, nameList)
+	if err != nil {
+		return err
+	}
+	// 解析数据
+	volumePriceMap := make(map[string]string)
+	for _, volumePrice := range volumePriceList {
+		volumePriceMap[volumePrice.CompanyCode] = volumePrice.IsSafe
+	}
+	for _, score := range scoreList {
+		for _, thirdBuyPoint := range score.ThirdBuyPoint {
+			if _, ok := volumePriceMap[thirdBuyPoint.Code]; ok {
+				thirdBuyPoint.PriceAnalyseResult = volumePriceMap[thirdBuyPoint.Code]
+			} else {
+				thirdBuyPoint.PriceAnalyseResult = "-"
+			}
+		}
+	}
+	return nil
 }
 
 func setScoreCache(ctx context.Context, scoreList []*model.ScoreResult, date string) {
@@ -690,6 +723,13 @@ func BuildSummaryMessage(scoreResultList []*model.ScoreResult, dateStart, dateEn
 				Width:           "auto",
 			},
 			{
+				DataType:        "text",
+				Name:            "priceAnalyseResult",
+				DisplayName:     "量价关系分析",
+				HorizontalAlign: "left",
+				Width:           "auto",
+			},
+			{
 				DataType:        "markdown",
 				Name:            "operation",
 				DisplayName:     "查看",
@@ -702,11 +742,12 @@ func BuildSummaryMessage(scoreResultList []*model.ScoreResult, dateStart, dateEn
 	for _, scoreResult := range scoreResultList {
 		for _, stockThirdBuyCodePeriodResult := range scoreResult.ThirdBuyPoint {
 			stockTableElement.Rows = append(stockTableElement.Rows, map[string]interface{}{
-				"industryName": scoreResult.Name,
-				"stockName":    stockThirdBuyCodePeriodResult.Name,
-				"reupChange":   fmt.Sprintf("%.2f%%", stockThirdBuyCodePeriodResult.ReupPeriod.Rate),
-				"finalChange":  fmt.Sprintf("%.2f%%", stockThirdBuyCodePeriodResult.FinalPeriod.Rate),
-				"operation":    fmt.Sprintf("[查看](https://xueqiu.com/S/%s)", stockThirdBuyCodePeriodResult.Code),
+				"industryName":       scoreResult.Name,
+				"stockName":          stockThirdBuyCodePeriodResult.Name,
+				"reupChange":         fmt.Sprintf("%.2f%%", stockThirdBuyCodePeriodResult.ReupPeriod.Rate),
+				"finalChange":        fmt.Sprintf("%.2f%%", stockThirdBuyCodePeriodResult.FinalPeriod.Rate),
+				"priceAnalyseResult": stockThirdBuyCodePeriodResult.PriceAnalyseResult,
+				"operation":          fmt.Sprintf("[查看](https://xueqiu.com/S/%s)", stockThirdBuyCodePeriodResult.Code),
 			})
 		}
 		stockTableElement.PageSize += len(scoreResult.ThirdBuyPoint)
@@ -871,6 +912,109 @@ func BuildPriceAnalyseReportMessage(result *model.PriceAnalyseReport) *model.Lar
 					model.MarkdownElement{
 						Tag:       "markdown",
 						Content:   fmt.Sprintf("根据个股近%d天的量价关系数据, 着重观察持续的天数, 如果持续天数为1表示状态转折, 如果持续天数较长, 则可以高优先级看下, 可能形成了趋势.", AnalyzeVolumePriceLimit),
+						TextAlign: "left",
+						TextSize:  "normal_v2",
+						Margin:    "0px 0px 0px 0px",
+					},
+				},
+			},
+		},
+	}
+	message.Card.Body.Elements = append(message.Card.Body.Elements, tableElement)
+	return message
+}
+
+func BuildSubscribeStrategyReportMessage(data []*model.SubscribeStrategyResult) *model.LarkMessage {
+	tableElement := model.TableElement{
+		Tag:       "table",
+		RowHeight: "middle",
+		HeaderStyle: model.HeaderStyle{
+			BackgroundStyle: "none",
+			Bold:            true,
+			Lines:           1,
+		},
+		Margin:   "0px 0px 0px 0px",
+		PageSize: len(data),
+		Columns: []model.Column{
+			{
+				DataType:        "text",
+				Name:            "name",
+				DisplayName:     "股票名称",
+				HorizontalAlign: "left",
+				Width:           "auto",
+			},
+			{
+				DataType:        "text",
+				Name:            "strategy_detail",
+				DisplayName:     "策略名称",
+				HorizontalAlign: "left",
+				Width:           "auto",
+			},
+			{
+				DataType:        "number",
+				Name:            "count",
+				DisplayName:     "符合连续天数",
+				HorizontalAlign: "left",
+				Width:           "auto",
+			},
+			{
+				DataType:        "text",
+				Name:            "strategy",
+				DisplayName:     "策略当前分析结果",
+				HorizontalAlign: "left",
+				Width:           "auto",
+			},
+		},
+		Rows: make([]map[string]interface{}, 0),
+	}
+	for _, item := range data {
+		tableElement.Rows = append(tableElement.Rows, map[string]interface{}{
+			"name":            item.Code,
+			"strategy_detail": item.StrategyDetail,
+			"count":           item.Count,
+			"strategy":        item.Strategy,
+		})
+	}
+
+	message := &model.LarkMessage{
+		MsgType: "interactive",
+		Card: model.LarkCard{
+			Header: model.LarkHeader{
+				Title: model.LarkTitle{
+					Tag:     "plain_text",
+					Content: "股票订阅分析通知",
+				},
+				Subtitle: model.LarkTitle{
+					Tag:     "plain_text",
+					Content: fmt.Sprintf("根据您订阅的策略, 我们根据最新的股价进行了分析"),
+				},
+				Template: "blue",
+				Padding:  "12px 12px 12px 12px",
+			},
+			Schema: "2.0",
+			Config: model.LarkConfig{
+				UpdateMulti: true,
+				Style: model.Style{
+					TextSize: model.TextSize{
+						NormalV2: model.NormalV2{
+							Default: "medium",
+							Pc:      "medium",
+							Mobile:  "heading",
+						},
+					},
+				},
+			},
+			Body: model.LarkBody{
+				Direction:         "vertical",
+				HorizontalSpacing: "8px",
+				VerticalSpacing:   "8px",
+				HorizontalAlign:   "left",
+				VerticalAlign:     "top",
+				Padding:           "12px 12px 12px 12px",
+				Elements: []model.Element{
+					model.MarkdownElement{
+						Tag:       "markdown",
+						Content:   "根据订阅的策略, 只通知符合策略的股票信息, 并展示符合策略的连续天数, 期望您根据订阅的策略来做出相应的操作, 如果不再需要改策略, 请删除改策略以减少通知次数",
 						TextAlign: "left",
 						TextSize:  "normal_v2",
 						Margin:    "0px 0px 0px 0px",

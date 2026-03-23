@@ -6,10 +6,12 @@ import (
 )
 
 type Subscribe struct {
-	ID       uint      `json:"id" gorm:"primaryKey"`
-	DateTime time.Time `json:"date_time" gorm:"column:date_time"`
-	Strategy string    `json:"strategy" gorm:"column:strategy"`
-	Status   int       `json:"status" gorm:"column:status"`
+	ID         uint      `json:"id" gorm:"primaryKey"`
+	DateTime   time.Time `json:"date_time" gorm:"column:date_time"`
+	Strategy   string    `json:"strategy" gorm:"column:strategy"`
+	Status     int       `json:"status" gorm:"column:status"`
+	LastResult bool      `json:"last_result" gorm:"column:last_result"`
+	Count      int       `json:"count" gorm:"column:count"`
 }
 
 func (Subscribe) TableName() string {
@@ -48,6 +50,18 @@ func GetAllSubscribeList(ctx context.Context) ([]*Subscribe, error) {
 func DeleteSubscribeById(ctx context.Context, id uint) error {
 	db := GetDB()
 	err := db.WithContext(ctx).Model(&Subscribe{}).Where("id = ?", id).Update("status", StatusDisabled).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func UpdateSubscribeResultAndCount(ctx context.Context, id uint, result bool, count int) error {
+	db := GetDB()
+	err := db.WithContext(ctx).Model(&Subscribe{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"last_result": result,
+		"count":       count,
+	}).Error
 	if err != nil {
 		return err
 	}

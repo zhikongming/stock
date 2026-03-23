@@ -78,9 +78,10 @@ type FilterThirdBuyCodePeriodResp struct {
 
 type FilterThirdBuyCodePeriodResult struct {
 	ThirdBuyCodePeriod
-	Code         string `json:"code"`
-	Name         string `json:"name"`
-	IndustryName string `json:"industryName"`
+	Code               string `json:"code"`
+	Name               string `json:"name"`
+	IndustryName       string `json:"industryName"`
+	PriceAnalyseResult string `json:"priceAnalyseResult"`
 }
 
 type SorterFilterThirdBuyCodePeriodResult []*FilterThirdBuyCodePeriodResult
