@@ -45,8 +45,6 @@ func (c *BaiduClient) GetRemoteStockDaily(ctx context.Context, code string, date
 		"code":        code,
 	}
 	headers := map[string]string{
-		"Cookie":          "BAIDUID=5B502C05DF2CFBC60C7E28CCEC88A863:FG=1",
-		"acs-token":       "1770962406840_1770994891027_0H8Hsi6BOiUvzDWJOZjxBbCefGKOp5A5n25L+PKxwWlpLHuGEhJpUIwQjBYS9ArAUTUVHBOGKRw1bN9Pr5/t5haKqCRZGEuFgh3osncDaHseWhJ8O6voJhvW/MsDxFZlUnkR1iQBGBCzq7QMIP4ba68hvkKrn22WY0lnQkvFlyyEEjHlANfzsEFGWwVSNVgJLFu/rEpRX6AcXEcYH3Jue3hzOgKFzScML2LRVhPwuwZl1O3SHL9zC+QA3EeWP2Whbzw9KbZ7GFw9Kty7AGgcM4sOXGetBmlyJugXlvm+rEwWfQ7PSwfO+TcTboYABHSdN6PDePeOFh7tn8VhWKxSx67UZpbl2PUlf1aqDD03Wh82V3GPqMZGj6k7SFDaJhFEkQ5LoxjEuCLn2MGnoADq4XODcJq0us6sW8rTqGa+uqkFoZKpO26kCYbXT+mIUDSKx7lWx10lgJ/4YznUM/UDcg==",
 		"User-Agent":      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
 		"Accept":          "application/vnd.finance-web.v1+json",
 		"Host":            "finance.pae.baidu.com",
