@@ -22,37 +22,41 @@ func InitCron() {
 			hlog.Infof("Today is weekend, skip sync stock price")
 			return
 		}
-		// 同步板块数据
-		req1 := &model.SyncStockIndustryReq{}
-		err := service.SyncStockIndustry(ctx, req1)
-		if err != nil {
-			hlog.Errorf("SyncStockIndustry failed, err: %v", err)
-		}
-
-		// 同步股价数据
-		req := &model.SyncStockCodeReq{}
-		err = service.SyncStockCode(ctx, req)
-		if err != nil {
-			hlog.Errorf("SyncStockCode failed, err: %v", err)
-		}
-
-		// 同步资金流向数据
-		req2 := &model.SyncFundFlowReq{}
-		err = service.SyncFundFlow(ctx, req2)
-		if err != nil {
-			hlog.Errorf("SyncFundFlow failed, err: %v", err)
-		}
-
-		// 计算报告数据
-		service.GetAnalyzeReport(ctx)
-
-		// 分析量价关系并发送报告
-		service.GetPriceAnalyse(ctx, &model.GetPriceAnalyseReq{})
-		service.GetPriceAnalyseReport(ctx)
-
-		// 分析策略并发送报告
-		service.GetSubscribeStrategyReport(ctx)
+		StartCronTask(ctx)
 	})
 
 	c.Start()
+}
+
+func StartCronTask(ctx context.Context) {
+	// 同步板块数据
+	req1 := &model.SyncStockIndustryReq{}
+	err := service.SyncStockIndustry(ctx, req1)
+	if err != nil {
+		hlog.Errorf("SyncStockIndustry failed, err: %v", err)
+	}
+
+	// 同步股价数据
+	req := &model.SyncStockCodeReq{}
+	err = service.SyncStockCode(ctx, req)
+	if err != nil {
+		hlog.Errorf("SyncStockCode failed, err: %v", err)
+	}
+
+	// 同步资金流向数据
+	req2 := &model.SyncFundFlowReq{}
+	err = service.SyncFundFlow(ctx, req2)
+	if err != nil {
+		hlog.Errorf("SyncFundFlow failed, err: %v", err)
+	}
+
+	// 计算报告数据
+	service.GetAnalyzeReport(ctx)
+
+	// 分析量价关系并发送报告
+	service.GetPriceAnalyse(ctx, &model.GetPriceAnalyseReq{})
+	service.GetPriceAnalyseReport(ctx)
+
+	// 分析策略并发送报告
+	service.GetSubscribeStrategyReport(ctx)
 }

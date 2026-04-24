@@ -315,7 +315,7 @@ type IndustryInfo struct {
 type StockInfo struct {
 	CodeInfo             *CodeInfo                `json:"code_info"`
 	IndustryInfo         *IndustryInfo            `json:"industry_info"`
-	SimilarCompaniesInfo []*SimilarCompany        `json:"similar_companies_info"`
+	SimilarCompaniesInfo []*SimilarCompanyV2      `json:"similar_companies_info"`
 	VolumePriceInfo      *GetVolumePriceResp      `json:"volume_price_info"`
 	BusinessAnalysisInfo *GetBusinessAnalysisResp `json:"business_analysis_info"`
 }

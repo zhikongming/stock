@@ -340,7 +340,7 @@
                     similars.forEach(s => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                            <td>${s.company_name}</td>
+                            <td><a href="https://xueqiu.com/S/${s.company_code}" target="_blank" class="no-underline">${s.company_name}</a></td>
                             <td><span class="table-colume-badge">${s.similarity_score}</span></td>
                             <td>${s.similarity_reason}</td>
                             <td class="business-desc">${s.business_description}</td>
