@@ -14,6 +14,11 @@ type SimilarCompany struct {
 	BusinessDescription string  `json:"business_description"`
 }
 
+type SimilarCompanyV2 struct {
+	SimilarCompany
+	CompanyCode string `json:"company_code"`
+}
+
 type GetVolumePriceReq struct {
 	CompanyName   string       `json:"company_name"`
 	StockDataList []*StockData `json:"stock_data_list"`

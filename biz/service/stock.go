@@ -306,7 +306,7 @@ func SyncStockDailyPrice(ctx context.Context, req *model.SyncStockCodeReq) error
 			}
 		}
 	}
-	time.Sleep(1 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 	return nil
 }
 
@@ -919,7 +919,7 @@ func GetStockInfo(ctx context.Context, req *model.GetStockInfoReq) (*model.Stock
 			if err != nil {
 				return nil, err
 			}
-			stockInfo.SimilarCompaniesInfo = similarCompanies
+			stockInfo.SimilarCompaniesInfo = ToSimilarCompanyV2(ctx, similarCompanies)
 		}
 	}
 
@@ -947,4 +947,19 @@ func GetStockInfo(ctx context.Context, req *model.GetStockInfoReq) (*model.Stock
 	}
 
 	return stockInfo, nil
+}
+
+func ToSimilarCompanyV2(ctx context.Context, similarCompanyList []*model.SimilarCompany) []*model.SimilarCompanyV2 {
+	var similarCompanyV2List []*model.SimilarCompanyV2
+	for _, similarCompany := range similarCompanyList {
+		stockCode, _ := dal.GetStockCodeByName(ctx, similarCompany.CompanyName)
+		item := &model.SimilarCompanyV2{
+			SimilarCompany: *similarCompany,
+		}
+		if stockCode != nil {
+			item.CompanyCode = stockCode.CompanyCode
+		}
+		similarCompanyV2List = append(similarCompanyV2List, item)
+	}
+	return similarCompanyV2List
 }

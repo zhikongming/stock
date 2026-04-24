@@ -8,6 +8,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/utils"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
+	"github.com/zhikongming/stock/biz/cron"
 	"github.com/zhikongming/stock/biz/model"
 	"github.com/zhikongming/stock/biz/service"
 )
@@ -107,4 +108,11 @@ func GetStockInfo(ctx context.Context, c *app.RequestContext) {
 	}
 
 	c.JSON(consts.StatusOK, info)
+}
+
+func StartCronTask(ctx context.Context, c *app.RequestContext) {
+	cron.StartCronTask(ctx)
+	c.JSON(consts.StatusOK, utils.H{
+		"message": "success",
+	})
 }
