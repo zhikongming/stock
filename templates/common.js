@@ -343,12 +343,16 @@ function getReportTypeString(reportType) {
     return "";
 }
 
-function getPreMOMReportType(reportType) {
+function getPreMOMYearAndReportType(year, reportType) {
+    let ret = {};
+    ret["year"] = parseInt(year);
     if (reportType == 1) {
-        return 4;
+        ret["report_type"] = 4;
+        ret["year"] = ret["year"]-1;
     } else {
-        return reportType-1;
+        ret["report_type"] = reportType-1;
     }
+    return ret;
 }
 
 function getReportTypeString2(reportType) {

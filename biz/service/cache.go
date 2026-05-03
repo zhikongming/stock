@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	AnalyzeVolumePriceLimit       = 5
+	AnalyzeVolumePriceLimit       = 6
 	AnalyzeVolumePriceReportLimit = 10
 )
 

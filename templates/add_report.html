@@ -1362,8 +1362,10 @@
             resp.then(data => {
                 if (data.status != 200) {
                     setValue();
-                    let preReportType = getPreMOMReportType(reportType);
-                    let preResp = getStockReport(code, year, preReportType, true);
+                    let yearAndReportType = getPreMOMYearAndReportType(year, reportType);
+                    preReportYear = yearAndReportType["year"];
+                    preReportType = yearAndReportType["report_type"];
+                    let preResp = getStockReport(code, preReportYear, preReportType, true);
                     preResp.then(preData => {
                         const result = preData.json();
                         result.then(rp => {
