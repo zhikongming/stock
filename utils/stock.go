@@ -44,6 +44,11 @@ func GetStockCodeNumber(code string) string {
 	return code
 }
 
+func IsStockTypeOfB(code string) bool {
+	c := GetStockCodeNumber(code)
+	return strings.HasPrefix(c, "900")
+}
+
 func RemoveIndustryNumberSuffix(name string) string {
 	return strings.TrimRightFunc(name, unicode.IsNumber)
 }

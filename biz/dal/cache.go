@@ -11,11 +11,12 @@ type CacheType int8
 type KeyType string
 
 const (
-	CacheTypeSimilarCompany   CacheType = 0
-	CacheTypeVolumePrice      CacheType = 1
-	CacheTypeScoreResult      CacheType = 2
-	CacheTypeBusinessAnalysis CacheType = 3
-	CacheTypeMultiVolumePrice CacheType = 4
+	CacheTypeSimilarCompany    CacheType = 0
+	CacheTypeVolumePrice       CacheType = 1
+	CacheTypeScoreResult       CacheType = 2
+	CacheTypeBusinessAnalysis  CacheType = 3
+	CacheTypeMultiVolumePrice  CacheType = 4
+	CacheTypeShareholderReport CacheType = 5
 
 	CacheKeyScoreResult      KeyType = "score_result"
 	CacheKeyMultiVolumePrice KeyType = "multi_volume_price"
@@ -57,6 +58,16 @@ func GetCacheByTypeDate(ctx context.Context, key string, cacheType CacheType, da
 		return nil, err
 	}
 	return &cache, nil
+}
+
+func GetAllCacheByTypeDate(ctx context.Context, cacheType CacheType, date string) ([]*Cache, error) {
+	db := GetDB()
+	var caches []*Cache
+	err := db.WithContext(ctx).Where("data_type = ? and date = ?", cacheType, date).Find(&caches).Error
+	if err != nil {
+		return nil, err
+	}
+	return caches, nil
 }
 
 func GetCacheByTypeLimit(ctx context.Context, key string, cacheType CacheType, limit int) ([]*Cache, error) {

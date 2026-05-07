@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	AnalyzeVolumePriceLimit       = 5
+	AnalyzeVolumePriceLimit       = 6
 	AnalyzeVolumePriceReportLimit = 10
 )
 
@@ -351,6 +351,36 @@ func (c *CozeCache) GetAndSetMultiVolumePrice(ctx context.Context, codeList, nam
 func (c *CozeCache) GetLastNMultiVolumePrice(ctx context.Context, limit int) ([]*dal.Cache, error) {
 	// 从缓存中获取数据
 	cache, err := dal.GetCacheByTypeLimit(ctx, string(dal.CacheKeyMultiVolumePrice), dal.CacheTypeMultiVolumePrice, limit)
+	if err != nil {
+		return nil, err
+	}
+	return cache, nil
+}
+
+func (c *CozeCache) GetAndSetShareholderReport(ctx context.Context, code string, date string) (*dal.Cache, error) {
+	cache, err := dal.GetCacheByTypeDate(ctx, code, dal.CacheTypeShareholderReport, date)
+	if err != nil {
+		return nil, err
+	}
+	if cache != nil {
+		return cache, nil
+	}
+
+	// 调用远端接口, 从接口中获取数据
+	client := NewBaiduClient()
+	resp, err := client.GetRemoteShareholder(ctx, code, date)
+	if err != nil {
+		return nil, err
+	}
+	// 缓存数据
+	respByte, _ := json.Marshal(resp)
+	cache = &dal.Cache{
+		DataKey:   string(code),
+		DataType:  int8(dal.CacheTypeShareholderReport),
+		Date:      date,
+		DataValue: string(respByte),
+	}
+	err = dal.CreateCache(ctx, cache)
 	if err != nil {
 		return nil, err
 	}

@@ -13,9 +13,9 @@ func DoGet(ctx context.Context, url string, params map[string]string, headers ma
 	client := &http.Client{}
 
 	// 创建一个新的 http.Request 对象
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		log.Printf("NewRequest error: %v", err)
+		log.Printf("NewRequestWithContext error: %v", err)
 		return nil, err
 	}
 

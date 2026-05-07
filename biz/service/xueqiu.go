@@ -117,3 +117,7 @@ func (c *XueqiuClient) GetLatestRemoteFundFlow(ctx context.Context) ([]*model.Fu
 func (c *XueqiuClient) GetRemoteFundFlowByCode(ctx context.Context, code string) ([]*model.FundFlowData, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+
+func (c *XueqiuClient) GetRemoteShareholder(ctx context.Context, code string, date string) (*model.Top10Shareholder, error) {
+	return nil, fmt.Errorf("not implemented")
+}

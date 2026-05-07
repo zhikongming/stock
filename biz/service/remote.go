@@ -18,4 +18,6 @@ type RemoteClient interface {
 
 	GetLatestRemoteFundFlow(ctx context.Context) ([]*model.FundFlowData, error)
 	GetRemoteFundFlowByCode(ctx context.Context, code string) ([]*model.FundFlowData, error)
+
+	GetRemoteShareholder(ctx context.Context, code string, date string) (*model.Top10Shareholder, error)
 }

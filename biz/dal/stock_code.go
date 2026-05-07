@@ -16,6 +16,7 @@ type StockCode struct {
 	BusinessType  int    `json:"business_type" gorm:"column:business_type"`
 	ListedDate    string `json:"listed_date" gorm:"column:listed_date"`
 	IsParsedPrice bool   `json:"is_parsed_price" gorm:"column:is_parsed_price"`
+	BdCompanyCode string `json:"bd_company_code" gorm:"column:bd_company_code"`
 }
 
 func (StockCode) TableName() string {
@@ -129,4 +130,9 @@ func AddParsedPriceCodeList(ctx context.Context, codeList []string) error {
 func DeleteParsedPriceCodeList(ctx context.Context, codeList []string) error {
 	db := GetDB()
 	return db.WithContext(ctx).Model(&StockCode{}).Where("company_code in ?", codeList).Update("is_parsed_price", false).Error
+}
+
+func UpdateStockCode(ctx context.Context, stockCode *StockCode) error {
+	db := GetDB()
+	return db.WithContext(ctx).Save(stockCode).Error
 }
