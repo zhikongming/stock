@@ -36,6 +36,9 @@ CREATE TABLE `cache` (
 ALTER TABLE `stock_code` 
   ADD COLUMN `is_parsed_price` tinyint NOT NULL DEFAULT '0' COMMENT '是否开启量价分析';
 
+ALTER TABLE `stock_code`
+  ADD COLUMN `bd_company_code` varchar(255) NOT NULL DEFAULT '' COMMENT '百度公司代码';
+
 ALTER TABLE `subscribe`
   ADD COLUMN `last_result` tinyint NOT NULL DEFAULT '0' COMMENT '最后分析结果',
   ADD COLUMN `count` int NOT NULL DEFAULT '0' COMMENT '满足最后结果的连续次数';

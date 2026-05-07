@@ -313,11 +313,12 @@ type IndustryInfo struct {
 }
 
 type StockInfo struct {
-	CodeInfo             *CodeInfo                `json:"code_info"`
-	IndustryInfo         *IndustryInfo            `json:"industry_info"`
-	SimilarCompaniesInfo []*SimilarCompanyV2      `json:"similar_companies_info"`
-	VolumePriceInfo      *GetVolumePriceResp      `json:"volume_price_info"`
-	BusinessAnalysisInfo *GetBusinessAnalysisResp `json:"business_analysis_info"`
+	CodeInfo                *CodeInfo                  `json:"code_info"`
+	IndustryInfo            *IndustryInfo              `json:"industry_info"`
+	SimilarCompaniesInfo    []*SimilarCompanyV2        `json:"similar_companies_info"`
+	VolumePriceInfo         *GetVolumePriceResp        `json:"volume_price_info"`
+	BusinessAnalysisInfo    *GetBusinessAnalysisResp   `json:"business_analysis_info"`
+	ShareholderAnalysisInfo *ShareholderAnalysisReport `json:"shareholder_analysis_info"`
 }
 
 type GetStockInfoReq struct {
@@ -325,6 +326,7 @@ type GetStockInfoReq struct {
 	SimilarChecked     bool   `json:"similar_checked" query:"similar_checked"`
 	VolumePriceChecked bool   `json:"volume_price_checked" query:"volume_price_checked"`
 	BusinessChecked    bool   `json:"business_checked" query:"business_checked"`
+	ShareholderChecked bool   `json:"shareholder_checked" query:"shareholder_checked"`
 }
 
 type AnalyzeThirdBuyCodeReq struct {

@@ -21,6 +21,7 @@ const updateWatcherUrl = "/stock/watcher"
 const filterThirdBuyCodeUrl = "/filter/third/buy"
 const updatePriceAnalyseUrl = "/analyze/price"
 const getPriceAnalyseUrl = "/analyze/price"
+const queryShareholderReportUrl = "/analyze/shareholder"
 
 const ChartPropertyMap = {
     "shareholderNumber": {
@@ -453,13 +454,14 @@ async function deleteSubscribeStrategyData(id) {
     return response;
 }
 
-async function getStockInfoData(name, similarChecked, volumeChecked, businessChecked) {
+async function getStockInfoData(name, similarChecked, volumeChecked, businessChecked, shareholderChecked) {
     const url = domain + getStockInfoUrl;
     const params = {
         "name": name,
         "similar_checked": similarChecked,
         "volume_price_checked": volumeChecked,
-        "business_checked": businessChecked
+        "business_checked": businessChecked,
+        "shareholder_checked": shareholderChecked,
     };
 
     const baseUrl = new URL(url);
@@ -554,6 +556,23 @@ async function updatePriceAnalyse(params) {
         },
         body: JSON.stringify(params)
     });
+    return response.json();
+}
+
+// 查询股东报告
+async function queryShareholderReport(conditions) {
+    const url = domain + queryShareholderReportUrl;
+    const data = {
+        "data": conditions
+    }
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    });
+
     return response.json();
 }
 

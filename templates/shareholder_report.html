@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股东分析报告</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="./common.css">
+    <script src="./common.js"></script>
+</head>
+<body>
+    <div class="page-container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-users"></i>
+                股东分析报告
+            </h1>
+            <p>根据股东名称和查询类型筛选股票</p>
+        </div>
+
+        <!-- 查询表单 -->
+        <div class="form-container">
+            <div class="form-header">
+                <i class="fas fa-sliders-h"></i>
+                <h2>筛选条件</h2>
+            </div>
+            
+            <form id="shareholder-form">
+                <div id="condition-container" style="display: flex; flex-direction: column;">
+                    <!-- 动态添加的条件组 -->
+                    <div class="condition-group" style="display: flex; gap: 15px; align-items: flex-end;">
+                        <!-- 股东名称 -->
+                        <div class="form-group" style="width: 350px;">
+                            <label class="form-label" for="shareholder-name-0">
+                                <i class="fas fa-user"></i>
+                                <span>股东名称</span>
+                            </label>
+                            <input type="text" id="shareholder-name-0" class="form-control" placeholder="请输入股东名称">
+                        </div>
+                        
+                        <!-- 查询类型 -->
+                        <div class="form-group" style="width: 180px;">
+                            <label class="form-label" for="query-type-0">
+                                <i class="fas fa-search"></i>
+                                <span>查询类型</span>
+                            </label>
+                            <select id="query-type-0" class="form-control">
+                                <option value="increase">增持</option>
+                                <option value="decrease">减持</option>
+                                <option value="exist">存在</option>
+                            </select>
+                        </div>
+                        
+                        <!-- 删除按钮 -->
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <button type="button" class="remove-condition-btn" onclick="removeCondition(this)" style="padding: 8px 12px;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <span style="font-size: 12px; color: #666;">股东名称处输入“股东人数”表示判断股东户数的增减, 输入“国家队”则会查询证金和汇金的数据, 其他则匹配对应的股东名称</span>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+                    <button type="button" class="table-action-btn" onclick="addCondition()">
+                        <i class="fas fa-plus"></i>
+                        <span>添加条件</span>
+                    </button>
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-search"></i>
+                        <span>查询</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 结果区域（初始隐藏） -->
+        <div id="results-section" class="results-container" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">
+                        <i class="fas fa-chart-line"></i>
+                        <span>查询结果</span>
+                    </h3>
+                    <div class="table-info">共 <span id="result-count">0</span> 条记录</div>
+                </div>
+                <table class="table-content-header" id="result-table">
+                    <thead>
+                        <tr>
+                            <th>股票代码</th>
+                            <th>股票名称</th>
+                            <th>股东名称</th>
+                            <th>持股数量</th>
+                            <th>持股比例(%)</th>
+                            <th>变动类型</th>
+                            <th>变动数量</th>
+                        </tr>
+                    </thead>
+                    <tbody id="result-tbody">
+                        <!-- 动态生成 -->
+                    </tbody>
+                </table>
+                <div id="result-empty" class="empty-state" style="display: none;">
+                    <i class="fas fa-search"></i>
+                    <h3>暂无查询结果</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let conditionIndex = 1;
+
+        // 添加条件组
+        function addCondition() {
+            const container = document.getElementById('condition-container');
+            const newGroup = document.createElement('div');
+            newGroup.className = 'condition-group';
+            newGroup.style.cssText = 'display: flex; gap: 15px; align-items: flex-end; margin-top: 15px;';
+            newGroup.innerHTML = `
+                <div class="form-group" style="width: 350px;">
+                        <label class="form-label" for="shareholder-name-${conditionIndex}">
+                            <i class="fas fa-user"></i>
+                            <span>股东名称</span>
+                        </label>
+                        <input type="text" id="shareholder-name-${conditionIndex}" class="form-control" placeholder="请输入股东名称">
+                    </div>
+                <div class="form-group" style="width: 180px;">
+                    <label class="form-label" for="query-type-${conditionIndex}">
+                        <i class="fas fa-search"></i>
+                        <span>查询类型</span>
+                    </label>
+                    <select id="query-type-${conditionIndex}" class="form-control">
+                        <option value="increase">增持</option>
+                        <option value="decrease">减持</option>
+                        <option value="exist">存在</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <button type="button" class="remove-condition-btn" onclick="removeCondition(this)" style="padding: 8px 12px;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(newGroup);
+            conditionIndex++;
+        }
+
+        // 删除条件组
+        function removeCondition(btn) {
+            const container = document.getElementById('condition-container');
+            const groups = container.querySelectorAll('.condition-group');
+            if (groups.length > 1) {
+                btn.parentElement.parentElement.remove();
+            } else {
+                alert('至少需要保留一个查询条件');
+            }
+        }
+
+        // 绑定提交事件
+        document.getElementById('shareholder-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const conditions = [];
+            const groups = document.querySelectorAll('.condition-group');
+            
+            groups.forEach((group, index) => {
+                const nameInput = group.querySelector(`#shareholder-name-${index}`);
+                const typeSelect = group.querySelector(`#query-type-${index}`);
+                
+                if (nameInput.value.trim()) {
+                    conditions.push({
+                        object: nameInput.value.trim(),
+                        operation: typeSelect.value
+                    });
+                }
+            });
+            
+            if (conditions.length === 0) {
+                alert('请至少输入一个股东名称');
+                return;
+            }
+            
+            // 调用后端接口
+            let resp = queryShareholderReport(conditions);
+            resp.then(data => renderResults(conditions, data));
+        });
+
+        // 渲染结果
+        function renderResults(conditions, data) {
+            const resultsSection = document.getElementById('results-section');
+            const resultTbody = document.getElementById('result-tbody');
+            const resultEmpty = document.getElementById('result-empty');
+            const resultCount = document.getElementById('result-count');
+            
+            resultsSection.style.display = 'block';
+            
+            if (data && data.length > 0) {
+                resultEmpty.style.display = 'none';
+                resultCount.textContent = data.length;
+                resultTbody.innerHTML = '';
+                
+                data.forEach(item => {
+                    const tr = document.createElement('tr');
+                    let shareholder_name = "";
+                    let shareholder_number = "";
+                    let shareholder_per = "";
+                    let diff = "";
+                    for (const shareholder of item.report.top_shareholder_list) {
+                        for (const condition of conditions) {
+                            if (shareholder.shareholder_name.includes(condition.object)) {
+                                shareholder_name = shareholder.shareholder_name;
+                                shareholder_number = shareholder.shareholder_number;
+                                shareholder_per = shareholder.shareholder_per;
+                                diff = shareholder.diff;
+                            }
+                        }
+                    }
+
+                    tr.innerHTML = `
+                        <td><a href="${getXueqiuStockUrl(item.code)}" target="_blank" class="no-underline">${item.code}</a></td>
+                        <td><a href="info_stock.html?company_name=${item.name}&shareholder-checked=true" target="_blank" class="no-underline">${item.name}</a></td>
+                        <td>${shareholder_name || '-'}</td>
+                        <td>${shareholder_number || '-'}</td>
+                        <td>${shareholder_per || '-'}</td>
+                        <td><span class="table-colume-badge ${item.change_type === 'increase' ? 'increase' : item.change_type === 'decrease' ? 'decrease' : 'exist'}">${item.change_type === 'increase' ? '增持' : item.change_type === 'decrease' ? '减持' : '存在'}</span></td>
+                        <td>${diff || '-'}</td>
+                    `;
+                    resultTbody.appendChild(tr);
+                });
+            } else {
+                resultEmpty.style.display = 'block';
+                resultTbody.innerHTML = '';
+                resultCount.textContent = '0';
+            }
+            
+            // 滚动到结果区域
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

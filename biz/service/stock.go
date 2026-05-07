@@ -946,7 +946,109 @@ func GetStockInfo(ctx context.Context, req *model.GetStockInfoReq) (*model.Stock
 		}
 	}
 
+	// 获取股东分析报告
+	if req.ShareholderChecked {
+		shareholderList, err := dal.GetCacheByTypeLimit(ctx, stockCode.CompanyCode, dal.CacheTypeShareholderReport, 2)
+		if err != nil {
+			return nil, err
+		}
+		if len(shareholderList) > 1 {
+			curShareholder := shareholderList[0]
+			prevShareholder := shareholderList[1]
+			curDate := utils.ParseDate(curShareholder.Date)
+			prevDate := utils.ParseDate(prevShareholder.Date)
+			if curDate.Before(prevDate) {
+				curShareholder, prevShareholder = prevShareholder, curShareholder
+			}
+			var curShareholderResp *model.Top10Shareholder
+			var prevShareholderResp *model.Top10Shareholder
+			err = json.Unmarshal([]byte(curShareholder.DataValue), &curShareholderResp)
+			if err != nil {
+				return nil, err
+			}
+			err = json.Unmarshal([]byte(prevShareholder.DataValue), &prevShareholderResp)
+			if err != nil {
+				return nil, err
+			}
+			stockInfo.ShareholderAnalysisInfo = ToShareholderAnalysisReport(curShareholderResp, prevShareholderResp)
+			stockInfo.ShareholderAnalysisInfo.ReportDate = curShareholder.Date
+		}
+	}
 	return stockInfo, nil
+}
+
+func ToShareholderAnalysisReport(curShareholder *model.Top10Shareholder, prevShareholder *model.Top10Shareholder) *model.ShareholderAnalysisReport {
+	report := &model.ShareholderAnalysisReport{}
+	report.ShareholderNumber = curShareholder.Num
+	report.ShareholderNumberDiff = curShareholder.Num - prevShareholder.Num
+
+	curShareholderMap := make(map[string]*model.Shareholder)
+	prevShareholderMap := make(map[string]*model.Shareholder)
+	for _, c := range curShareholder.ShareholderList {
+		curShareholderMap[c.ShareholderName] = c
+	}
+	for _, c := range prevShareholder.ShareholderList {
+		prevShareholderMap[c.ShareholderName] = c
+	}
+
+	report.AddShareholderList = make([]*model.ShareholderDiff, 0)
+	for shareholderName, _ := range curShareholderMap {
+		if _, ok := prevShareholderMap[shareholderName]; !ok {
+			report.AddShareholderList = append(report.AddShareholderList, &model.ShareholderDiff{
+				ShareholderName: shareholderName,
+				Diff:            "",
+			})
+		}
+	}
+
+	report.DelShareholderList = make([]*model.ShareholderDiff, 0)
+	for shareholderName, shareholder := range prevShareholderMap {
+		if _, ok := curShareholderMap[shareholderName]; !ok {
+			report.DelShareholderList = append(report.DelShareholderList, &model.ShareholderDiff{
+				ShareholderName: shareholderName,
+				Diff:            shareholder.ShareholderNumber,
+			})
+		}
+	}
+
+	report.ChangeShareholderList = make([]*model.ShareholderDiff, 0)
+	for shareholderName, shareholder := range curShareholderMap {
+		if _, ok := prevShareholderMap[shareholderName]; ok {
+			if shareholder.ShareholderNumber != prevShareholderMap[shareholderName].ShareholderNumber {
+				// 注意这里的数据是带了单位的, 因此需要根据单位来调整数据
+				curShareholderNumber, curShareholderUnit := utils.GetShareholderNumberUnit(shareholder.ShareholderNumber)
+				prevShareholderNumber, prevShareholderUnit := utils.GetShareholderNumberUnit(prevShareholderMap[shareholderName].ShareholderNumber)
+				if curShareholderUnit != prevShareholderUnit {
+					continue
+				}
+				report.ChangeShareholderList = append(report.ChangeShareholderList, &model.ShareholderDiff{
+					ShareholderName: shareholderName,
+					Diff:            fmt.Sprintf("%.2f%s", curShareholderNumber-prevShareholderNumber, curShareholderUnit),
+				})
+			}
+		}
+	}
+
+	report.TopShareholderList = make([]*model.ShareholderWithDiff, 0)
+	for _, shareholder := range curShareholder.ShareholderList {
+		shareholderWithDiff := &model.ShareholderWithDiff{
+			Shareholder: *shareholder,
+			Diff:        "不变",
+		}
+		for _, changeShareholder := range report.ChangeShareholderList {
+			if changeShareholder.ShareholderName == shareholder.ShareholderName {
+				shareholderWithDiff.Diff = changeShareholder.Diff
+			}
+		}
+		for _, addShareholder := range report.AddShareholderList {
+			if addShareholder.ShareholderName == shareholder.ShareholderName {
+				shareholderWithDiff.Diff = "新进"
+			}
+		}
+		report.TopShareholderList = append(report.TopShareholderList, shareholderWithDiff)
+	}
+
+	return report
 }
 
 func ToSimilarCompanyV2(ctx context.Context, similarCompanyList []*model.SimilarCompany) []*model.SimilarCompanyV2 {
