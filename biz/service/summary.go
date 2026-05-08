@@ -15,6 +15,11 @@ import (
 	"github.com/zhikongming/stock/utils"
 )
 
+const (
+	VolumeReportDiffThreshold = 1.8
+	MaxVolumeReportJobNum     = 50
+)
+
 func GetAnalyzeReport(ctx context.Context) ([]*model.ScoreResult, error) {
 	req := &model.GetIndustryTrendDataReq{
 		Days: 30,
@@ -827,6 +832,65 @@ func GetPriceAnalyseReport(ctx context.Context) (*model.PriceAnalyseReport, erro
 	message := BuildPriceAnalyseReportMessage(result)
 	_ = SendLarkMessage(ctx, message)
 	return result, nil
+}
+
+func GetVolumeReport(ctx context.Context) ([]*model.VolumeReportItem, error) {
+	// 根据最近的两个交易日的数据, 来计算是否出现成交量大幅增加
+	stockList, err := dal.GetAllStockCode(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// 需要使用并发来计算, 以减少耗时
+	jobList := make([]func() (interface{}, error), 0)
+	for _, stockCode := range stockList {
+		jobList = append(jobList, func(stockCode *dal.StockCode) func() (interface{}, error) {
+			return func() (interface{}, error) {
+				stockPriceList, err := dal.GetLastNStockPrice(ctx, stockCode.CompanyCode, "", 2)
+				if err != nil {
+					return nil, err
+				}
+				if len(stockPriceList) != 2 {
+					return nil, nil
+				}
+				curStockPrice := stockPriceList[0]
+				preStockPrice := stockPriceList[1]
+				if preStockPrice.Amount == 0 {
+					return nil, nil
+				}
+				if float64(curStockPrice.Amount)/float64(preStockPrice.Amount) < VolumeReportDiffThreshold {
+					return nil, nil
+				}
+				// 如果是放量下跌则返回为空
+				if curStockPrice.PriceClose < preStockPrice.PriceClose {
+					return nil, nil
+				}
+				report := &model.VolumeReportItem{
+					Code:          stockCode.CompanyCode,
+					Name:          stockCode.CompanyName,
+					PreDate:       utils.FormatDate(preStockPrice.Date),
+					CurrentDate:   utils.FormatDate(curStockPrice.Date),
+					PreAmount:     preStockPrice.Amount,
+					CurrentAmount: curStockPrice.Amount,
+					Diff:          utils.Float64KeepDecimal(float64(curStockPrice.Amount)/float64(preStockPrice.Amount), 2),
+				}
+				return report, nil
+			}
+		}(stockCode))
+	}
+	// 执行并发任务
+	reportList, err := utils.ConcurrentActuator(jobList, MaxVolumeReportJobNum)
+	if err != nil {
+		return nil, err
+	}
+	var ret []*model.VolumeReportItem
+	for _, item := range reportList {
+		if item != nil {
+			ret = append(ret, item.(*model.VolumeReportItem))
+		}
+	}
+	// 对结果进行排序
+	sort.Sort(model.VolumeReportItemSorter(ret))
+	return ret, nil
 }
 
 func BuildPriceAnalyseReportMessage(result *model.PriceAnalyseReport) *model.LarkMessage {

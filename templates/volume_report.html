@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成交量报告</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="./common.css">
+    <script src="./common.js"></script>
+</head>
+<body>
+    <div class="page-container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-chart-bar"></i>
+                成交量分析报告
+            </h1>
+            <p>展示股票成交量变化情况</p>
+        </div>
+
+        <!-- 结果表格 -->
+        <div id="result-container" class="table-container">
+            <div class="table-header">
+                <h2 class="table-title">
+                    <i class="fas fa-table"></i>
+                    <span>成交量对比</span>
+                </h2>
+                <div class="table-info">共 <span id="result-count">0</span> 条记录</div>
+            </div>
+            
+            <table class="table-content-header">
+                <thead>
+                    <tr>
+                        <th>股票代码</th>
+                        <th>股票名称</th>
+                        <th>前一交易日</th>
+                        <th>前一交易日成交量</th>
+                        <th>最新交易日</th>
+                        <th>最新成交量</th>
+                        <th>成交量增量</th>
+                    </tr>
+                </thead>
+                <tbody id="result-tbody">
+                    <!-- 动态生成 -->
+                </tbody>
+            </table>
+            
+            <div id="empty-result" class="empty-state" style="display: none;">
+                <i class="fas fa-database"></i>
+                <h3>暂无数据</h3>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const resultContainer = document.getElementById('result-container');
+        const resultTbody = document.getElementById('result-tbody');
+        const resultCount = document.getElementById('result-count');
+        const emptyResult = document.getElementById('empty-result');
+
+        // 页面加载时自动获取数据
+        document.addEventListener('DOMContentLoaded', async function() {
+            let resp = await fetchVolumeReport();
+            renderTable(resp);
+        });
+
+        // 渲染表格
+        function renderTable(data) {
+            resultTbody.innerHTML = '';
+            
+            if (data && data.length > 0) {
+                emptyResult.style.display = 'none';
+                resultCount.textContent = data.length;
+                
+                data.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>
+                            <a href="https://xueqiu.com/S/${item.code}" target="_blank" class="no-underline">${item.code}</a>
+                        </td>
+                        <td>
+                            <a href="https://xueqiu.com/S/${item.code}" target="_blank" class="no-underline">${item.name}</a>
+                        </td>
+                        <td>${item.pre_date}</td>
+                        <td>${formatAmountSmart(item.pre_amount)}</td>
+                        <td>${item.current_date}</td>
+                        <td>${formatAmountSmart(item.current_amount)}</td>
+                        <td><span class="table-colume-badge ${item.diff >= 0 ? 'increase' : 'decrease'}">${item.diff >= 0 ? '+' : ''}${item.diff}</span></td>
+                    `;
+                    resultTbody.appendChild(tr);
+                });
+            } else {
+                emptyResult.style.display = 'block';
+                resultCount.textContent = '0';
+            }
+        }
+    </script>
+</body>
+</html>

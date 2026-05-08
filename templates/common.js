@@ -22,6 +22,7 @@ const filterThirdBuyCodeUrl = "/filter/third/buy"
 const updatePriceAnalyseUrl = "/analyze/price"
 const getPriceAnalyseUrl = "/analyze/price"
 const queryShareholderReportUrl = "/analyze/shareholder"
+const queryVolumeReportUrl = "/analyze/volume/report"
 
 const ChartPropertyMap = {
     "shareholderNumber": {
@@ -573,6 +574,18 @@ async function queryShareholderReport(conditions) {
         body: JSON.stringify(data)
     });
 
+    return response.json();
+}
+
+// 获取成交量报告数据
+async function fetchVolumeReport() {
+    const url = domain + queryVolumeReportUrl;
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
     return response.json();
 }
 

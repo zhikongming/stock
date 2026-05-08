@@ -42,3 +42,14 @@ type PriceAnalyseReportItem struct {
 	IsSafe string `json:"is_safe"`
 	Count  int    `json:"count"`
 }
+
+type VolumeReportItem struct {
+	Code          string  `json:"code"`
+	Name          string  `json:"name"`
+	PreAmount     int64   `json:"pre_amount"`
+	CurrentAmount int64   `json:"current_amount"`
+	PreDate       string  `json:"pre_date"`
+	CurrentDate   string  `json:"current_date"`
+	Diff          float64 `json:"diff"`
+	Error         error   `json:"-"`
+}
