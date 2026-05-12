@@ -200,6 +200,7 @@
                 resultEmpty.style.display = 'none';
                 resultCount.textContent = data.length;
                 resultTbody.innerHTML = '';
+                let operation = "";
                 
                 data.forEach(item => {
                     const tr = document.createElement('tr');
@@ -215,6 +216,7 @@
                                 shareholder_per = shareholder.shareholder_per;
                                 diff = shareholder.diff;
                             }
+                            operation = condition.operation;
                         }
                     }
 
@@ -224,7 +226,7 @@
                         <td>${shareholder_name || '-'}</td>
                         <td>${shareholder_number || '-'}</td>
                         <td>${shareholder_per || '-'}</td>
-                        <td><span class="table-colume-badge ${item.change_type === 'increase' ? 'increase' : item.change_type === 'decrease' ? 'decrease' : 'exist'}">${item.change_type === 'increase' ? '增持' : item.change_type === 'decrease' ? '减持' : '存在'}</span></td>
+                        <td><span class="table-colume-badge ${operation === 'increase' ? 'increase' : operation === 'decrease' ? 'decrease' : 'exist'}">${operation === 'increase' ? '增持' : operation === 'decrease' ? '减持' : '存在'}</span></td>
                         <td>${diff || '-'}</td>
                     `;
                     resultTbody.appendChild(tr);
