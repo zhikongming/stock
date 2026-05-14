@@ -191,3 +191,14 @@ func GetVolumeReport(ctx context.Context, c *app.RequestContext) {
 	}
 	c.JSON(http.StatusOK, data)
 }
+
+func GetLimitUpReport(ctx context.Context, c *app.RequestContext) {
+	data, err := service.GetLimitUpReport(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.H{
+			"message": fmt.Sprintf("%v", err),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}

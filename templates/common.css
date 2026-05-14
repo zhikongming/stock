@@ -1553,3 +1553,28 @@ body {
 .max-width-400 {
     max-width: 400px;
 }
+
+/* 股票项样式 - 不单独占用一行 */
+.limitup-stock-item {
+    display: inline-block;  /* 关键：使元素在同一行显示 */
+    margin-right: 16px;    /* 右侧间距 */
+    margin-bottom: 4px;    /* 换行时的底部间距 */
+}
+
+.limitup-stock-item:not(:last-child)::after {
+    content: ',';          /* 在非最后一个股票后添加逗号分隔 */
+    margin-left: 4px;
+    color: #999;
+}
+
+.limitup-stock-name {
+    color: #1a73e8;        /* 蓝色链接颜色 */
+    text-decoration: none; /* 去除下划线 */
+    font-weight: 500;
+}
+
+.limitup-industry-name {
+    color: #999;           /* 灰色小字体 */
+    font-size: 12px;
+    margin-left: 4px;
+}

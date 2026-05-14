@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>涨停板报告</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="./common.css">
+    <script src="./common.js"></script>
+</head>
+<body>
+    <div class="page-container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-arrow-up"></i>
+                涨停板分析报告
+            </h1>
+            <p>展示股票连续涨停情况</p>
+        </div>
+
+        <!-- 结果区域 -->
+        <div id="result-container" class="table-container">
+            <div class="table-header">
+                <h2 class="table-title">
+                    <i class="fas fa-table"></i>
+                    <span>连板统计</span>
+                </h2>
+                <div class="table-info">共 <span id="result-count">0</span> 条记录</div>
+            </div>
+
+            <table class="table-content-header">
+                <thead>
+                    <tr>
+                        <th>连板数量</th>
+                        <th>股票信息</th>
+                    </tr>
+                </thead>
+                <tbody id="result-tbody">
+                    <!-- 动态生成 -->
+                </tbody>
+            </table>
+
+            <div id="empty-result" class="empty-state" style="display: none;">
+                <i class="fas fa-database"></i>
+                <h3>暂无数据</h3>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const resultContainer = document.getElementById('result-container');
+        const resultTbody = document.getElementById('result-tbody');
+        const resultCount = document.getElementById('result-count');
+        const emptyResult = document.getElementById('empty-result');
+
+        let stockList = [];
+
+        // 页面加载时自动获取数据
+        document.addEventListener('DOMContentLoaded', async function() {
+            let resp = await fetchLimitUpReport();
+            renderTable(resp);
+        });
+
+        // 渲染表格
+        function renderTable(data) {
+            resultTbody.innerHTML = '';
+            stockList = [];
+            let totalCount = 0;
+
+            if (data && data.length > 0) {
+                emptyResult.style.display = 'none';
+
+                // 遍历连板数量分组（二维数组）
+                data.forEach((group) => {
+                    if (group && group.length > 0) {
+                        const limitCount = group[0].count;
+                        totalCount += group.length;
+                        stockList = stockList.concat(group);
+
+                        // 为每个连板组创建一行
+                        const tr = document.createElement('tr');
+
+                        // 连板数量列
+                        const countTd = document.createElement('td');
+                        countTd.innerHTML = `<span class="table-colume-badge increase">${limitCount}连板</span>`;
+                        tr.appendChild(countTd);
+
+                        // 股票信息列（同一连板组的股票放在一起）
+                        const stockTd = document.createElement('td');
+                        let stockHtml = '';
+                        group.forEach((item, index) => {
+                            stockHtml += `
+                                <div class="limitup-stock-item">
+                                    <a href="https://xueqiu.com/S/${item.code}" target="_blank" class="limitup-stock-name">${item.name}</a>
+                                    <span class="limitup-industry-name">(${item.industry_name || '-'})</span>
+                                </div>
+                            `;
+                        });
+                        stockTd.innerHTML = stockHtml;
+                        tr.appendChild(stockTd);
+
+                        resultTbody.appendChild(tr);
+                    }
+                });
+
+                resultCount.textContent = totalCount;
+            } else {
+                emptyResult.style.display = 'block';
+                resultCount.textContent = '0';
+            }
+        }
+    </script>
+</body>
+</html>

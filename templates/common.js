@@ -23,6 +23,8 @@ const updatePriceAnalyseUrl = "/analyze/price"
 const getPriceAnalyseUrl = "/analyze/price"
 const queryShareholderReportUrl = "/analyze/shareholder"
 const queryVolumeReportUrl = "/analyze/volume/report"
+const queryLimitUpReportUrl = "/analyze/limitup/report"
+
 
 const ChartPropertyMap = {
     "shareholderNumber": {
@@ -588,6 +590,20 @@ async function fetchVolumeReport() {
     });
     return response.json();
 }
+
+// 获取涨停报告报告数据
+async function fetchLimitUpReport() {
+    const url = domain + queryLimitUpReportUrl;
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
+
+
 
 function getLoanRateTitle(name) {
     return name + "-贷款收益率";
