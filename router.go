@@ -77,6 +77,7 @@ func customizedRegister(r *server.Hertz) {
 	r.POST("/data/shareholder", handler.SyncShareholder)
 	r.POST("/analyze/shareholder", handler.GetShareholderReport)
 	r.GET("/analyze/volume/report", handler.GetVolumeReport)
+	r.GET("/analyze/limitup/report", handler.GetLimitUpReport)
 }
 
 func registerPlatform(r *server.Hertz) {
