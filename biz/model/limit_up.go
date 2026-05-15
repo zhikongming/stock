@@ -1,8 +1,11 @@
 package model
 
+import "time"
+
 type LimitUpReportItem struct {
-	Code         string `json:"code"`
-	Name         string `json:"name"`
-	Count        int    `json:"count"`
-	IndustryName string `json:"industry_name"`
+	Code         string    `json:"code"`
+	Name         string    `json:"name"`
+	Count        int       `json:"count"`
+	IndustryName string    `json:"industry_name"`
+	LastDate     time.Time `json:"-"`
 }

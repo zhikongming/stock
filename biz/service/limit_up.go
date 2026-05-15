@@ -5,6 +5,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/zhikongming/stock/biz/dal"
 	"github.com/zhikongming/stock/biz/model"
@@ -59,6 +60,7 @@ func GetLimitUpReport(ctx context.Context) ([][]*model.LimitUpReportItem, error)
 					Name:         stockCode.CompanyName,
 					Count:        count,
 					IndustryName: stockMap[stockCode.CompanyCode],
+					LastDate:     stockPriceList[0].Date,
 				}
 				return data, nil
 			}
@@ -82,12 +84,25 @@ func GetLimitUpReport(ctx context.Context) ([][]*model.LimitUpReportItem, error)
 			}
 		}
 	}
+	// 过滤掉日期不正确的股票
+	var lastDate time.Time
+	for _, item := range ret {
+		if item.LastDate.After(lastDate) {
+			lastDate = item.LastDate
+		}
+	}
+	var retNew []*model.LimitUpReportItem
+	for _, item := range ret {
+		if !item.LastDate.Before(lastDate) {
+			retNew = append(retNew, item)
+		}
+	}
 	// 构建返回数据
 	reportList := make([][]*model.LimitUpReportItem, 0, maxCount+1)
 	for i := 0; i <= maxCount; i++ {
 		reportList = append(reportList, []*model.LimitUpReportItem{})
 	}
-	for _, item := range ret {
+	for _, item := range retNew {
 		count := item.Count
 		reportList[count] = append(reportList[count], item)
 	}
@@ -117,10 +132,17 @@ func CalculateLimitUpCount(stockPriceList []*dal.StockPrice) int {
 }
 
 func IsLimitUpWithRate(prevClose, current float64, rate float64) bool {
-	prevCloseInCents := int(math.Round(prevClose * 100))
-	currentInCents := int(math.Round(current * 100))
-	limitUpInCents := int(math.Round(float64(prevCloseInCents) * rate))
-	return currentInCents >= limitUpInCents
+	// 1. 使用精度偏移量处理 (Precision Offset)
+	// 金融计算中，为了处理 18.837 这种刚好在边缘的情况，
+	// 我们可以计算出理论涨幅后，取 2 位小数的截断值。
+
+	// 计算公式：floor(prevClose * (1 + rate) * 100 + 0.00001) / 100
+	// 加上 0.00001 是为了防止浮点数表示 18.837 变成 18.836999999999 的误差
+	limitUpPrice := math.Floor(prevClose*rate*100+0.00001) / 100
+
+	// 2. 只要当前价大于或等于这个截断计算出的价格，即为涨停
+	// 在 14.49 * 1.3 = 18.837 的情况下，limitUpPrice 会得到 18.83
+	return current >= limitUpPrice
 }
 
 func GetLimitUpRate(stockCode string) float64 {
@@ -132,8 +154,12 @@ func GetLimitUpRate(stockCode string) float64 {
 	if strings.HasPrefix(stockCode, "688") {
 		return 1.20
 	}
-	// 北交所（8/43开头）
-	if strings.HasPrefix(stockCode, "8") || strings.HasPrefix(stockCode, "43") {
+	// 北交所（已知前缀列表，根据实际情况持续补充）
+	if strings.HasPrefix(stockCode, "8") || strings.HasPrefix(stockCode, "43") ||
+		strings.HasPrefix(stockCode, "82") || strings.HasPrefix(stockCode, "83") ||
+		strings.HasPrefix(stockCode, "87") || strings.HasPrefix(stockCode, "88") ||
+		strings.HasPrefix(stockCode, "920") || strings.HasPrefix(stockCode, "921") ||
+		strings.HasPrefix(stockCode, "922") {
 		return 1.30
 	}
 	// 主板（其余代码）
