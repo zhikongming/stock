@@ -117,6 +117,9 @@ func CalculateLimitUpCount(stockPriceList []*dal.StockPrice) int {
 	if len(stockPriceList) < 2 {
 		return 0
 	}
+	if stockPriceList[0].PriceClose <= 1.0 {
+		return 0
+	}
 	rate := GetLimitUpRate(utils.GetStockCodeNumber(stockPriceList[0].CompanyCode))
 	count := 0
 	for idx := 0; idx < len(stockPriceList)-1; idx++ {
