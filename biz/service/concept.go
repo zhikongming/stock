@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"sort"
 	"strings"
 
 	"github.com/zhikongming/stock/biz/dal"
@@ -56,6 +57,9 @@ func GetConcepts(ctx context.Context) ([]*model.ConceptResp, error) {
 
 		result = append(result, item)
 	}
+
+	// 按名称排序
+	sort.Sort(model.ConceptRespSorter(result))
 
 	return result, nil
 }
