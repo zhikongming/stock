@@ -27,3 +27,15 @@ func (s LimitUpReportItemSorter) Swap(i, j int) {
 func (s LimitUpReportItemSorter) Less(i, j int) bool {
 	return s[i].IndustryName < s[j].IndustryName
 }
+
+type ConceptRespSorter []*ConceptResp
+
+func (s ConceptRespSorter) Len() int {
+	return len(s)
+}
+func (s ConceptRespSorter) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s ConceptRespSorter) Less(i, j int) bool {
+	return s[i].Name < s[j].Name
+}
