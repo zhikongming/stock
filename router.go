@@ -78,6 +78,14 @@ func customizedRegister(r *server.Hertz) {
 	r.POST("/analyze/shareholder", handler.GetShareholderReport)
 	r.GET("/analyze/volume/report", handler.GetVolumeReport)
 	r.GET("/analyze/limitup/report", handler.GetLimitUpReport)
+
+	// 概念管理API
+	r.GET("/concept/list", handler.GetConcepts)
+	r.POST("/concept/add", handler.AddConcept)
+	r.DELETE("/concept/delete", handler.DeleteConcept)
+	r.GET("/concept/stocks", handler.GetConceptStocks)
+	r.POST("/concept/stock/add", handler.AddConceptStock)
+	r.DELETE("/concept/stock/delete", handler.DeleteConceptStock)
 }
 
 func registerPlatform(r *server.Hertz) {

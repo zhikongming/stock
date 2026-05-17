@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票概念管理</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="./common.css">
+    <script src="./common.js"></script>
+</head>
+<body>
+    <div class="page-container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-network-wired"></i>
+                股票概念管理
+            </h1>
+            <p>管理股票概念及其相关个股</p>
+        </div>
+
+        <!-- 添加概念区域 -->
+        <div class="form-container">
+            <div class="form-header">
+                <i class="fas fa-plus-circle"></i>
+                <h2>新增概念</h2>
+            </div>
+            
+            <form id="add-concept-form">
+                <div class="form-group">
+                    <label class="form-label" for="concept-name">
+                        <i class="fas fa-heading"></i>
+                        <span>概念名称</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="concept-name" 
+                        class="form-control" 
+                        placeholder="例如：人工智能"
+                        required
+                    >
+                </div>
+                
+                <div class="form-group full-width">
+                    <div style="display: flex; justify-content: flex-end;">
+                        <button type="submit" class="submit-btn">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>添加概念</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 概念列表区域 -->
+        <div id="result-container" class="table-container">
+            <div class="table-header">
+                <h2 class="table-title">
+                    <i class="fas fa-table"></i>
+                    <span>概念列表</span>
+                </h2>
+                <div class="table-info">共 <span id="result-count">0</span> 条记录</div>
+            </div>
+
+            <table class="table-content-header">
+                <thead>
+                    <tr>
+                        <th>概念名称</th>
+                        <th>相关个股</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="result-tbody">
+                    <!-- 动态生成 -->
+                </tbody>
+            </table>
+
+            <div id="empty-result" class="empty-state" style="display: none;">
+                <i class="fas fa-database"></i>
+                <h3>暂无概念数据</h3>
+                <p>点击上方按钮添加新概念</p>
+            </div>
+        </div>
+
+        <!-- 添加股票到概念弹窗 -->
+        <div id="add-stock-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>
+                        <i class="fas fa-plus-circle"></i>
+                        <span>添加个股</span>
+                    </h3>
+                    <button class="modal-close" onclick="closeAddStockModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label" for="stock-input">
+                            <i class="fas fa-barcode"></i>
+                            <span>股票代码/名称</span>
+                        </label>
+                        <!-- 自动补全容器 -->
+                        <div class="autocomplete-container">
+                            <input 
+                                type="text" 
+                                id="stock-input" 
+                                class="form-control" 
+                                placeholder="输入股票代码或名称"
+                                required
+                            >
+                            <!-- 自动补全下拉列表 -->
+                            <div id="stock-suggestions" class="suggestions-list" style="display: none;"></div>
+                        </div>
+                        <span class="form-hint">支持输入股票代码（如000001）或股票名称（如平安银行）</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="action-btn2" onclick="closeAddStockModal()">
+                        <i class="fas fa-times"></i>
+                        <span>取消</span>
+                    </button>
+                    <button class="submit-btn" onclick="submitAddStock()">
+                        <i class="fas fa-check"></i>
+                        <span>确认添加</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* 弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            border-bottom: 2px solid #e2e8f0;
+            background-color: #f8fafc;
+        }
+
+        .modal-header h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--dark-color);
+            font-size: 1.3rem;
+            margin: 0;
+        }
+
+        .modal-header i {
+            color: var(--primary-color);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #64748b;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            background-color: #e2e8f0;
+            color: var(--dark-color);
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .modal-footer {
+            padding: 20px 25px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            background-color: #f8fafc;
+        }
+
+        /* 自动补全容器 */
+        .autocomplete-container {
+            position: relative;
+        }
+
+        /* 自动补全下拉列表 */
+        .suggestions-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: white;
+            border: 2px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .suggestion-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-code {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .suggestion-name {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .suggestion-highlight {
+            background-color: rgba(59, 130, 246, 0.2);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        /* 股票标签样式 */
+        .concept-stock-item {
+            display: inline-flex;
+            align-items: center;
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--secondary-color);
+            padding: 6px 12px;
+            border-radius: 20px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .concept-stock-item .remove-btn {
+            margin-left: 8px;
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+            border: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.7rem;
+        }
+
+        .concept-stock-item .remove-btn:hover {
+            background-color: rgba(239, 68, 68, 0.2);
+        }
+
+        /* 操作按钮组 */
+        .concept-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .concept-actions .action-btn {
+            width: 32px;
+            height: 32px;
+        }
+    </style>
+
+    <script>
+        // 全局变量
+        let concepts = [];
+        let currentConceptId = null;
+        let stockList = []; // 股票代码列表，用于自动补全
+        let selectedStockCode = null; // 选中的股票完整代码
+
+        // DOM元素
+        const resultTbody = document.getElementById('result-tbody');
+        const resultCount = document.getElementById('result-count');
+        const emptyResult = document.getElementById('empty-result');
+        const addStockModal = document.getElementById('add-stock-modal');
+        const stockInput = document.getElementById('stock-input');
+        const suggestionsList = document.getElementById('stock-suggestions');
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadConcepts();
+            await loadStockList(); // 加载股票列表用于自动补全
+
+            // 绑定表单提交事件
+            document.getElementById('add-concept-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const name = document.getElementById('concept-name').value.trim();
+                
+                if (!name) {
+                    alert('请输入概念名称');
+                    return;
+                }
+
+                try {
+                    const response = await addConcept(name);
+                    if (response.status === 200) {
+                        alert('概念添加成功');
+                        this.reset();
+                        await loadConcepts();
+                    } else {
+                        const data = await response.json();
+                        alert('添加失败：' + (data.message || '未知错误'));
+                    }
+                } catch (error) {
+                    console.error('添加概念失败:', error);
+                    alert('添加概念失败');
+                }
+            });
+
+            // 股票输入框自动补全事件
+            stockInput.addEventListener('input', function() {
+                showSuggestions(this.value);
+            });
+
+            stockInput.addEventListener('keydown', function(e) {
+                handleKeyDown(e);
+            });
+
+            stockInput.addEventListener('blur', function() {
+                // 延迟隐藏，给点击选择留时间
+                setTimeout(function() {
+                    suggestionsList.style.display = 'none';
+                }, 200);
+            });
+
+            stockInput.addEventListener('focus', function() {
+                if (this.value.trim()) {
+                    showSuggestions(this.value);
+                }
+            });
+        });
+
+        // 加载股票列表
+        async function loadStockList() {
+            try {
+                const data = await getCodeData();
+                stockList = data || [];
+            } catch (error) {
+                console.error('加载股票列表失败:', error);
+            }
+        }
+
+        // 加载概念列表
+        async function loadConcepts() {
+            try {
+                const data = await getConcepts();
+                concepts = data || [];
+                renderTable();
+            } catch (error) {
+                console.error('加载概念列表失败:', error);
+                alert('加载概念列表失败');
+            }
+        }
+
+        // 渲染表格
+        function renderTable() {
+            resultTbody.innerHTML = '';
+
+            if (concepts.length > 0) {
+                emptyResult.style.display = 'none';
+                resultCount.textContent = concepts.length;
+
+                concepts.forEach(concept => {
+                    const tr = document.createElement('tr');
+
+                    // 概念名称列
+                    const nameTd = document.createElement('td');
+                    nameTd.innerHTML = `<span class="table-colume-badge increase">${concept.name}</span>`;
+                    tr.appendChild(nameTd);
+
+                    // 相关个股列
+                    const stocksTd = document.createElement('td');
+                    if (concept.stocks && concept.stocks.length > 0) {
+                        let stocksHtml = '';
+                        concept.stocks.forEach((stock, index) => {
+                            stocksHtml += `
+                                <div class="concept-stock-item">
+                                    <a href="https://xueqiu.com/S/${stock.code}" target="_blank" class="limitup-stock-name">${stock.name}</a>
+                                    <button class="remove-btn" onclick="confirmRemoveStock(${concept.id}, '${stock.code}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            `;
+                        });
+                        stocksTd.innerHTML = stocksHtml;
+                    } else {
+                        stocksTd.innerHTML = '<span style="color: #94a3b8;">暂无个股</span>';
+                    }
+                    tr.appendChild(stocksTd);
+
+                    // 操作列
+                    const actionTd = document.createElement('td');
+                    actionTd.innerHTML = `
+                        <div class="concept-actions">
+                            <button class="action-btn edit" onclick="openAddStockModal(${concept.id})" title="添加个股">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="action-btn delete" onclick="confirmDeleteConcept(${concept.id}, '${concept.name}')" title="删除概念">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                    tr.appendChild(actionTd);
+
+                    resultTbody.appendChild(tr);
+                });
+            } else {
+                emptyResult.style.display = 'block';
+                resultCount.textContent = '0';
+            }
+        }
+
+        // 显示自动补全建议
+        function showSuggestions(input) {
+            const keyword = input.toLowerCase().trim();
+            
+            if (!keyword) {
+                suggestionsList.style.display = 'none';
+                return;
+            }
+
+            // 过滤匹配的股票
+            const matches = stockList.filter(stock => {
+                const code = stock.company_code ? stock.company_code.toLowerCase() : '';
+                const name = stock.company_name ? stock.company_name.toLowerCase() : '';
+                return code.includes(keyword) || name.includes(keyword);
+            }).slice(0, 10); // 最多显示10条
+
+            if (matches.length === 0) {
+                suggestionsList.style.display = 'none';
+                return;
+            }
+
+            // 生成建议列表HTML
+            let html = '';
+            matches.forEach(stock => {
+                const code = stock.company_code || '';
+                const name = stock.company_name || '';
+                
+                // 高亮匹配部分
+                const highlightedCode = highlightMatch(code, keyword);
+                const highlightedName = highlightMatch(name, keyword);
+                
+                html += `
+                    <div class="suggestion-item" data-code="${code}">
+                        <span class="suggestion-code">${highlightedCode}</span>
+                        <span class="suggestion-name">${highlightedName}</span>
+                    </div>
+                `;
+            });
+
+            suggestionsList.innerHTML = html;
+            suggestionsList.style.display = 'block';
+
+            // 绑定点击事件
+            document.querySelectorAll('.suggestion-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const code = this.getAttribute('data-code');
+                    selectStock(code);
+                });
+            });
+        }
+
+        // 高亮匹配文本
+        function highlightMatch(text, keyword) {
+            if (!text || !keyword) return text;
+            const regex = new RegExp(`(${keyword})`, 'gi');
+            return text.replace(regex, '<span class="suggestion-highlight">$1</span>');
+        }
+
+        // 键盘导航处理
+        function handleKeyDown(e) {
+            const items = document.querySelectorAll('.suggestion-item');
+            if (items.length === 0) return;
+
+            let selectedIndex = -1;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].classList.contains('selected')) {
+                    selectedIndex = i;
+                    break;
+                }
+            }
+
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (selectedIndex < items.length - 1) {
+                        if (selectedIndex >= 0) {
+                            items[selectedIndex].classList.remove('selected');
+                        }
+                        items[selectedIndex + 1].classList.add('selected');
+                        items[selectedIndex + 1].scrollIntoView({ block: 'nearest' });
+                    }
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (selectedIndex > 0) {
+                        items[selectedIndex].classList.remove('selected');
+                        items[selectedIndex - 1].classList.add('selected');
+                        items[selectedIndex - 1].scrollIntoView({ block: 'nearest' });
+                    }
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (selectedIndex >= 0) {
+                        const code = items[selectedIndex].getAttribute('data-code');
+                        selectStock(code);
+                    } else if (items.length > 0) {
+                        const code = items[0].getAttribute('data-code');
+                        selectStock(code);
+                    }
+                    break;
+                case 'Escape':
+                    suggestionsList.style.display = 'none';
+                    break;
+            }
+        }
+
+        // 选择股票
+        function selectStock(code) {
+            // 找到股票信息
+            const stock = stockList.find(s => s.company_code === code);
+            if (stock) {
+                // 显示格式：代码(名称)
+                stockInput.value = `${stock.company_code} (${stock.company_name})`;
+                selectedStockCode = stock.company_code; // 保存完整代码
+            } else {
+                stockInput.value = code;
+                selectedStockCode = code;
+            }
+            suggestionsList.style.display = 'none';
+        }
+
+        // 打开添加股票弹窗
+        function openAddStockModal(conceptId) {
+            currentConceptId = conceptId;
+            stockInput.value = '';
+            selectedStockCode = null;
+            suggestionsList.style.display = 'none';
+            addStockModal.style.display = 'flex';
+            // 聚焦输入框
+            setTimeout(() => {
+                stockInput.focus();
+            }, 100);
+        }
+
+        // 关闭添加股票弹窗
+        function closeAddStockModal() {
+            addStockModal.style.display = 'none';
+            currentConceptId = null;
+            stockInput.value = '';
+            selectedStockCode = null;
+            suggestionsList.style.display = 'none';
+        }
+
+        // 提交添加股票
+        async function submitAddStock() {
+            const inputValue = stockInput.value.trim();
+            
+            if (!inputValue) {
+                alert('请输入股票代码或名称');
+                return;
+            }
+
+            // 如果有选中的股票代码，直接使用
+            let companyCode = selectedStockCode;
+
+            // 如果没有选中，尝试从输入中提取或搜索
+            if (!companyCode) {
+                // 尝试从输入中提取代码
+                const codeMatch = inputValue.match(/^(\d{6}(?:\.[A-Za-z]+)?)/);
+                if (codeMatch) {
+                    companyCode = codeMatch[1].toUpperCase();
+                } else {
+                    // 尝试按名称搜索
+                    const foundStock = stockList.find(stock => 
+                        stock.company_name && stock.company_name.includes(inputValue)
+                    );
+                    if (foundStock) {
+                        companyCode = foundStock.company_code;
+                    }
+                }
+            }
+
+            // 如果还是没有找到，尝试补全股票代码
+            if (!companyCode) {
+                // 检查是否是6位数字
+                const numMatch = inputValue.match(/^\d{6}$/);
+                if (numMatch) {
+                    // 尝试添加.SZ或.SH后缀
+                    const code6 = numMatch[0];
+                    const szStock = stockList.find(s => s.company_code === code6 + '.SZ');
+                    const shStock = stockList.find(s => s.company_code === code6 + '.SH');
+                    
+                    if (szStock) {
+                        companyCode = szStock.company_code;
+                    } else if (shStock) {
+                        companyCode = shStock.company_code;
+                    }
+                }
+            }
+
+            if (!companyCode) {
+                alert('未找到匹配的股票，请输入正确的股票代码或名称');
+                return;
+            }
+
+            // 验证company_code格式
+            const codePattern = /^[A-Za-z]{2}\d{6}$/;
+            if (!codePattern.test(companyCode)) {
+                alert('股票代码格式不正确');
+                return;
+            }
+
+            try {
+                const response = await addConceptStock(currentConceptId, companyCode);
+                if (response.status === 200) {
+                    alert('个股添加成功');
+                    closeAddStockModal();
+                    await loadConcepts();
+                } else {
+                    const data = await response.json();
+                    alert('添加失败：' + (data.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('添加个股失败:', error);
+                alert('添加个股失败');
+            }
+        }
+
+        // 确认删除概念
+        function confirmDeleteConcept(id, name) {
+            if (confirm(`确定要删除概念「${name}」吗？此操作将同时删除该概念下的所有个股关联。`)) {
+                deleteConceptById(id);
+            }
+        }
+
+        // 删除概念
+        async function deleteConceptById(id) {
+            try {
+                const response = await deleteConcept(id);
+                if (response.status === 200) {
+                    alert('概念删除成功');
+                    await loadConcepts();
+                } else {
+                    const data = await response.json();
+                    alert('删除失败：' + (data.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('删除概念失败:', error);
+                alert('删除概念失败');
+            }
+        }
+
+        // 确认移除个股
+        function confirmRemoveStock(conceptId, code) {
+            if (confirm(`确定要从概念中移除股票「${code}」吗？`)) {
+                removeStockFromConcept(conceptId, code);
+            }
+        }
+
+        // 从概念中移除个股
+        async function removeStockFromConcept(conceptId, code) {
+            try {
+                const response = await deleteConceptStock(conceptId, code);
+                if (response.status === 200) {
+                    alert('个股移除成功');
+                    await loadConcepts();
+                } else {
+                    const data = await response.json();
+                    alert('移除失败：' + (data.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('移除个股失败:', error);
+                alert('移除个股失败');
+            }
+        }
+
+        // ESC键关闭弹窗
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (addStockModal.style.display === 'flex') {
+                    closeAddStockModal();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
