@@ -25,6 +25,14 @@ const queryShareholderReportUrl = "/analyze/shareholder"
 const queryVolumeReportUrl = "/analyze/volume/report"
 const queryLimitUpReportUrl = "/analyze/limitup/report"
 
+// 概念管理API
+const getConceptsUrl = "/concept/list"
+const addConceptUrl = "/concept/add"
+const deleteConceptUrl = "/concept/delete"
+const getConceptStocksUrl = "/concept/stocks"
+const addConceptStockUrl = "/concept/stock/add"
+const deleteConceptStockUrl = "/concept/stock/delete"
+
 
 const ChartPropertyMap = {
     "shareholderNumber": {
@@ -601,6 +609,82 @@ async function fetchLimitUpReport() {
         }
     });
     return response.json();
+}
+
+// 概念管理API
+async function getConcepts() {
+    const url = domain + getConceptsUrl;
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
+
+async function addConcept(name) {
+    const url = domain + addConceptUrl;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"name": name})
+    });
+    return response;
+}
+
+async function deleteConcept(id) {
+    const url = domain + deleteConceptUrl;
+    const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"id": id})
+    });
+    return response;
+}
+
+async function getConceptStocks(conceptId) {
+    const url = domain + getConceptStocksUrl;
+    const params = {"concept_id": conceptId};
+    const baseUrl = new URL(url);
+    Object.entries(params).forEach(([key, value]) => {
+        baseUrl.searchParams.append(key, value);
+    });
+    const response = await fetch(baseUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
+
+async function addConceptStock(conceptId, stockCode) {
+    const url = domain + addConceptStockUrl;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"concept_id": conceptId, "stock_code": stockCode})
+    });
+    return response;
+}
+
+async function deleteConceptStock(conceptId, stockCode) {
+    const url = domain + deleteConceptStockUrl;
+    const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"concept_id": conceptId, "stock_code": stockCode})
+    });
+    return response;
 }
 
 

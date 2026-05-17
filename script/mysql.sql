@@ -42,3 +42,10 @@ ALTER TABLE `stock_code`
 ALTER TABLE `subscribe`
   ADD COLUMN `last_result` tinyint NOT NULL DEFAULT '0' COMMENT '最后分析结果',
   ADD COLUMN `count` int NOT NULL DEFAULT '0' COMMENT '满足最后结果的连续次数';
+
+CREATE TABLE `concept` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'id',
+  `name` varchar(255) NOT NULL DEFAULT '' COMMENT '概念名称',
+  `stocks` text DEFAULT NULL COMMENT '股票列表',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='概念数据';
