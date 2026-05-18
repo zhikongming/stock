@@ -440,6 +440,9 @@
                             <button class="action-btn edit" onclick="openAddStockModal(${concept.id})" title="添加个股">
                                 <i class="fas fa-plus"></i>
                             </button>
+                            <button class="action-btn view" onclick="openAllStocks(${concept.id})" title="打开全部股票" ${concept.stocks && concept.stocks.length > 0 ? '' : 'disabled'}>
+                                <i class="fas fa-external-link-alt"></i>
+                            </button>
                             <button class="action-btn delete" onclick="confirmDeleteConcept(${concept.id}, '${concept.name}')" title="删除概念">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -718,6 +721,25 @@
             } catch (error) {
                 console.error('移除个股失败:', error);
                 alert('移除个股失败');
+            }
+        }
+
+        // 打开概念下所有股票链接
+        function openAllStocks(conceptId) {
+            const concept = concepts.find(c => c.id === conceptId);
+            if (!concept || !concept.stocks || concept.stocks.length === 0) {
+                alert('该概念下暂无股票');
+                return;
+            }
+
+            const stocks = concept.stocks;
+            for (let i = 0; i < stocks.length; i++) {
+                let openUrl = "https://xueqiu.com/S/" + stocks[i].code;
+                // 设置随机延迟避免请求过高
+                const delay = Math.floor(Math.random() * 1000);
+                setTimeout(() => {
+                    window.open(openUrl, '_blank');
+                }, delay * i);
             }
         }
 
