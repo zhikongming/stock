@@ -840,6 +840,23 @@ func GetVolumeReport(ctx context.Context) ([]*model.VolumeReportItem, error) {
 	if err != nil {
 		return nil, err
 	}
+	// 获取所有的板块信息
+	allIndustryList, err := dal.GetAllStockIndustry(ctx)
+	if err != nil {
+		return nil, err
+	}
+	industryMap := make(map[string]string)
+	for _, industry := range allIndustryList {
+		industryMap[industry.Code] = industry.Name
+	}
+	allIndustryRelationList, err := dal.GetAllStockIndustryRelation(ctx)
+	if err != nil {
+		return nil, err
+	}
+	stockMap := make(map[string]string)
+	for _, industryRelation := range allIndustryRelationList {
+		stockMap[industryRelation.CompanyCode] = industryMap[industryRelation.IndustryCode]
+	}
 	// 需要使用并发来计算, 以减少耗时
 	jobList := make([]func() (interface{}, error), 0)
 	for _, stockCode := range stockList {
@@ -872,6 +889,7 @@ func GetVolumeReport(ctx context.Context) ([]*model.VolumeReportItem, error) {
 					PreAmount:     preStockPrice.Amount,
 					CurrentAmount: curStockPrice.Amount,
 					Diff:          utils.Float64KeepDecimal(float64(curStockPrice.Amount)/float64(preStockPrice.Amount), 2),
+					IndustryName:  stockMap[stockCode.CompanyCode],
 				}
 				return report, nil
 			}
