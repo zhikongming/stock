@@ -52,4 +52,5 @@ type VolumeReportItem struct {
 	CurrentDate   string  `json:"current_date"`
 	Diff          float64 `json:"diff"`
 	Error         error   `json:"-"`
+	IndustryName  string  `json:"industry_name"`
 }
