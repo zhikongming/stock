@@ -14,6 +14,25 @@ type BDStockDailyData struct {
 	MarketData string   `json:"marketData"`
 }
 
+type BDGetRemoteStockMinuteResp struct {
+	Result *BDStockMinuteResult `json:"Result"`
+}
+
+type BDStockMinuteResult struct {
+	NewMarketData *BDStockMinuteData `json:"newMarketData"`
+}
+
+type BDStockMinuteData struct {
+	Headers    []string             `json:"headers"`
+	Keys       []string             `json:"keys"`
+	MarketData []*BDStockMinuteItem `json:"marketData"`
+}
+
+type BDStockMinuteItem struct {
+	Date string `json:"date"`
+	P    string `json:"p"`
+}
+
 type BDGetRemoteShareholderResp struct {
 	Result *BDShareholdersResult `json:"Result"`
 }

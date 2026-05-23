@@ -124,3 +124,9 @@ type StockRelationItem struct {
 	Percent  float64 `json:"percent"`
 	TickSize float64 `json:"tick_size"`
 }
+
+type StockMinuteData struct {
+	Time    string  `json:"time"`
+	Price   float64 `json:"price"`
+	Percent float64 `json:"percent"`
+}

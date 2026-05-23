@@ -612,9 +612,14 @@ async function fetchLimitUpReport() {
 }
 
 // 概念管理API
-async function getConcepts() {
+async function getConcepts(withChange = false) {
     const url = domain + getConceptsUrl;
-    const response = await fetch(url, {
+    const params = {"with_change": withChange};
+    const baseUrl = new URL(url);
+    Object.entries(params).forEach(([key, value]) => {
+        baseUrl.searchParams.append(key, value);
+    });
+    const response = await fetch(baseUrl, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json'

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"sort"
 	"strings"
@@ -40,6 +41,14 @@ func GetLimitUpReport(ctx context.Context) ([][]*model.LimitUpReportItem, error)
 	for _, industryRelation := range allIndustryRelationList {
 		stockMap[industryRelation.CompanyCode] = industryMap[industryRelation.IndustryCode]
 	}
+	// 获取所有概念的数据
+	conceptList, err := dal.GetConcepts(ctx)
+	conceptMap := make(map[string]string)
+	for _, concept := range conceptList {
+		for _, stock := range strings.Split(concept.Stocks, ",") {
+			conceptMap[stock] = concept.Name
+		}
+	}
 
 	// 需要使用并发来计算, 以减少耗时
 	jobList := make([]func() (interface{}, error), 0)
@@ -61,6 +70,9 @@ func GetLimitUpReport(ctx context.Context) ([][]*model.LimitUpReportItem, error)
 					Count:        count,
 					IndustryName: stockMap[stockCode.CompanyCode],
 					LastDate:     stockPriceList[0].Date,
+				}
+				if conceptName, ok := conceptMap[stockCode.CompanyCode]; ok {
+					data.IndustryName = fmt.Sprintf("%s,%s", data.IndustryName, conceptName)
 				}
 				return data, nil
 			}
@@ -167,4 +179,8 @@ func GetLimitUpRate(stockCode string) float64 {
 	}
 	// 主板（其余代码）
 	return 1.10
+}
+
+func GetLimitUpMaxPercent(stockCode string) int {
+	return int(utils.Float64KeepDecimal((GetLimitUpRate(stockCode)-1.0)*100, 0))
 }
