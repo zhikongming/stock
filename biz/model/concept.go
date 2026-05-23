@@ -8,6 +8,11 @@ type ConceptStockInfo struct {
 	MaxPercent int     `json:"max_percent"`
 }
 
+type GetConceptsResp struct {
+	Concepts       []*ConceptResp `json:"concepts"`
+	GetPercentTime string         `json:"get_percent_time"`
+}
+
 // 概念响应结构
 type ConceptResp struct {
 	ID      uint                `json:"id"`
@@ -19,6 +24,7 @@ type ConceptResp struct {
 // 获取概念列表请求
 type GetConceptsReq struct {
 	WithChange bool `query:"with_change"`
+	ForceSync  bool `query:"force_sync"`
 }
 
 // 添加概念请求

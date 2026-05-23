@@ -58,7 +58,7 @@
                 <h2 class="table-title">
                     <i class="fas fa-table"></i>
                     <span>概念列表</span>
-                    (共 <span id="result-count">0</span> 条记录)
+                    (共<span id="result-count">0</span>条记录<span id="last-update-time"></span>)
                 </h2>
                 <div class="table-info">
                     <div class="table-header-right">
@@ -426,6 +426,7 @@
     <script>
         // 全局变量
         let concepts = [];
+        let conceptGetPercentTime = null;
         let currentConceptId = null;
         let stockList = []; // 股票代码列表，用于自动补全
         let selectedStockCode = null; // 选中的股票完整代码
@@ -434,6 +435,7 @@
         // DOM元素
         const resultTbody = document.getElementById('result-tbody');
         const resultCount = document.getElementById('result-count');
+        const lastUpdateTime = document.getElementById('last-update-time');
         const emptyResult = document.getElementById('empty-result');
         const addStockModal = document.getElementById('add-stock-modal');
         const stockInput = document.getElementById('stock-input');
@@ -522,7 +524,8 @@
         async function loadConcepts() {
             try {
                 const data = await getConcepts(enableChange);
-                concepts = data || [];
+                concepts = data.concepts || [];
+                conceptGetPercentTime = data.get_percent_time || null;
                 renderTable(enableChange);
             } catch (error) {
                 console.error('加载概念列表失败:', error);
@@ -537,6 +540,9 @@
             if (concepts.length > 0) {
                 emptyResult.style.display = 'none';
                 resultCount.textContent = concepts.length;
+                if (enableChange) {
+                    lastUpdateTime.textContent = `, 股价更新时间：${conceptGetPercentTime}`;
+                }
 
                 concepts.forEach(concept => {
                     const tr = document.createElement('tr');
@@ -552,9 +558,9 @@
                     if (concept.percent !== undefined && concept.percent !== null && enableChange) {
                         const percent = concept.percent;
                         if (percent > 0) {
-                            changeTd.innerHTML = `<span class="positive">+${percent.toFixed(2)}%</span>`;
+                            changeTd.innerHTML = `<span class="negative">+${percent.toFixed(2)}%</span>`;
                         } else if (percent < 0) {
-                            changeTd.innerHTML = `<span class="negative">${percent.toFixed(2)}%</span>`;
+                            changeTd.innerHTML = `<span class="positive">${percent.toFixed(2)}%</span>`;
                         } else {
                             changeTd.textContent = '0.00%';
                         }
@@ -571,9 +577,9 @@
                             let percent = ""
                             if (enableChange) {
                                 if (stock.percent >= 0) {
-                                percent = `(+${stock.percent.toFixed(2)}%)`
+                                    percent = `(<span class="negative">+${stock.percent.toFixed(2)}%</span>)`
                                 } else {
-                                    percent = `(${stock.percent.toFixed(2)}%)`
+                                    percent = `(<span class="positive">${stock.percent.toFixed(2)}%</span>)`
                                 }
                             }
                             // 生成涨停板标签
