@@ -7,6 +7,7 @@ type MemCache struct {
 	Data     interface{}
 	Expire   time.Time
 	KeepTime time.Duration
+	SetTime  time.Time
 }
 
 var MemCacheMap = make(map[string]*MemCache)
@@ -17,6 +18,7 @@ func NewMemCache(key string, data interface{}, keepTime time.Duration) *MemCache
 		Data:     data,
 		Expire:   time.Now().Add(keepTime),
 		KeepTime: keepTime,
+		SetTime:  time.Now(),
 	}
 }
 

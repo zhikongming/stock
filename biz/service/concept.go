@@ -18,7 +18,7 @@ const (
 )
 
 // GetConcepts 获取所有概念列表
-func GetConcepts(ctx context.Context, req *model.GetConceptsReq) ([]*model.ConceptResp, error) {
+func GetConcepts(ctx context.Context, req *model.GetConceptsReq) (*model.GetConceptsResp, error) {
 	concepts, err := dal.GetConcepts(ctx)
 	if err != nil {
 		return nil, err
@@ -66,19 +66,46 @@ func GetConcepts(ctx context.Context, req *model.GetConceptsReq) ([]*model.Conce
 		result = append(result, item)
 	}
 
-	// 按名称排序
-	sort.Sort(model.ConceptRespSorter(result))
-
+	resp := &model.GetConceptsResp{}
 	// 填充涨跌幅数据
 	if req.WithChange {
 		// 检查缓存, 如果缓存里面有数据的话, 则直接get缓存数据
 		cache := GetMemCache(ConceptCacheKey)
-		if cache != nil {
-			result = cache.Data.([]*model.ConceptResp)
+		if cache != nil && !req.ForceSync {
+			d := cache.Data.([]*model.ConceptResp)
+			dMap := make(map[uint]*model.ConceptResp)
+			// 防止用户添加了新的概念和股票, 而数据展示不出来
+			for _, item := range d {
+				dMap[item.ID] = item
+			}
+			// 合并数据
+			for _, item := range result {
+				dStockMap := make(map[string]*model.ConceptStockInfo)
+				if dItem, ok := dMap[item.ID]; ok {
+					item.Percent = dItem.Percent
+					for _, stock := range dItem.Stocks {
+						dStockMap[stock.Code] = stock
+					}
+				}
+
+				for _, stock := range item.Stocks {
+					if dStock, ok := dStockMap[stock.Code]; ok {
+						stock.Percent = dStock.Percent
+					}
+				}
+			}
+			// 按涨跌幅排序
+			sort.Sort(model.ConceptRespChangeSorter(result))
+			resp.GetPercentTime = utils.FormatTime(cache.SetTime)
 		} else {
 			// 九点半之前的话, 则不填充涨跌幅数据
 			if utils.IsBeforeHourMinute(9, 30) {
-				return result, nil
+				sort.Sort(model.ConceptRespNameSorter(result))
+
+				return &model.GetConceptsResp{
+					Concepts:       result,
+					GetPercentTime: utils.FormatTime(time.Now()),
+				}, nil
 			}
 			// 调用接口获取数据并设置内存缓存
 			for _, concept := range result {
@@ -129,16 +156,25 @@ func GetConcepts(ctx context.Context, req *model.GetConceptsReq) ([]*model.Conce
 					concept.Percent = utils.Float64KeepDecimal(concept.Percent, 2)
 				}
 			}
+			// 按涨跌幅排序
+			sort.Sort(model.ConceptRespChangeSorter(result))
+
 			// 设置缓存
 			if utils.IsBeforeHourMinute(15, 0) {
 				SetMemCache(ConceptCacheKey, result, 3*time.Minute)
 			} else {
 				SetMemCache(ConceptCacheKey, result, 10*time.Hour)
 			}
+			resp.GetPercentTime = utils.FormatTime(time.Now())
 		}
+	} else {
+		// 按名称排序
+		sort.Sort(model.ConceptRespNameSorter(result))
+		resp.GetPercentTime = ""
 	}
 
-	return result, nil
+	resp.Concepts = result
+	return resp, nil
 }
 
 // AddConcept 添加新概念
