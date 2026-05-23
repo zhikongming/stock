@@ -108,9 +108,8 @@ func GetConcepts(ctx context.Context, req *model.GetConceptsReq) (*model.GetConc
 				}, nil
 			}
 			// 调用接口获取数据并设置内存缓存
+			jobList := make([]func() (interface{}, error), 0)
 			for _, concept := range result {
-				concept.Percent = 0.0
-				jobList := make([]func() (interface{}, error), 0)
 				for _, stock := range concept.Stocks {
 					jobList = append(jobList, func(code string) func() (interface{}, error) {
 						return func() (interface{}, error) {
@@ -129,20 +128,23 @@ func GetConcepts(ctx context.Context, req *model.GetConceptsReq) (*model.GetConc
 						}
 					}(stock.Code))
 				}
-				// 执行并发任务
-				dataList, err := utils.ConcurrentActuator(jobList, MaxConceptJobNum)
-				if err != nil {
-					return nil, err
+			}
+			// 执行并发任务
+			dataList, err := utils.ConcurrentActuator(jobList, MaxConceptJobNum)
+			if err != nil {
+				return nil, err
+			}
+			dataMap := make(map[string]*model.WrapMinutePrice)
+			for _, item := range dataList {
+				if item == nil {
+					continue
 				}
-				dataMap := make(map[string]*model.WrapMinutePrice)
-				for _, item := range dataList {
-					if item == nil {
-						continue
-					}
-					wrap := item.(*model.WrapMinutePrice)
-					dataMap[wrap.Code] = wrap
-				}
+				wrap := item.(*model.WrapMinutePrice)
+				dataMap[wrap.Code] = wrap
+			}
+			for _, concept := range result {
 				// 填充涨跌幅数据
+				concept.Percent = 0.0
 				count := 0
 				for _, stock := range concept.Stocks {
 					if wrap, ok := dataMap[stock.Code]; ok {
