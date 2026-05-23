@@ -253,3 +253,59 @@ func (c *BaiduClient) GetRemoteShareholder(ctx context.Context, code string, dat
 	}
 	return top10Shareholder, nil
 }
+
+func (c *BaiduClient) GetRemoteStockMinute(ctx context.Context, code string) ([]*model.StockMinuteData, error) {
+	path := fmt.Sprintf("%s%s", BaiduDomain, BaiduStockDailyPath)
+	code = utils.GetStockCodeNumber(code)
+	params := map[string]string{
+		"srcid":       "5353",
+		"pointType":   "string",
+		"group":       "quotation_minute_ab",
+		"query":       code,
+		"code":        code,
+		"market_type": "ab",
+		"newFormat":   "1",
+	}
+	headers := map[string]string{
+		"User-Agent":      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+		"Accept":          "application/vnd.finance-web.v1+json",
+		"Host":            "finance.pae.baidu.com",
+		"Connection":      "keep-alive",
+		"Accept-Encoding": "gzip, deflate, br, zstd",
+		"Accept-Language": "zh-CN,zh;q=0.9",
+		"origin":          "https://gushitong.baidu.com",
+	}
+	resp, err := DoGet(ctx, path, params, headers)
+	if err != nil {
+		return nil, err
+	}
+
+	var ret model.BDGetRemoteStockMinuteResp
+	err = json.Unmarshal(resp, &ret)
+	if err != nil {
+		log.Printf("code:%s, json unmarshal failed: %v", code, err)
+		return nil, err
+	}
+
+	result := make([]*model.StockMinuteData, 0)
+	if len(ret.Result.NewMarketData.MarketData) == 0 {
+		return result, nil
+	}
+	d := ret.Result.NewMarketData.MarketData[0]
+	sliceList := strings.Split(d.P, ";")
+	for _, item := range sliceList {
+		itemList := strings.Split(item, ",")
+		if len(itemList) < 6 {
+			continue
+		}
+		price, _ := strconv.ParseFloat(itemList[2], 64)
+		percent, _ := strconv.ParseFloat(itemList[5], 64)
+		result = append(result, &model.StockMinuteData{
+			Time:    itemList[1],
+			Price:   price,
+			Percent: percent,
+		})
+	}
+
+	return result, nil
+}

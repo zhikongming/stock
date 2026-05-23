@@ -2,15 +2,23 @@ package model
 
 // 概念股票信息
 type ConceptStockInfo struct {
-	Code string `json:"code"`
-	Name string `json:"name"`
+	Code       string  `json:"code"`
+	Name       string  `json:"name"`
+	Percent    float64 `json:"percent"`
+	MaxPercent int     `json:"max_percent"`
 }
 
 // 概念响应结构
 type ConceptResp struct {
-	ID     uint                `json:"id"`
-	Name   string              `json:"name"`
-	Stocks []*ConceptStockInfo `json:"stocks"`
+	ID      uint                `json:"id"`
+	Name    string              `json:"name"`
+	Percent float64             `json:"percent"`
+	Stocks  []*ConceptStockInfo `json:"stocks"`
+}
+
+// 获取概念列表请求
+type GetConceptsReq struct {
+	WithChange bool `query:"with_change"`
 }
 
 // 添加概念请求
@@ -38,4 +46,9 @@ type AddConceptStockReq struct {
 type DeleteConceptStockReq struct {
 	ConceptID int64  `json:"concept_id"`
 	StockCode string `json:"stock_code"`
+}
+
+type WrapMinutePrice struct {
+	Code string `json:"code"`
+	*StockMinuteData
 }

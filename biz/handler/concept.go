@@ -13,7 +13,15 @@ import (
 
 // GetConcepts 获取所有概念列表
 func GetConcepts(ctx context.Context, c *app.RequestContext) {
-	concepts, err := service.GetConcepts(ctx)
+	var req model.GetConceptsReq
+	if err := c.BindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.H{
+			"message": "bad request",
+		})
+		return
+	}
+
+	concepts, err := service.GetConcepts(ctx, &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.H{
 			"message": fmt.Sprintf("error: %v", err),

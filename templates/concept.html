@@ -58,14 +58,25 @@
                 <h2 class="table-title">
                     <i class="fas fa-table"></i>
                     <span>概念列表</span>
+                    (共 <span id="result-count">0</span> 条记录)
                 </h2>
-                <div class="table-info">共 <span id="result-count">0</span> 条记录</div>
+                <div class="table-info">
+                    <div class="table-header-right">
+                        <div class="toggle-switch">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="enable-change-toggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-text">获取涨跌幅</span>
+                        </div>
+                    </div></div>
             </div>
 
             <table class="table-content-header">
                 <thead>
                     <tr>
                         <th>概念名称</th>
+                        <th>概念涨跌幅</th>
                         <th>相关个股</th>
                         <th>操作</th>
                     </tr>
@@ -130,6 +141,77 @@
     </div>
 
     <style>
+        /* 表格头部右侧区域 */
+        .table-header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* 开关样式 */
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-label {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+            cursor: pointer;
+        }
+
+        .toggle-label input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            border-radius: 26px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle-label input:checked + .toggle-slider {
+            background-color: #3b82f6;
+        }
+
+        .toggle-label input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+
+        .toggle-text {
+            font-size: 0.9rem;
+            color: #475569;
+            font-weight: 500;
+        }
+
+        /* 涨跌幅列样式 */
+        .change-cell {
+            font-weight: 600;
+            min-width: 80px;
+        }
+
         /* 弹窗样式 */
         .modal-overlay {
             position: fixed;
@@ -274,6 +356,41 @@
             font-weight: 500;
         }
 
+        /* 股票信息容器 */
+        .stock-info {
+            position: relative;
+            display: inline-block;
+        }
+
+        /* 涨停板标签样式 */
+        .limitup-tag {
+            position: absolute;
+            top: -10px;
+            left: -25px;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: bold;
+        }
+
+        .limitup-30 {
+            background-color: rgba(239, 175, 0, 0.9);
+            color: white;
+            border: 1px solid rgba(239, 175, 0, 0.9);
+        }
+
+        .limitup-20 {
+            background-color: rgba(34, 197, 94, 0.9);
+            color: white;
+            border: 1px solid rgba(34, 197, 94, 0.9);
+        }
+
+        .limitup-10 {
+            background-color: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: 1px solid rgba(239, 68, 68, 0.9);
+        }
+
         .concept-stock-item .remove-btn {
             margin-left: 8px;
             background-color: rgba(239, 68, 68, 0.1);
@@ -312,6 +429,7 @@
         let currentConceptId = null;
         let stockList = []; // 股票代码列表，用于自动补全
         let selectedStockCode = null; // 选中的股票完整代码
+        let enableChange = false; // 是否获取涨跌幅
 
         // DOM元素
         const resultTbody = document.getElementById('result-tbody');
@@ -320,11 +438,26 @@
         const addStockModal = document.getElementById('add-stock-modal');
         const stockInput = document.getElementById('stock-input');
         const suggestionsList = document.getElementById('stock-suggestions');
+        const enableChangeToggle = document.getElementById('enable-change-toggle');
 
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', async function() {
+            // 从localStorage读取设置
+            const savedEnableChange = localStorage.getItem('concept_enable_change');
+            enableChange = savedEnableChange === 'true';
+            if (enableChangeToggle) {
+                enableChangeToggle.checked = enableChange;
+            }
+
             await loadConcepts();
             await loadStockList(); // 加载股票列表用于自动补全
+
+            // 绑定涨跌幅开关事件
+            enableChangeToggle.addEventListener('change', function() {
+                enableChange = this.checked;
+                localStorage.setItem('concept_enable_change', enableChange.toString());
+                loadConcepts();
+            });
 
             // 绑定表单提交事件
             document.getElementById('add-concept-form').addEventListener('submit', async function(e) {
@@ -388,9 +521,9 @@
         // 加载概念列表
         async function loadConcepts() {
             try {
-                const data = await getConcepts();
+                const data = await getConcepts(enableChange);
                 concepts = data || [];
-                renderTable();
+                renderTable(enableChange);
             } catch (error) {
                 console.error('加载概念列表失败:', error);
                 alert('加载概念列表失败');
@@ -398,7 +531,7 @@
         }
 
         // 渲染表格
-        function renderTable() {
+        function renderTable(enableChange) {
             resultTbody.innerHTML = '';
 
             if (concepts.length > 0) {
@@ -413,14 +546,44 @@
                     nameTd.innerHTML = `<span class="table-colume-badge increase">${concept.name}</span>`;
                     tr.appendChild(nameTd);
 
+                    // 涨跌幅列
+                    const changeTd = document.createElement('td');
+                    changeTd.className = 'change-cell';
+                    if (concept.percent !== undefined && concept.percent !== null && enableChange) {
+                        const percent = concept.percent;
+                        if (percent > 0) {
+                            changeTd.innerHTML = `<span class="positive">+${percent.toFixed(2)}%</span>`;
+                        } else if (percent < 0) {
+                            changeTd.innerHTML = `<span class="negative">${percent.toFixed(2)}%</span>`;
+                        } else {
+                            changeTd.textContent = '0.00%';
+                        }
+                    } else {
+                        changeTd.textContent = '-';
+                    }
+                    tr.appendChild(changeTd);
+
                     // 相关个股列
                     const stocksTd = document.createElement('td');
                     if (concept.stocks && concept.stocks.length > 0) {
                         let stocksHtml = '';
                         concept.stocks.forEach((stock, index) => {
+                            let percent = ""
+                            if (enableChange) {
+                                if (stock.percent >= 0) {
+                                percent = `(+${stock.percent.toFixed(2)}%)`
+                                } else {
+                                    percent = `(${stock.percent.toFixed(2)}%)`
+                                }
+                            }
+                            // 生成涨停板标签
+                            const limitupTag = `<span class="limitup-tag limitup-${stock.max_percent}">${stock.max_percent}%</span>`; 
                             stocksHtml += `
                                 <div class="concept-stock-item">
-                                    <a href="https://xueqiu.com/S/${stock.code}" target="_blank" class="limitup-stock-name">${stock.name}</a>
+                                    <div class="stock-info">
+                                        <a href="https://xueqiu.com/S/${stock.code}" target="_blank" class="limitup-stock-name">${stock.name}${percent}</a>
+                                        ${limitupTag}
+                                    </div>
                                     <button class="remove-btn" onclick="confirmRemoveStock(${concept.id}, '${stock.code}')">
                                         <i class="fas fa-times"></i>
                                     </button>

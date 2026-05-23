@@ -86,3 +86,9 @@ func IsNowWeekend() bool {
 	weekday := time.Now().Weekday()
 	return weekday == time.Saturday || weekday == time.Sunday
 }
+
+func IsBeforeHourMinute(hour, minute int) bool {
+	t := time.Now()
+	target := time.Date(t.Year(), t.Month(), t.Day(), hour, minute, 0, 0, t.Location())
+	return t.Before(target)
+}

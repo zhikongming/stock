@@ -5,14 +5,20 @@ import (
 	"errors"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/zhikongming/stock/biz/dal"
 	"github.com/zhikongming/stock/biz/model"
 	"github.com/zhikongming/stock/utils"
 )
 
+const (
+	ConceptCacheKey  = "concept_key"
+	MaxConceptJobNum = 3
+)
+
 // GetConcepts 获取所有概念列表
-func GetConcepts(ctx context.Context) ([]*model.ConceptResp, error) {
+func GetConcepts(ctx context.Context, req *model.GetConceptsReq) ([]*model.ConceptResp, error) {
 	concepts, err := dal.GetConcepts(ctx)
 	if err != nil {
 		return nil, err
@@ -40,13 +46,15 @@ func GetConcepts(ctx context.Context) ([]*model.ConceptResp, error) {
 				}
 				if stock != nil {
 					stocks = append(stocks, &model.ConceptStockInfo{
-						Code: stock.CompanyCode,
-						Name: stock.CompanyName,
+						Code:       stock.CompanyCode,
+						Name:       stock.CompanyName,
+						MaxPercent: GetLimitUpMaxPercent(utils.GetStockCodeNumber(stock.CompanyCode)),
 					})
 				} else {
 					stocks = append(stocks, &model.ConceptStockInfo{
-						Code: code,
-						Name: "未知",
+						Code:       code,
+						Name:       "未知",
+						MaxPercent: GetLimitUpMaxPercent(utils.GetStockCodeNumber(code)),
 					})
 				}
 			}
@@ -60,6 +68,75 @@ func GetConcepts(ctx context.Context) ([]*model.ConceptResp, error) {
 
 	// 按名称排序
 	sort.Sort(model.ConceptRespSorter(result))
+
+	// 填充涨跌幅数据
+	if req.WithChange {
+		// 检查缓存, 如果缓存里面有数据的话, 则直接get缓存数据
+		cache := GetMemCache(ConceptCacheKey)
+		if cache != nil {
+			result = cache.Data.([]*model.ConceptResp)
+		} else {
+			// 九点半之前的话, 则不填充涨跌幅数据
+			if utils.IsBeforeHourMinute(9, 30) {
+				return result, nil
+			}
+			// 调用接口获取数据并设置内存缓存
+			for _, concept := range result {
+				concept.Percent = 0.0
+				jobList := make([]func() (interface{}, error), 0)
+				for _, stock := range concept.Stocks {
+					jobList = append(jobList, func(code string) func() (interface{}, error) {
+						return func() (interface{}, error) {
+							client := NewBaiduClient()
+							priceList, err := client.GetRemoteStockMinute(ctx, code)
+							if err != nil {
+								return nil, err
+							}
+							if len(priceList) == 0 {
+								return nil, nil
+							}
+							return &model.WrapMinutePrice{
+								Code:            code,
+								StockMinuteData: priceList[len(priceList)-1],
+							}, nil
+						}
+					}(stock.Code))
+				}
+				// 执行并发任务
+				dataList, err := utils.ConcurrentActuator(jobList, MaxConceptJobNum)
+				if err != nil {
+					return nil, err
+				}
+				dataMap := make(map[string]*model.WrapMinutePrice)
+				for _, item := range dataList {
+					if item == nil {
+						continue
+					}
+					wrap := item.(*model.WrapMinutePrice)
+					dataMap[wrap.Code] = wrap
+				}
+				// 填充涨跌幅数据
+				count := 0
+				for _, stock := range concept.Stocks {
+					if wrap, ok := dataMap[stock.Code]; ok {
+						stock.Percent = wrap.Percent
+						concept.Percent += wrap.Percent
+						count++
+					}
+				}
+				if count > 0 {
+					concept.Percent /= float64(count)
+					concept.Percent = utils.Float64KeepDecimal(concept.Percent, 2)
+				}
+			}
+			// 设置缓存
+			if utils.IsBeforeHourMinute(15, 0) {
+				SetMemCache(ConceptCacheKey, result, 3*time.Minute)
+			} else {
+				SetMemCache(ConceptCacheKey, result, 10*time.Hour)
+			}
+		}
+	}
 
 	return result, nil
 }

@@ -469,3 +469,7 @@ func (c *EastMoneyClient) GetRemoteFundFlowByCode(ctx context.Context, code stri
 func (c *EastMoneyClient) GetRemoteShareholder(ctx context.Context, code string, date string) (*model.Top10Shareholder, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+
+func (c *EastMoneyClient) GetRemoteStockMinute(ctx context.Context, code string) ([]*model.StockMinuteData, error) {
+	return nil, fmt.Errorf("not implemented")
+}
