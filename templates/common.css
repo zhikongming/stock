@@ -1578,3 +1578,95 @@ body {
     font-size: 12px;
     margin-left: 4px;
 }
+
+/* 链接卡片样式 */
+.link-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.link-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background-color: white;
+    border: 2px solid #e2e8f0;
+    border-radius: var(--border-radius);
+    padding: 15px 20px;
+    text-decoration: none;
+    color: inherit;
+    transition: var(--transition);
+}
+
+.link-card:hover {
+    border-color: var(--secondary-color);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+}
+
+.link-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.link-icon.blue {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--secondary-color);
+}
+
+.link-icon.green {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--accent-color);
+}
+
+.link-icon.orange {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+}
+
+.link-icon.purple {
+    background-color: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+}
+
+.link-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.link-info h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.link-info p {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.link-arrow {
+    color: #94a3b8;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.link-card:hover .link-arrow {
+    color: var(--secondary-color);
+}
