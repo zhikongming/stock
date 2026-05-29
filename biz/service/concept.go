@@ -162,7 +162,7 @@ func GetConcepts(ctx context.Context, req *model.GetConceptsReq) (*model.GetConc
 			sort.Sort(model.ConceptRespChangeSorter(result))
 
 			// 设置缓存
-			if utils.IsBeforeHourMinute(15, 0) {
+			if utils.IsBeforeHourMinute(15, 0) && !utils.IsNowWeekend() {
 				SetMemCache(ConceptCacheKey, result, 3*time.Minute)
 			} else {
 				SetMemCache(ConceptCacheKey, result, 10*time.Hour)
