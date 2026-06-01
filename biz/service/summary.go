@@ -834,6 +834,131 @@ func GetPriceAnalyseReport(ctx context.Context) (*model.PriceAnalyseReport, erro
 	return result, nil
 }
 
+// GetUpTrendReport 获取上升趋势报告
+// 找出均线金叉（MA5上穿MA10）的股票，并计算持续天数
+func GetUpTrendReport(ctx context.Context) ([]*model.UpTrendReportItem, error) {
+	// 获取所有股票代码
+	stockList, err := dal.GetAllStockCode(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// 获取所有的板块信息
+	allIndustryList, err := dal.GetAllStockIndustry(ctx)
+	if err != nil {
+		return nil, err
+	}
+	industryMap := make(map[string]string)
+	for _, industry := range allIndustryList {
+		industryMap[industry.Code] = industry.Name
+	}
+	allIndustryRelationList, err := dal.GetAllStockIndustryRelation(ctx)
+	if err != nil {
+		return nil, err
+	}
+	stockMap := make(map[string]string)
+	for _, industryRelation := range allIndustryRelationList {
+		stockMap[industryRelation.CompanyCode] = industryMap[industryRelation.IndustryCode]
+	}
+	// 需要使用并发来计算, 以减少耗时
+	jobList := make([]func() (interface{}, error), 0)
+	for _, stockCode := range stockList {
+		jobList = append(jobList, func(stockCode *dal.StockCode) func() (interface{}, error) {
+			return func() (interface{}, error) {
+				// 获取最近30天的股价数据
+				stockPriceList, err := dal.GetLastNStockPrice(ctx, stockCode.CompanyCode, "", 30)
+				if err != nil {
+					return nil, err
+				}
+				if len(stockPriceList) < 10 {
+					return nil, nil
+				}
+				// 按日期升序排列（最新的在最后）
+				stockPriceList = utils.ListSwap(stockPriceList)
+				// 查找均线金叉日期（MA5上穿MA10）
+				goldCrossDate, durationDays := findGoldCross(stockPriceList)
+				if goldCrossDate == "" {
+					return nil, nil
+				}
+				report := &model.UpTrendReportItem{
+					Code:          stockCode.CompanyCode,
+					Name:          stockCode.CompanyName,
+					IndustryName:  stockMap[stockCode.CompanyCode],
+					GoldCrossDate: goldCrossDate,
+					DurationDays:  durationDays,
+				}
+				return report, nil
+			}
+		}(stockCode))
+	}
+	// 执行并发任务
+	reportList, err := utils.ConcurrentActuator(jobList, MaxVolumeReportJobNum)
+	if err != nil {
+		return nil, err
+	}
+	var ret []*model.UpTrendReportItem
+	for _, item := range reportList {
+		if item != nil {
+			ret = append(ret, item.(*model.UpTrendReportItem))
+		}
+	}
+	// 按持续天数降序排序
+	sort.Slice(ret, func(i, j int) bool {
+		return ret[i].DurationDays < ret[j].DurationDays
+	})
+	return ret, nil
+}
+
+// findGoldCross 查找均线金叉（MA5上穿MA10）的日期和持续天数
+// 同时需要满足三个条件：
+// 1. 价格位于关键均线之上：最新收盘价 > 20日均线 且 收盘价 > 60日均线
+// 2. 均线方向向上：20日均线今天的值 > 5个交易日前的值，10日均线今天的值 > 5个交易日前的值
+// 3. 均线多头排列：10日均线 > 20日均线 > 60日均线
+// 返回金叉日期和持续天数
+func findGoldCross(stockPriceList []*dal.StockPrice) (string, int) {
+	n := len(stockPriceList)
+	// 需要至少6个交易日的数据（用于比较5个交易日前的均线值）
+	if n < 6 {
+		return "", 0
+	}
+
+	// 获取最新的股价数据
+	latest := stockPriceList[n-1]
+
+	// 检查条件1：价格位于关键均线之上
+	// 收盘价 > 10日均线 且 收盘价 > 20日均线
+	if !(latest.PriceClose > latest.Ma10 && latest.PriceClose > latest.Ma20) {
+		return "", 0
+	}
+
+	// 检查条件2：均线方向向上
+	// 20日均线今天的值 > 5个交易日前的值
+	// 10日均线今天的值 > 5个交易日前的值
+	// 5日均线今天的值 > 5个交易日前的值
+	fiveDaysAgo := stockPriceList[n-6] // 5个交易日前的数据（索引为n-6）
+	if !(latest.Ma20 > fiveDaysAgo.Ma20 && latest.Ma10 > fiveDaysAgo.Ma10 && latest.Ma5 > fiveDaysAgo.Ma5) {
+		return "", 0
+	}
+
+	// 检查条件3：均线多头排列
+	// 5日均线 > 10日均线 > 20日均线 > 60日均线
+	if !(latest.Ma5 > latest.Ma10 && latest.Ma10 > latest.Ma20 && latest.Ma20 > latest.Ma60) {
+		return "", 0
+	}
+
+	// 从后往前查找最近的金叉点（MA5上穿MA20）
+	for i := n - 1; i >= 1; i-- {
+		current := stockPriceList[i]
+		prev := stockPriceList[i-1]
+		// 判断是否发生金叉：前一天MA5 <= MA20，当天MA5 > MA20
+		if prev.Ma5 <= prev.Ma20 && current.Ma5 > current.Ma20 {
+			// 计算持续天数（从金叉到最新的天数）
+			durationDays := n - i
+			return utils.FormatDate(current.Date), durationDays
+		}
+	}
+	return "", 0
+}
+
 func GetVolumeReport(ctx context.Context) ([]*model.VolumeReportItem, error) {
 	// 根据最近的两个交易日的数据, 来计算是否出现成交量大幅增加
 	stockList, err := dal.GetAllStockCode(ctx)

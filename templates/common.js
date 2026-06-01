@@ -24,6 +24,7 @@ const getPriceAnalyseUrl = "/analyze/price"
 const queryShareholderReportUrl = "/analyze/shareholder"
 const queryVolumeReportUrl = "/analyze/volume/report"
 const queryLimitUpReportUrl = "/analyze/limitup/report"
+const queryUpTrendReportUrl = "/analyze/up_trend/report"
 
 // 概念管理API
 const getConceptsUrl = "/concept/list"
@@ -602,6 +603,18 @@ async function fetchVolumeReport() {
 // 获取涨停报告报告数据
 async function fetchLimitUpReport() {
     const url = domain + queryLimitUpReportUrl;
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
+
+// 获取上升趋势报告数据
+async function fetchUpTrendReport() {
+    const url = domain + queryUpTrendReportUrl;
     const response = await fetch(url, {
         method: 'GET',
         headers: {

@@ -202,3 +202,14 @@ func GetLimitUpReport(ctx context.Context, c *app.RequestContext) {
 	}
 	c.JSON(http.StatusOK, data)
 }
+
+func GetUpTrendReport(ctx context.Context, c *app.RequestContext) {
+	data, err := service.GetUpTrendReport(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.H{
+			"message": fmt.Sprintf("%v", err),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
