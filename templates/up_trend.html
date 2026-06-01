@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上升趋势报告</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="./common.css">
+    <script src="./common.js"></script>
+</head>
+<body>
+    <div class="page-container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-arrow-up"></i>
+                上升趋势分析报告
+            </h1>
+            <p>展示均线金叉后持续上涨的股票</p>
+        </div>
+
+        <!-- 板块统计 -->
+        <div id="industry-stats" class="stats-container" style="display: none; margin-bottom: 10px;">
+            <div class="stats-header">
+                <h3>
+                    <i class="fas fa-bar-chart"></i>
+                    <span>板块分布</span>
+                </h3>
+            </div>
+            <div id="industry-tags" class="tags-container"></div>
+        </div>
+
+        <!-- 结果表格 -->
+        <div id="result-container" class="table-container">
+            <div class="table-header">
+                <h2 class="table-title">
+                    <i class="fas fa-table"></i>
+                    <span>上升趋势股票</span>
+                </h2>
+                <div class="table-info">共 <span id="result-count">0</span> 条记录
+                    <button id="showAllCodeBtn" class="table-action-btn" style="margin-left: 20px;">
+                        <i class="fas fa-eye"></i>
+                        <span>点击遍历</span>
+                    </button>
+                </div>
+            </div>
+            
+            <table class="table-content-header">
+                <thead>
+                    <tr>
+                        <th>股票代码</th>
+                        <th>股票名称</th>
+                        <th class="sortable" id="sort-industry">所属板块 <i class="fas fa-sort"></i></th>
+                        <th>均线金叉日期</th>
+                        <th>持续天数</th>
+                    </tr>
+                </thead>
+                <tbody id="result-tbody">
+                    <!-- 动态生成 -->
+                </tbody>
+            </table>
+            
+            <div id="empty-result" class="empty-state" style="display: none;">
+                <i class="fas fa-database"></i>
+                <h3>暂无数据</h3>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const resultContainer = document.getElementById('result-container');
+        const resultTbody = document.getElementById('result-tbody');
+        const resultCount = document.getElementById('result-count');
+        const emptyResult = document.getElementById('empty-result');
+        const showAllCodeBtn = document.getElementById('showAllCodeBtn');
+
+        let stockList = [];
+        let openAllCodeListIndex = 0;
+        let sortOrder = 'asc'; // 'asc' 或 'desc'
+
+        // 页面加载时自动获取数据
+        document.addEventListener('DOMContentLoaded', async function() {
+            let resp = await fetchUpTrendReport();
+            renderTable(resp);
+            
+            // 绑定排序事件
+            document.getElementById('sort-industry').addEventListener('click', function() {
+                sortByIndustry();
+            });
+        });
+
+        // 渲染板块统计
+        function renderIndustryStats(data) {
+            const industryTags = document.getElementById('industry-tags');
+            const industryStats = document.getElementById('industry-stats');
+            
+            // 统计每个板块的个股数量
+            const countMap = {};
+            data.forEach(item => {
+                const industry = item.industry_name || '未分类';
+                countMap[industry] = (countMap[industry] || 0) + 1;
+            });
+            
+            // 按数量降序排序
+            const sortedIndustries = Object.entries(countMap).sort((a, b) => b[1] - a[1]);
+            
+            // 渲染标签
+            industryTags.innerHTML = sortedIndustries.map(([industry, count]) => 
+                `<span class="industry-tag table-colume-badge" style="margin-right: 10px;">${industry}</industry><span class="tag-count">(${count})</span></span>`
+            ).join('');
+            
+            industryStats.style.display = 'block';
+        }
+
+        // 渲染表格
+        function renderTable(data) {
+            resultTbody.innerHTML = '';
+            
+            if (data && data.length > 0) {
+                emptyResult.style.display = 'none';
+                resultCount.textContent = data.length;
+                stockList = data;
+                initShowAllCodeBtn();
+                renderIndustryStats(data);
+                
+                data.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>
+                            <a href="https://xueqiu.com/S/${item.code}" target="_blank" class="no-underline">${item.code}</a>
+                        </td>
+                        <td>
+                            <a href="https://xueqiu.com/S/${item.code}" target="_blank" class="no-underline">${item.name}</a>
+                        </td>
+                        <td>${item.industry_name}</td>
+                        <td>${item.gold_cross_date}</td>
+                        <td><span class="table-colume-badge increase">${item.duration_days}</span></td>
+                    `;
+                    resultTbody.appendChild(tr);
+                });
+            } else {
+                emptyResult.style.display = 'block';
+                resultCount.textContent = '0';
+                showAllCodeBtn.style.display = 'none';
+                document.getElementById('industry-stats').style.display = 'none';
+            }
+        }
+
+        function initShowAllCodeBtn() {
+            openAllCodeListIndex = 0;
+            showAllCodeBtn.style.display = 'inline-block';
+        }
+
+        // 按所属板块排序
+        function sortByIndustry() {
+            // 切换排序顺序
+            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+            
+            // 排序数据
+            stockList.sort((a, b) => {
+                const industryA = a.industry_name || '';
+                const industryB = b.industry_name || '';
+                if (sortOrder === 'asc') {
+                    return industryA.localeCompare(industryB, 'zh-CN');
+                } else {
+                    return industryB.localeCompare(industryA, 'zh-CN');
+                }
+            });
+            
+            // 更新排序图标
+            const sortIcon = document.querySelector('#sort-industry i');
+            if (sortOrder === 'asc') {
+                sortIcon.className = 'fas fa-sort-up';
+            } else {
+                sortIcon.className = 'fas fa-sort-down';
+            }
+            
+            // 重新渲染表格
+            renderTable(stockList);
+        }
+
+        function openAllCodeList() {
+            for (let i = openAllCodeListIndex * MAX_OPEN_CODE_COUNT; i < stockList.length && i < (openAllCodeListIndex + 1) * MAX_OPEN_CODE_COUNT; i++) {
+                let openUrl = "https://xueqiu.com/S/" + stockList[i].code;
+                // 为了防止雪球请求太高, 会要求用户验证, 所以这里设置一个随机延迟
+                const delay = Math.floor(Math.random() * 1000);
+                setTimeout(() => {
+                    window.open(openUrl, '_blank');
+                }, delay);
+            }
+            openAllCodeListIndex++;
+        }
+
+        showAllCodeBtn.addEventListener('click', () => {
+            openAllCodeList();
+        });
+    </script>
+</body>
+</html>

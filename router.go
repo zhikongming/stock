@@ -78,6 +78,7 @@ func customizedRegister(r *server.Hertz) {
 	r.POST("/analyze/shareholder", handler.GetShareholderReport)
 	r.GET("/analyze/volume/report", handler.GetVolumeReport)
 	r.GET("/analyze/limitup/report", handler.GetLimitUpReport)
+	r.GET("/analyze/up_trend/report", handler.GetUpTrendReport)
 
 	// 概念管理API
 	r.GET("/concept/list", handler.GetConcepts)
