@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>异常股票数据</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="./common.css">
+    <script src="./common.js"></script>
+</head>
+<body>
+    <div class="page-container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-exclamation-triangle"></i>
+                异常股票数据
+            </h1>
+            <p>展示异常波动、严重异常波动及交易所风险提示的股票</p>
+        </div>
+
+        <!-- 在表格上方添加解释区域 -->
+        <div class="info-panel">
+            <h3><i class="fas fa-info-circle"></i> 异常类型说明</h3>
+            <div class="info-content">
+                <div class="info-item">
+                    <span class="info-label">严重异常波动</span>
+                    <span class="info-desc">指股票价格在短期内出现剧烈波动，通常表现为连续多个交易日涨停或跌停，偏离正常交易范围，可能触发交易所临时停牌核查。</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">交易所风险提示</span>
+                    <span class="info-desc">指交易所针对特定股票发布的风险警示公告，提醒投资者注意投资风险，可能涉及公司基本面变化、异常交易行为等情况。</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 结果表格 -->
+        <div id="result-container" class="table-container">
+            <div class="table-header">
+                <h2 class="table-title">
+                    <i class="fas fa-table"></i>
+                    <span>异常股票列表</span>
+                </h2>
+                <div class="table-info">共 <span id="result-count">0</span> 条记录</div>
+            </div>
+            
+            <table class="table-content-header">
+                <thead>
+                    <tr>
+                        <th>股票代码</th>
+                        <th>股票名称</th>
+                        <th>异常类型</th>
+                        <th>开始日期</th>
+                        <th>截止日期</th>
+                        <th>通知日期</th>
+                        <th>异常类型描述</th>
+                    </tr>
+                </thead>
+                <tbody id="result-tbody">
+                    <!-- 动态生成 -->
+                </tbody>
+            </table>
+            
+            <div id="empty-result" class="empty-state" style="display: none;">
+                <i class="fas fa-database"></i>
+                <h3>暂无数据</h3>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const resultContainer = document.getElementById('result-container');
+        const resultTbody = document.getElementById('result-tbody');
+        const resultCount = document.getElementById('result-count');
+        const emptyResult = document.getElementById('empty-result');
+
+        // 异常类型映射
+        const unusualTypeMap = {
+            0: '异常波动',
+            1: '严重异常波动',
+            2: '交易所风险提示'
+        };
+
+        // 页面加载时自动获取数据
+        document.addEventListener('DOMContentLoaded', async function() {
+            let resp = await fetchUnusualStock();
+            renderTable(resp);
+        });
+
+        // 获取截止日期的显示样式（根据日期差异）
+        function getEndDateClass(endDateStr) {
+            if (!endDateStr) return '';
+            
+            try {
+                const endDate = new Date(endDateStr);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                // 计算日期差（天数）
+                const diffTime = endDate-today;
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                
+                // 截止日期到齐的今天和前一天展示为红色
+                // 前两天和三天展示为绿色
+                // 其他为红色
+                if (diffDays >= 0 && diffDays <= 2) {
+                    return 'red';
+                } else if (diffDays >= 3 && diffDays <= 6) {
+                    return 'green';
+                } else {
+                    return '';
+                }
+            } catch (error) {
+                console.error('日期解析失败:', error);
+                return '';
+            }
+        }
+
+        // 渲染表格
+        function renderTable(data) {
+            resultTbody.innerHTML = '';
+            
+            if (data && data.length > 0) {
+                emptyResult.style.display = 'none';
+                resultCount.textContent = data.length;
+                
+                data.forEach(item => {
+                    const tr = document.createElement('tr');
+                    const endDateClass = getEndDateClass(item.end_date);
+                    const unusualType = unusualTypeMap[item.type] || '未知';
+                    
+                    tr.innerHTML = `
+                        <td>
+                            <a href="https://xueqiu.com/S/${item.code}" target="_blank" class="no-underline">${item.code}</a>
+                        </td>
+                        <td>
+                            <a href="https://xueqiu.com/S/${item.code}" target="_blank" class="no-underline">${item.name}</a>
+                        </td>
+                        <td><span class="table-colume-badge">${unusualType}</span></td>
+                        <td>${formatDate(item.start_date)}</td>
+                        <td class="${endDateClass}">${formatDate(item.end_date)}</td>
+                        <td>${formatDate(item.notice_date)}</td>
+                        <td>${item.unusual_type || '-'}</td>
+                    `;
+                    resultTbody.appendChild(tr);
+                });
+            } else {
+                emptyResult.style.display = 'block';
+                resultCount.textContent = '0';
+            }
+        }
+
+        // 格式化日期
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            
+            try {
+                const date = new Date(dateStr);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            } catch (error) {
+                return dateStr;
+            }
+        }
+    </script>
+</body>
+</html>

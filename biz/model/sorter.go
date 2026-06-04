@@ -1,5 +1,7 @@
 package model
 
+import "github.com/zhikongming/stock/utils"
+
 type VolumeReportItemSorter []*VolumeReportItem
 
 func (s VolumeReportItemSorter) Len() int {
@@ -50,4 +52,21 @@ func (s ConceptRespChangeSorter) Swap(i, j int) {
 }
 func (s ConceptRespChangeSorter) Less(i, j int) bool {
 	return s[i].Percent > s[j].Percent
+}
+
+type UnusualStockSorter []*UnusualStock
+
+func (s UnusualStockSorter) Len() int {
+	return len(s)
+}
+func (s UnusualStockSorter) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s UnusualStockSorter) Less(i, j int) bool {
+	iEndDate := utils.ParseDate(s[i].EndDate)
+	jEndDate := utils.ParseDate(s[j].EndDate)
+	if iEndDate == jEndDate {
+		return s[i].Type > s[j].Type
+	}
+	return iEndDate.Before(jEndDate)
 }

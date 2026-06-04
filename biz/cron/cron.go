@@ -25,6 +25,23 @@ func InitCron() {
 		StartCronTask(ctx)
 	})
 
+	c.AddFunc("0 */2 * * *", func() {
+		// 如果是周六或者周日, 则不执行
+		if utils.IsNowWeekend() {
+			hlog.Infof("Today is weekend, skip sync unusual stock")
+			return
+		}
+		if utils.IsBeforeHourMinute(6, 0) {
+			hlog.Infof("Today is before 6:00, skip sync unusual stock")
+			return
+		}
+		if utils.IsAfterHourMinute(9, 30) && utils.IsBeforeHourMinute(15, 0) {
+			hlog.Infof("Today is 09:30-15:00, skip sync unusual stock")
+			return
+		}
+		service.CreateUnusualStock(ctx)
+	})
+
 	c.Start()
 }
 

@@ -125,3 +125,13 @@ func (c *XueqiuClient) GetRemoteShareholder(ctx context.Context, code string, da
 func (c *XueqiuClient) GetRemoteStockMinute(ctx context.Context, code string) ([]*model.StockMinuteData, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+
+func (c *XueqiuClient) GetRemoteUnusualStock(ctx context.Context) ([]*model.UnusualStock, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (c *XueqiuClient) GetRemoteSpecialUnusualStock(ctx context.Context) ([]*model.UnusualStock, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (c *XueqiuClient) GetRemoteMarketRisk(ctx context.Context) ([]*model.UnusualStock, error) {
+	return nil, fmt.Errorf("not implemented")
+}

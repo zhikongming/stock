@@ -87,6 +87,10 @@ func customizedRegister(r *server.Hertz) {
 	r.GET("/concept/stocks", handler.GetConceptStocks)
 	r.POST("/concept/stock/add", handler.AddConceptStock)
 	r.DELETE("/concept/stock/delete", handler.DeleteConceptStock)
+
+	// 异常股票API
+	r.POST("/unusual/stock", handler.CreateUnusualStock)
+	r.GET("/unusual/stock", handler.GetUnusualStockList)
 }
 
 func registerPlatform(r *server.Hertz) {

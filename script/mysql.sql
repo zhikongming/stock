@@ -49,3 +49,16 @@ CREATE TABLE `concept` (
   `stocks` text DEFAULT NULL COMMENT '股票列表',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='概念数据';
+
+CREATE TABLE `unusual_stock` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'id',
+  `code` varchar(255) NOT NULL DEFAULT '' COMMENT '股票代码',
+  `name` varchar(255) NOT NULL DEFAULT '' COMMENT '股票名称',
+  `type` tinyint NOT NULL DEFAULT '0' COMMENT '异常类型: 0: 异常波动, 1: 严重异常波动, 2: 交易所风险提示',
+  `start_date` DATE NOT NULL COMMENT '异常开始日期',
+  `end_date` DATE NOT NULL COMMENT '异常结束日期',
+  `notice_date` DATE COMMENT '通知日期',
+  `unusual_type` varchar(255) NOT NULL DEFAULT '' COMMENT '异常类型',
+  `unusual_reason` text DEFAULT NULL COMMENT '异常原因',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='异常股票数据';
