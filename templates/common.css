@@ -690,6 +690,16 @@ body {
     color: #475569;
 }
 
+.table-content-header td.red {
+    padding: 18px 12px;
+    color: red;
+}
+
+.table-content-header td.green {
+    padding: 18px 12px;
+    color: green;
+}
+
 /* 策略名称列 */
 .table-name-cell {
     display: flex;
@@ -1669,4 +1679,61 @@ body {
 
 .link-card:hover .link-arrow {
     color: var(--secondary-color);
+}
+
+.ellipsis-cell {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: help;
+}
+
+/* 解释区域样式 */
+.info-panel {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-left: 4px solid #17a2b8;
+}
+
+.info-panel h3 {
+    margin: 0 0 15px 0;
+    color: #17a2b8;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.info-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.info-item {
+    background: #fff;
+    border-radius: 6px;
+    padding: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.info-label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.info-desc {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .info-content {
+        grid-template-columns: 1fr;
+    }
 }

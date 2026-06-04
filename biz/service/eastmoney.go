@@ -16,12 +16,14 @@ const (
 	EastMoneyDomain  = "https://datacenter.eastmoney.com"
 	EastMoneyDomain2 = "https://push2.eastmoney.com"
 	EastMoneyDomain3 = "https://push2his.eastmoney.com"
+	EastMoneyDomain4 = "https://mobappconfig.securities.eastmoney.com"
 
 	EastMoneyBasicPath         = "/securities/api/data/v1/get"
 	EastMoneyStockRelationPath = "/api/qt/stock/get"
 	EastMoneyStockDailyPath    = "/api/qt/stock/kline/get"
 	EastMoneyIndustryPath      = "/api/qt/clist/get"
 	EastMoneyFundFlowPath      = "/api/qt/stock/fflow/daykline/get"
+	EastMoneyMarketRiskPath    = "/emcfg/stock_monitor.json"
 
 	KLineTypeDay   = "101"
 	KLineType30Min = "30"
@@ -472,4 +474,120 @@ func (c *EastMoneyClient) GetRemoteShareholder(ctx context.Context, code string,
 
 func (c *EastMoneyClient) GetRemoteStockMinute(ctx context.Context, code string) ([]*model.StockMinuteData, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+func (c *EastMoneyClient) GetRemoteUnusualStock(ctx context.Context) ([]*model.UnusualStock, error) {
+	path := fmt.Sprintf("%s%s", EastMoneyDomain, EastMoneyBasicPath)
+	params := map[string]string{
+		"pageNumber":   "1",
+		"pageSize":     "100",
+		"sortTypes":    "-1,-1",
+		"sortColumns":  "NOTICE_DATE,END_DATE",
+		"source":       "SECURITIES",
+		"client":       "APP",
+		"reportName":   "RPT_APP_UNUSUALBASIC",
+		"columns":      "SECUCODE,SECURITY_CODE,SECURITY_NAME_ABBR,UNUSUAL_TYPE,START_DATE,END_DATE,INFO_CODE,NOTICE_DATE,UNUSUAL_REASON,UNUSUAL_REASON_TYPE,MRAKET_TYPE",
+		"quoteColumns": "",
+		"filter":       "(UNUSUAL_TYPE=\"001\")",
+		"v":            "06945155531701716",
+	}
+	resp, err := DoGet(ctx, path, params, nil)
+	if err != nil {
+		return nil, err
+	}
+	var ret model.EMGetUnusualStockResp
+	err = json.Unmarshal(resp, &ret)
+	if err != nil {
+		log.Printf("json unmarshal failed: %v", err)
+		return nil, err
+	}
+	data := make([]*model.UnusualStock, 0)
+	for _, item := range ret.Result.Data {
+		data = append(data, &model.UnusualStock{
+			Code:          TransferEmCodeToStandard(item.SecuCode),
+			Name:          item.SecretaryNameAbbr,
+			Type:          model.UnusualTypeNormal,
+			StartDate:     utils.FormatDate(utils.ParseTime(item.StartDate)),
+			EndDate:       utils.FormatDate(utils.ParseTime(item.EndDate)),
+			NoticeDate:    utils.FormatDate(utils.ParseTime(item.NoticeDate)),
+			UnusualType:   item.UnusualReasonType,
+			UnusualReason: item.UnusualReason,
+		})
+	}
+	return data, nil
+}
+
+func (c *EastMoneyClient) GetRemoteSpecialUnusualStock(ctx context.Context) ([]*model.UnusualStock, error) {
+	path := fmt.Sprintf("%s%s", EastMoneyDomain, EastMoneyBasicPath)
+	params := map[string]string{
+		"pageNumber":   "1",
+		"pageSize":     "100",
+		"sortTypes":    "-1,-1",
+		"sortColumns":  "NOTICE_DATE,END_DATE",
+		"source":       "SECURITIES",
+		"client":       "APP",
+		"reportName":   "RPT_APP_UNUSUALBASIC",
+		"columns":      "SECUCODE,SECURITY_CODE,SECURITY_NAME_ABBR,UNUSUAL_TYPE,START_DATE,END_DATE,INFO_CODE,NOTICE_DATE,UNUSUAL_REASON,UNUSUAL_REASON_TYPE,MRAKET_TYPE,PREDICT_START_DATE,PREDICT_END_DATE,IS_HIS",
+		"quoteColumns": "",
+		"filter":       "(UNUSUAL_TYPE=\"002\")(IS_HIS=\"1\")",
+		"v":            "06945155531701716",
+	}
+	resp, err := DoGet(ctx, path, params, nil)
+	if err != nil {
+		return nil, err
+	}
+	var ret model.EMGetUnusualStockResp
+	err = json.Unmarshal(resp, &ret)
+	if err != nil {
+		log.Printf("json unmarshal failed: %v", err)
+		return nil, err
+	}
+	data := make([]*model.UnusualStock, 0)
+	for _, item := range ret.Result.Data {
+		data = append(data, &model.UnusualStock{
+			Code:          TransferEmCodeToStandard(item.SecuCode),
+			Name:          item.SecretaryNameAbbr,
+			Type:          model.UnusualTypeSpecial,
+			StartDate:     utils.FormatDate(utils.ParseTime(item.PredictStartDate)),
+			EndDate:       utils.FormatDate(utils.ParseTime(item.PredictEndDate)),
+			NoticeDate:    utils.FormatDate(utils.ParseTime(item.NoticeDate)),
+			UnusualType:   item.UnusualReasonType,
+			UnusualReason: item.UnusualReason,
+		})
+	}
+	return data, nil
+}
+
+func (c *EastMoneyClient) GetRemoteMarketRisk(ctx context.Context) ([]*model.UnusualStock, error) {
+	path := fmt.Sprintf("%s%s", EastMoneyDomain4, EastMoneyMarketRiskPath)
+	resp, err := DoGet(ctx, path, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	var ret []*model.EMMarketRisk
+	err = json.Unmarshal(resp, &ret)
+	if err != nil {
+		log.Printf("json unmarshal failed: %v", err)
+		return nil, err
+	}
+	data := make([]*model.UnusualStock, 0)
+	for _, item := range ret {
+		data = append(data, &model.UnusualStock{
+			Code:       utils.GetFullStockCodeOfNumber(item.StockCode),
+			Name:       item.StockName,
+			Type:       model.UnusualTypeMarketRisk,
+			StartDate:  item.ValidateStartDate,
+			EndDate:    item.ValidateEndDate,
+			NoticeDate: "0001-01-01",
+		})
+	}
+	return data, nil
+}
+
+func TransferEmCodeToStandard(code string) string {
+	idx := strings.Index(code, ".")
+	if idx == -1 {
+		return code
+	}
+	return strings.ToUpper(code[idx+1:]) + code[:idx]
 }

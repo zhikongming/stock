@@ -21,4 +21,8 @@ type RemoteClient interface {
 	GetRemoteFundFlowByCode(ctx context.Context, code string) ([]*model.FundFlowData, error)
 
 	GetRemoteShareholder(ctx context.Context, code string, date string) (*model.Top10Shareholder, error)
+
+	GetRemoteUnusualStock(ctx context.Context) ([]*model.UnusualStock, error)
+	GetRemoteSpecialUnusualStock(ctx context.Context) ([]*model.UnusualStock, error)
+	GetRemoteMarketRisk(ctx context.Context) ([]*model.UnusualStock, error)
 }

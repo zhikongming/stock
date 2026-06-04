@@ -25,6 +25,7 @@ const queryShareholderReportUrl = "/analyze/shareholder"
 const queryVolumeReportUrl = "/analyze/volume/report"
 const queryLimitUpReportUrl = "/analyze/limitup/report"
 const queryUpTrendReportUrl = "/analyze/up_trend/report"
+const queryUnusualStockUrl = "/unusual/stock"
 
 // 概念管理API
 const getConceptsUrl = "/concept/list"
@@ -705,7 +706,16 @@ async function deleteConceptStock(conceptId, stockCode) {
     return response;
 }
 
-
+// 获取异常股票数据
+async function fetchUnusualStock() {
+    const response = await fetch(domain + queryUnusualStockUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
 
 function getLoanRateTitle(name) {
     return name + "-贷款收益率";

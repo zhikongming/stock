@@ -101,3 +101,35 @@ type WrapFundFlowData struct {
 	StockCode    string          `json:"stock_code"`
 	FundFlowData []*FundFlowData `json:"fund_flow_data"`
 }
+
+type EMGetUnusualStockResp struct {
+	Result *EMUnusualStock `json:"result"`
+}
+
+type EMUnusualStock struct {
+	Data []*UnusualStockData `json:"data"`
+}
+
+type UnusualStockData struct {
+	SecuCode          string `json:"SECUCODE"`
+	SecretaryCode     string `json:"SECURITY_CODE"`
+	SecretaryNameAbbr string `json:"SECURITY_NAME_ABBR"`
+	UnusualType       string `json:"UNUSUAL_TYPE"`
+	StartDate         string `json:"START_DATE"`
+	EndDate           string `json:"END_DATE"`
+	InfoCode          string `json:"INFO_CODE"`
+	NoticeDate        string `json:"NOTICE_DATE"`
+	UnusualReason     string `json:"UNUSUAL_REASON"`
+	UnusualReasonType string `json:"UNUSUAL_REASON_TYPE"`
+	MarketType        string `json:"MRAKET_TYPE"`
+	PredictStartDate  string `json:"PREDICT_START_DATE"`
+	PredictEndDate    string `json:"PREDICT_END_DATE"`
+}
+
+type EMMarketRisk struct {
+	Market            string `json:"MARKET"`
+	StockName         string `json:"STKNAME"`
+	ValidateStartDate string `json:"VALIDATESTARTDATE"`
+	ValidateEndDate   string `json:"VALIDATEENDDATE"`
+	StockCode         string `json:"STKCODE"`
+}

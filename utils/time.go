@@ -46,6 +46,11 @@ func ParseDate(date string) time.Time {
 	return t
 }
 
+func ParseDateWithRegion(date string) time.Time {
+	t, _ := time.Parse(time.RFC3339, date)
+	return t
+}
+
 func ParseDate2(date string) time.Time {
 	t, _ := time.Parse(Date2Format, date)
 	return t
@@ -91,4 +96,10 @@ func IsBeforeHourMinute(hour, minute int) bool {
 	t := time.Now()
 	target := time.Date(t.Year(), t.Month(), t.Day(), hour, minute, 0, 0, t.Location())
 	return t.Before(target)
+}
+
+func IsAfterHourMinute(hour, minute int) bool {
+	t := time.Now()
+	target := time.Date(t.Year(), t.Month(), t.Day(), hour, minute, 0, 0, t.Location())
+	return t.After(target)
 }
