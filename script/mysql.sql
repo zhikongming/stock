@@ -62,3 +62,13 @@ CREATE TABLE `unusual_stock` (
   `unusual_reason` text DEFAULT NULL COMMENT '异常原因',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='异常股票数据';
+
+CREATE TABLE `event` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'id',
+  `date` DATE NOT NULL COMMENT '事件日期',
+  `event` text DEFAULT NULL COMMENT '事件内容',
+  `comment` text DEFAULT NULL COMMENT '事件备注',
+  `stocks` text DEFAULT NULL COMMENT '股票列表',
+  PRIMARY KEY (`id`),
+  KEY `idx_date` (`date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='事件数据';

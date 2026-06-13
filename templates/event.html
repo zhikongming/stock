@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>事件时间轴</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="./bootstrap.min.css">
+    <link rel="stylesheet" href="./common.css">
+    <script src="./common.js"></script>
+    <script src="./bootstrap.bundle.min.js"></script>
+</head>
+<body>
+    <div class="page-container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-calendar-alt"></i>
+                事件时间轴
+            </h1>
+            <p>记录和展示重要事件</p>
+        </div>
+
+        <!-- 添加事件表单 -->
+        <div class="form-container">
+            <div class="form-header">
+                <i class="fas fa-plus-circle"></i>
+                <h2>添加事件</h2>
+            </div>
+            <form id="event-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="event-date">
+                            <i class="fas fa-calendar"></i>
+                            <span>事件日期</span>
+                        </label>
+                        <input type="date" id="event-date" class="form-control" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label" for="event-content">
+                            <i class="fas fa-file-text"></i>
+                            <span>事件内容</span>
+                        </label>
+                        <textarea id="event-content" class="form-control" rows="3" placeholder="请输入事件内容" required></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label" for="event-comment">
+                            <i class="fas fa-comments"></i>
+                            <span>备注</span>
+                        </label>
+                        <textarea id="event-comment" class="form-control" rows="2" placeholder="请输入备注信息"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="event-stocks">
+                            <i class="fas fa-chart-line"></i>
+                            <span>相关股票（逗号分隔）</span>
+                        </label>
+                        <!-- 自动补全容器 -->
+                        <div class="autocomplete-container">
+                            <input 
+                                type="text" 
+                                id="event-stocks" 
+                                class="form-control" 
+                                placeholder="输入股票代码或名称，支持自动匹配"
+                            >
+                            <!-- 自动补全下拉列表 -->
+                            <div id="stock-suggestions" class="suggestions-list" style="display: none;"></div>
+                        </div>
+                        <span class="form-hint">支持输入股票代码（如SH600000）或股票名称（如平安银行），按回车添加</span>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-plus"></i>
+                        <span>添加事件</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 时间轴展示区域 -->
+        <div id="timeline-container" class="table-container">
+            <div class="table-header">
+                <h2 class="table-title">
+                    <i class="fas fa-history"></i>
+                    <span>事件时间轴</span>
+                </h2>
+            </div>
+            <div id="timeline-content" class="timeline">
+                <!-- 时间轴内容 -->
+            </div>
+            <div id="empty-timeline" class="empty-state" style="display: none;">
+                <i class="fas fa-calendar-times"></i>
+                <h3>暂无事件记录</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改事件模态框 -->
+    <div class="modal fade" id="editModal" tabindex="-1" style="color: black">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">修改事件</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-id">
+                    <div class="form-group">
+                        <label class="form-label" for="edit-date">事件日期</label>
+                        <input type="date" id="edit-date" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="edit-event">事件内容</label>
+                        <textarea id="edit-event" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="edit-comment">备注</label>
+                        <textarea id="edit-comment" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="edit-stocks">相关股票</label>
+                        <!-- 自动补全容器 -->
+                        <div class="autocomplete-container">
+                            <input 
+                                type="text" 
+                                id="edit-stocks" 
+                                class="form-control" 
+                                placeholder="输入股票代码或名称，支持自动匹配"
+                            >
+                            <!-- 自动补全下拉列表 -->
+                            <div id="edit-stock-suggestions" class="suggestions-list" style="display: none;"></div>
+                        </div>
+                        <span class="form-hint">支持输入股票代码（如SH600000）或股票名称（如平安银行），按回车添加</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveEdit()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* 自动补全容器 */
+        .autocomplete-container {
+            position: relative;
+        }
+
+        /* 自动补全下拉列表 */
+        .suggestions-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: white;
+            border: 2px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .suggestion-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-code {
+            font-weight: 600;
+            color: #3b82f6;
+        }
+
+        .suggestion-name {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .suggestion-highlight {
+            background-color: rgba(59, 130, 246, 0.2);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        /* 时间线样式 */
+        .timeline {
+            position: relative;
+            padding-left: 120px;
+            min-height: 200px;
+        }
+
+        /* 时间线竖线 */
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e2e8f0;
+            border-radius: 2px;
+        }
+
+        /* 时间线日期组 */
+        .timeline-date-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        /* 日期标签 */
+        .timeline-date-label {
+            position: absolute;
+            left: -110px;
+            top: 0;
+            width: 100px;
+            z-index: 1;
+        }
+
+        /* 日期文字 */
+        .timeline-date-text {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .timeline-date-text i {
+            margin-right: 8px;
+            color: #3b82f6;
+        }
+
+        /* 日期标记点 */
+        .timeline-date-dot {
+            position: absolute;
+            left: 47px;
+            top: 5px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #3b82f6;
+            border: 3px solid #dbeafe;
+        }
+
+        /* 事件卡片容器 */
+        .timeline-events-container {
+            margin-left: 10px;
+        }
+
+        /* 事件卡片 */
+        .timeline-event-card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid #f1f5f9;
+        }
+
+        /* 事件内容 */
+        .timeline-event-content {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+
+        /* 事件备注 */
+        .timeline-event-comment {
+            font-size: 12px;
+            color: #64748b;
+            background: #f8fafc;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        /* 事件底部（股票和操作按钮） */
+        .timeline-event-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        /* 事件股票列表 */
+        .timeline-event-stocks {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .timeline-stock-tag {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(59, 130, 246, 0.08);
+            color: #3b82f6;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .timeline-stock-tag i {
+            margin-right: 4px;
+            font-size: 10px;
+        }
+
+        /* 事件操作按钮 */
+        .timeline-event-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .timeline-event-actions .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .timeline-event-actions .action-btn.edit-btn {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+
+        .timeline-event-actions .action-btn.edit-btn:hover {
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        .timeline-event-actions .action-btn.delete-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .timeline-event-actions .action-btn.delete-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* 空状态居中 */
+        #empty-timeline {
+            text-align: center;
+            padding: 60px 20px;
+        }
+    </style>
+
+    <script>
+        // 全局变量
+        let stockList = []; // 股票代码列表，用于自动补全
+        let eventList = []; // 事件列表，用于编辑时快速查找
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadStockList(); // 加载股票列表用于自动补全
+            loadEvents();
+            
+            // 绑定表单提交
+            document.getElementById('event-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                createEvent();
+            });
+
+            // 股票输入框自动补全事件
+            const stockInput = document.getElementById('event-stocks');
+            const suggestionsList = document.getElementById('stock-suggestions');
+
+            stockInput.addEventListener('input', function() {
+                showSuggestions(this.value, 'stock-suggestions');
+            });
+
+            stockInput.addEventListener('keydown', function(e) {
+                handleKeyDown(e, 'stock-suggestions', 'event-stocks');
+            });
+
+            stockInput.addEventListener('blur', function() {
+                // 延迟隐藏，给点击选择留时间
+                setTimeout(function() {
+                    suggestionsList.style.display = 'none';
+                }, 200);
+            });
+
+            stockInput.addEventListener('focus', function() {
+                if (this.value.trim()) {
+                    showSuggestions(this.value, 'stock-suggestions');
+                }
+            });
+
+            // 编辑模态框股票输入框自动补全事件
+            const editStockInput = document.getElementById('edit-stocks');
+            const editSuggestionsList = document.getElementById('edit-stock-suggestions');
+
+            editStockInput.addEventListener('input', function() {
+                showSuggestions(this.value, 'edit-stock-suggestions');
+            });
+
+            editStockInput.addEventListener('keydown', function(e) {
+                handleKeyDown(e, 'edit-stock-suggestions', 'edit-stocks');
+            });
+
+            editStockInput.addEventListener('blur', function() {
+                setTimeout(function() {
+                    editSuggestionsList.style.display = 'none';
+                }, 200);
+            });
+
+            editStockInput.addEventListener('focus', function() {
+                if (this.value.trim()) {
+                    showSuggestions(this.value, 'edit-stock-suggestions');
+                }
+            });
+        });
+
+        // 加载股票列表
+        async function loadStockList() {
+            try {
+                const data = await getCodeData();
+                stockList = data || [];
+            } catch (error) {
+                console.error('加载股票列表失败:', error);
+            }
+        }
+
+        // 加载事件列表
+        async function loadEvents() {
+            const url = domain + '/event/timeline';
+            const response = await fetch(url);
+            const data = await response.json();
+            // 保存事件数据到全局变量，供编辑时使用
+            eventList = data || [];
+            renderTimeline(data);
+        }
+
+        // 渲染时间轴
+        function renderTimeline(data) {
+            const container = document.getElementById('timeline-content');
+            const emptyState = document.getElementById('empty-timeline');
+
+            if (data && data.length > 0) {
+                emptyState.style.display = 'none';
+                container.innerHTML = '';
+
+                data.forEach(item => {
+                    const dateGroup = document.createElement('div');
+                    dateGroup.className = 'timeline-date-group';
+                    dateGroup.innerHTML = `
+                        <div class="timeline-date-label">
+                            <div class="timeline-date-text">
+                                <i class="fas fa-calendar-day"></i>
+                                <span>${item.date}</span>
+                            </div>
+                        </div>
+                        <div class="timeline-date-dot"></div>
+                        <div class="timeline-events-container">
+                            ${item.events.map(event => {
+                                // 处理股票信息，支持数组和字符串两种格式
+                                let stockTags = '';
+                                if (event.stocks) {
+                                    if (Array.isArray(event.stocks)) {
+                                        stockTags = event.stocks.map(stock => `
+                                            <span class="timeline-stock-tag">
+                                                <i class="fas fa-chart-line"></i>
+                                                ${stock.code || stock}(${stock.name || ''})
+                                            </span>
+                                        `).join('');
+                                    } else if (typeof event.stocks === 'string') {
+                                        // 字符串格式，按逗号分割
+                                        const stockArray = event.stocks.split(',').map(s => s.trim()).filter(s => s);
+                                        stockTags = stockArray.map(stock => `
+                                            <span class="timeline-stock-tag">
+                                                <i class="fas fa-chart-line"></i>
+                                                ${stock}
+                                            </span>
+                                        `).join('');
+                                    }
+                                }
+                                return `
+                                    <div class="timeline-event-card">
+                                        <div class="timeline-event-content">${event.event}</div>
+                                        ${event.comment ? `<div class="timeline-event-comment">${event.comment}</div>` : ''}
+                                        <div class="timeline-event-footer">
+                                            <div class="timeline-event-stocks">${stockTags}</div>
+                                            <div class="timeline-event-actions">
+                                                <button class="action-btn edit-btn" onclick="editEvent(${event.id})" data-bs-toggle="modal" data-bs-target="#editModal" title="编辑">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="action-btn delete-btn" onclick="deleteEvent(${event.id})" title="删除">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                    container.appendChild(dateGroup);
+                });
+            } else {
+                emptyState.style.display = 'block';
+                container.innerHTML = '';
+            }
+        }
+
+        // 创建事件
+        async function createEvent() {
+            const date = document.getElementById('event-date').value;
+            const event = document.getElementById('event-content').value;
+            const comment = document.getElementById('event-comment').value;
+            const stocks = document.getElementById('event-stocks').value;
+
+            const url = domain + '/event/create';
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date, event, comment, stocks })
+            });
+
+            if (response.ok) {
+                alert('事件添加成功');
+                document.getElementById('event-form').reset();
+                loadEvents();
+            } else {
+                alert('添加失败');
+            }
+        }
+
+        // 显示自动补全建议
+        function showSuggestions(input, suggestionsId) {
+            const suggestionsList = document.getElementById(suggestionsId);
+            const keyword = input.toLowerCase().trim();
+            
+            // 检查是否在逗号之后输入（支持多股票输入）
+            const lastCommaIndex = keyword.lastIndexOf(',');
+            const currentInput = lastCommaIndex >= 0 ? keyword.substring(lastCommaIndex + 1).trim() : keyword;
+            
+            if (!currentInput) {
+                suggestionsList.style.display = 'none';
+                return;
+            }
+
+            // 过滤匹配的股票
+            const matches = stockList.filter(stock => {
+                const code = stock.company_code ? stock.company_code.toLowerCase() : '';
+                const name = stock.company_name ? stock.company_name.toLowerCase() : '';
+                return code.includes(currentInput) || name.includes(currentInput);
+            }).slice(0, 10); // 最多显示10条
+
+            if (matches.length === 0) {
+                suggestionsList.style.display = 'none';
+                return;
+            }
+
+            // 生成建议列表HTML
+            let html = '';
+            matches.forEach(stock => {
+                const code = stock.company_code || '';
+                const name = stock.company_name || '';
+                
+                // 高亮匹配部分
+                const highlightedCode = highlightMatch(code, currentInput);
+                const highlightedName = highlightMatch(name, currentInput);
+                
+                html += `
+                    <div class="suggestion-item" data-code="${code}" data-name="${name}">
+                        <span class="suggestion-code">${highlightedCode}</span>
+                        <span class="suggestion-name">${highlightedName}</span>
+                    </div>
+                `;
+            });
+
+            suggestionsList.innerHTML = html;
+            suggestionsList.style.display = 'block';
+
+            // 绑定点击事件
+            document.querySelectorAll('.suggestion-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const code = this.getAttribute('data-code');
+                    const name = this.getAttribute('data-name');
+                    // 根据suggestionsId确定对应的inputId
+                    const inputId = suggestionsId === 'stock-suggestions' ? 'event-stocks' : 'edit-stocks';
+                    addStockTag(code, name, inputId);
+                });
+            });
+        }
+
+        // 高亮匹配文本
+        function highlightMatch(text, keyword) {
+            if (!text || !keyword) return text;
+            const regex = new RegExp(`(${keyword})`, 'gi');
+            return text.replace(regex, '<span class="suggestion-highlight">$1</span>');
+        }
+
+        // 键盘导航处理
+        function handleKeyDown(e, suggestionsId, inputId) {
+            const suggestionsList = document.getElementById(suggestionsId);
+            const stockInput = document.getElementById(inputId);
+            const items = document.querySelectorAll('.suggestion-item');
+            
+            if (items.length === 0) {
+                // 如果没有建议项，检查是否按回车添加股票
+                if (e.key === 'Enter' && stockInput.value.trim()) {
+                    e.preventDefault();
+                    const inputValue = stockInput.value.trim();
+                    // 尝试从输入中提取股票信息
+                    const lastCommaIndex = inputValue.lastIndexOf(',');
+                    const currentInput = lastCommaIndex >= 0 ? inputValue.substring(lastCommaIndex + 1).trim() : inputValue;
+                    
+                    if (currentInput) {
+                        const stock = stockList.find(s => 
+                            s.company_code && s.company_code.toLowerCase().includes(currentInput.toLowerCase()) ||
+                            s.company_name && s.company_name.toLowerCase().includes(currentInput.toLowerCase())
+                        );
+                        if (stock) {
+                            addStockTag(stock.company_code, stock.company_name, inputId);
+                        }
+                    }
+                }
+                return;
+            }
+
+            let selectedIndex = -1;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].classList.contains('selected')) {
+                    selectedIndex = i;
+                    break;
+                }
+            }
+
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (selectedIndex < items.length - 1) {
+                        if (selectedIndex >= 0) {
+                            items[selectedIndex].classList.remove('selected');
+                        }
+                        items[selectedIndex + 1].classList.add('selected');
+                        items[selectedIndex + 1].scrollIntoView({ block: 'nearest' });
+                    }
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (selectedIndex > 0) {
+                        items[selectedIndex].classList.remove('selected');
+                        items[selectedIndex - 1].classList.add('selected');
+                        items[selectedIndex - 1].scrollIntoView({ block: 'nearest' });
+                    }
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (selectedIndex >= 0) {
+                        const code = items[selectedIndex].getAttribute('data-code');
+                        const name = items[selectedIndex].getAttribute('data-name');
+                        addStockTag(code, name, inputId);
+                    } else if (items.length > 0) {
+                        const code = items[0].getAttribute('data-code');
+                        const name = items[0].getAttribute('data-name');
+                        addStockTag(code, name, inputId);
+                    }
+                    break;
+                case 'Escape':
+                    suggestionsList.style.display = 'none';
+                    break;
+            }
+        }
+
+        // 添加股票标签
+        function addStockTag(code, name, inputId = 'event-stocks') {
+            const stockInput = document.getElementById(inputId);
+            const suggestionsId = inputId === 'event-stocks' ? 'stock-suggestions' : 'edit-stock-suggestions';
+            const suggestionsList = document.getElementById(suggestionsId);
+            
+            let currentValue = stockInput.value.trim();
+            
+            // 如果已有内容，添加逗号分隔
+            if (currentValue) {
+                // 移除最后一个不完整的输入
+                const lastCommaIndex = currentValue.lastIndexOf(',');
+                if (lastCommaIndex >= 0) {
+                    currentValue = currentValue.substring(0, lastCommaIndex + 1);
+                } else {
+                    currentValue = '';
+                }
+            }
+            
+            // 添加新股票
+            stockInput.value = currentValue + code + ' (' + name + '), ';
+            suggestionsList.style.display = 'none';
+            stockInput.focus();
+        }
+
+        // 编辑事件
+        function editEvent(id) {
+            // 从已加载的事件列表中查找事件，无需请求后端
+            let foundEvent = null;
+            for (const dateGroup of eventList) {
+                foundEvent = dateGroup.events.find(e => e.id === id);
+                if (foundEvent) break;
+            }
+            
+            if (foundEvent) {
+                document.getElementById('edit-id').value = foundEvent.id;
+                document.getElementById('edit-date').value = foundEvent.date;
+                console.log(foundEvent);
+                document.getElementById('edit-event').value = foundEvent.event;
+                document.getElementById('edit-comment').value = foundEvent.comment || '';
+                // 处理股票信息，支持数组和字符串两种格式
+                if (foundEvent.stocks) {
+                    if (Array.isArray(foundEvent.stocks)) {
+                        document.getElementById('edit-stocks').value = foundEvent.stocks.map(stock => stock.code+'('+stock.name+')').join(',');
+                    } else {
+                        document.getElementById('edit-stocks').value = foundEvent.stocks;
+                    }
+                } else {
+                    document.getElementById('edit-stocks').value = '';
+                }
+            }
+        }
+
+        // 保存编辑
+        async function saveEdit() {
+            const id = document.getElementById('edit-id').value;
+            const date = document.getElementById('edit-date').value;
+            const event = document.getElementById('edit-event').value;
+            const comment = document.getElementById('edit-comment').value;
+            const stocks = document.getElementById('edit-stocks').value;
+
+            const url = domain + '/event/update';
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: parseInt(id), date, event, comment, stocks })
+            });
+
+            if (response.ok) {
+                alert('修改成功');
+                document.getElementById('editModal').querySelector('.btn-close').click();
+                loadEvents();
+            } else {
+                alert('修改失败');
+            }
+        }
+
+        // 删除事件
+        async function deleteEvent(id) {
+            if (!confirm('确定要删除此事件吗？')) return;
+
+            const url = domain + '/event/delete';
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+
+            if (response.ok) {
+                loadEvents();
+            } else {
+                alert('删除失败');
+            }
+        }
+    </script>
+</body>
+</html>
