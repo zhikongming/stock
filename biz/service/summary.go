@@ -865,7 +865,7 @@ func GetUpTrendReport(ctx context.Context) ([]*model.UpTrendReportItem, error) {
 		jobList = append(jobList, func(stockCode *dal.StockCode) func() (interface{}, error) {
 			return func() (interface{}, error) {
 				// 获取最近30天的股价数据
-				stockPriceList, err := dal.GetLastNStockPrice(ctx, stockCode.CompanyCode, "", 30)
+				stockPriceList, err := dal.GetLastNStockPrice(ctx, stockCode.CompanyCode, "", 50)
 				if err != nil {
 					return nil, err
 				}
@@ -956,7 +956,7 @@ func findGoldCross(stockPriceList []*dal.StockPrice) (string, int) {
 			return utils.FormatDate(current.Date), durationDays
 		}
 	}
-	return "", 0
+	return utils.FormatDate(stockPriceList[0].Date), n
 }
 
 func GetVolumeReport(ctx context.Context) ([]*model.VolumeReportItem, error) {
