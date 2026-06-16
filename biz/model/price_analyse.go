@@ -59,9 +59,11 @@ type VolumeReportItem struct {
 // 包含股票名称、所属板块、均线金叉日期、持续天数
 // 金叉：短期均线上穿长期均线，通常是买入信号
 type UpTrendReportItem struct {
-	Code          string `json:"code"`
-	Name          string `json:"name"`
-	IndustryName  string `json:"industry_name"`
-	GoldCrossDate string `json:"gold_cross_date"` // 均线金叉日期
-	DurationDays  int    `json:"duration_days"`   // 持续天数
+	Code            string  `json:"code"`
+	Name            string  `json:"name"`
+	IndustryName    string  `json:"industry_name"`
+	GoldCrossDate   string  `json:"gold_cross_date"`   // 均线金叉日期
+	DurationDays    int     `json:"duration_days"`     // 持续天数
+	LastPrice       float64 `json:"last_price"`        // 最新价格
+	PriceChangeRate float64 `json:"price_change_rate"` // 价格变化率
 }
