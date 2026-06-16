@@ -480,26 +480,26 @@
                                 if (event.stocks) {
                                     if (Array.isArray(event.stocks)) {
                                         stockTags = event.stocks.map(stock => `
-                                            <span class="timeline-stock-tag">
+                                            <a href="https://xueqiu.com/S/${stock.code || stock}" target="_blank" class="timeline-stock-tag no-underline">
                                                 <i class="fas fa-chart-line"></i>
                                                 ${stock.code || stock}(${stock.name || ''})
-                                            </span>
+                                            </a>
                                         `).join('');
                                     } else if (typeof event.stocks === 'string') {
                                         // 字符串格式，按逗号分割
                                         const stockArray = event.stocks.split(',').map(s => s.trim()).filter(s => s);
                                         stockTags = stockArray.map(stock => `
-                                            <span class="timeline-stock-tag">
+                                            <a href="https://xueqiu.com/S/${stock}" target="_blank" class="timeline-stock-tag no-underline">
                                                 <i class="fas fa-chart-line"></i>
                                                 ${stock}
-                                            </span>
+                                            </a>
                                         `).join('');
                                     }
                                 }
                                 return `
                                     <div class="timeline-event-card">
                                         <div class="timeline-event-content">${event.event}</div>
-                                        ${event.comment ? `<div class="timeline-event-comment">${event.comment}</div>` : ''}
+                                        ${event.comment ? `<div class="timeline-event-comment">${event.comment.replace(/\n/g, '<br/>')}</div>` : ''}
                                         <div class="timeline-event-footer">
                                             <div class="timeline-event-stocks">${stockTags}</div>
                                             <div class="timeline-event-actions">

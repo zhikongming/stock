@@ -63,3 +63,10 @@ type ScoreResultDiff struct {
 	ScoreDiff string `json:"score_diff"`
 	OrderDiff string `json:"order_diff"`
 }
+
+type GoldCrossResult struct {
+	Date            string
+	Days            int
+	LastPrice       float64
+	PriceChangeRate float64
+}

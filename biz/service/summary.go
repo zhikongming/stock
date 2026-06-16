@@ -875,16 +875,18 @@ func GetUpTrendReport(ctx context.Context) ([]*model.UpTrendReportItem, error) {
 				// 按日期升序排列（最新的在最后）
 				stockPriceList = utils.ListSwap(stockPriceList)
 				// 查找均线金叉日期（MA5上穿MA10）
-				goldCrossDate, durationDays := findGoldCross(stockPriceList)
-				if goldCrossDate == "" {
+				result := findGoldCross(stockPriceList)
+				if result == nil {
 					return nil, nil
 				}
 				report := &model.UpTrendReportItem{
-					Code:          stockCode.CompanyCode,
-					Name:          stockCode.CompanyName,
-					IndustryName:  stockMap[stockCode.CompanyCode],
-					GoldCrossDate: goldCrossDate,
-					DurationDays:  durationDays,
+					Code:            stockCode.CompanyCode,
+					Name:            stockCode.CompanyName,
+					IndustryName:    stockMap[stockCode.CompanyCode],
+					GoldCrossDate:   result.Date,
+					DurationDays:    result.Days,
+					LastPrice:       result.LastPrice,
+					PriceChangeRate: result.PriceChangeRate,
 				}
 				return report, nil
 			}
@@ -914,11 +916,11 @@ func GetUpTrendReport(ctx context.Context) ([]*model.UpTrendReportItem, error) {
 // 2. 均线方向向上：20日均线今天的值 > 5个交易日前的值，10日均线今天的值 > 5个交易日前的值
 // 3. 均线多头排列：10日均线 > 20日均线 > 60日均线
 // 返回金叉日期和持续天数
-func findGoldCross(stockPriceList []*dal.StockPrice) (string, int) {
+func findGoldCross(stockPriceList []*dal.StockPrice) *model.GoldCrossResult {
 	n := len(stockPriceList)
 	// 需要至少6个交易日的数据（用于比较5个交易日前的均线值）
 	if n < 6 {
-		return "", 0
+		return nil
 	}
 
 	// 获取最新的股价数据
@@ -927,7 +929,7 @@ func findGoldCross(stockPriceList []*dal.StockPrice) (string, int) {
 	// 检查条件1：价格位于关键均线之上
 	// 收盘价 > 10日均线 且 收盘价 > 20日均线
 	if !(latest.PriceClose > latest.Ma10 && latest.PriceClose > latest.Ma20) {
-		return "", 0
+		return nil
 	}
 
 	// 检查条件2：均线方向向上
@@ -936,13 +938,13 @@ func findGoldCross(stockPriceList []*dal.StockPrice) (string, int) {
 	// 5日均线今天的值 > 5个交易日前的值
 	fiveDaysAgo := stockPriceList[n-6] // 5个交易日前的数据（索引为n-6）
 	if !(latest.Ma20 > fiveDaysAgo.Ma20 && latest.Ma10 > fiveDaysAgo.Ma10 && latest.Ma5 > fiveDaysAgo.Ma5) {
-		return "", 0
+		return nil
 	}
 
 	// 检查条件3：均线多头排列
 	// 5日均线 > 10日均线 > 20日均线 > 60日均线
 	if !(latest.Ma5 > latest.Ma10 && latest.Ma10 > latest.Ma20 && latest.Ma20 > latest.Ma60) {
-		return "", 0
+		return nil
 	}
 
 	// 从后往前查找最近的金叉点（MA5上穿MA20）
@@ -953,10 +955,20 @@ func findGoldCross(stockPriceList []*dal.StockPrice) (string, int) {
 		if prev.Ma5 <= prev.Ma20 && current.Ma5 > current.Ma20 {
 			// 计算持续天数（从金叉到最新的天数）
 			durationDays := n - i
-			return utils.FormatDate(current.Date), durationDays
+			return &model.GoldCrossResult{
+				Date:            utils.FormatDate(current.Date),
+				Days:            durationDays,
+				LastPrice:       latest.PriceClose,
+				PriceChangeRate: utils.Float64KeepDecimal((latest.PriceClose-prev.PriceClose)*100/prev.PriceClose, 2),
+			}
 		}
 	}
-	return utils.FormatDate(stockPriceList[0].Date), n
+	return &model.GoldCrossResult{
+		Date:            utils.FormatDate(stockPriceList[0].Date),
+		Days:            n,
+		LastPrice:       latest.PriceClose,
+		PriceChangeRate: utils.Float64KeepDecimal((latest.PriceClose-stockPriceList[0].PriceClose)*100/stockPriceList[0].PriceClose, 2),
+	}
 }
 
 func GetVolumeReport(ctx context.Context) ([]*model.VolumeReportItem, error) {

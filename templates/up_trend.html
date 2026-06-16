@@ -53,6 +53,8 @@
                         <th class="sortable" id="sort-industry">所属板块 <i class="fas fa-sort"></i></th>
                         <th>均线金叉日期</th>
                         <th>持续天数</th>
+                        <th>最新价格</th>
+                        <th>金叉之后涨幅</th>
                     </tr>
                 </thead>
                 <tbody id="result-tbody">
@@ -136,6 +138,8 @@
                         <td>${item.industry_name}</td>
                         <td>${item.gold_cross_date}</td>
                         <td><span class="table-colume-badge increase">${item.duration_days}</span></td>
+                        <td>${item.last_price}</td>
+                        <td>${item.price_change_rate}%</td>
                     `;
                     resultTbody.appendChild(tr);
                 });
