@@ -8,6 +8,72 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
     <link rel="stylesheet" href="./common.css">
     <script src="./common.js"></script>
+    <style>
+        /* 订阅股票行的醒目样式 */
+        .subscribed-row {
+            background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fff7ed 100%) !important;
+            border-left: 4px solid #f97316 !important;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.15) !important;
+            transform: scale(1.005);
+            transition: all 0.3s ease;
+        }
+
+        .subscribed-row:hover {
+            background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 50%, #ffedd5 100%) !important;
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25) !important;
+            transform: scale(1.008);
+        }
+
+        /* 订阅股票的高亮图标 */
+        .subscribed-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: linear-gradient(135deg, #f97316, #fb923c);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 6px rgba(249, 115, 22, 0);
+            }
+        }
+
+        /* 订阅按钮激活状态 */
+        .subscribe-btn.subscribed {
+            background: linear-gradient(135deg, #f97316, #fb923c) !important;
+            border-color: #f97316 !important;
+            color: white !important;
+        }
+
+        .subscribe-btn.subscribed:hover {
+            background: linear-gradient(135deg, #ea580c, #f97316) !important;
+            transform: scale(1.05);
+        }
+
+        /* 股票名称高亮 */
+        .subscribed-row .stock-highlight {
+            font-weight: 700;
+            color: #dc2626;
+            text-shadow: 0 1px 2px rgba(220, 38, 38, 0.2);
+        }
+
+        /* 涨幅数字高亮 */
+        .subscribed-row .highlight-rate {
+            font-weight: 700;
+            color: #16a34a;
+            font-size: 1.1em;
+        }
+    </style>
 </head>
 <body>
     <div class="page-container">
@@ -44,6 +110,16 @@
                     </button>
                 </div>
             </div>
+            <div class="table-header-actions">
+                <button id="show-subscribed-btn" class="action-btn2 primary">
+                    <i class="fas fa-eye"></i>
+                    <span>只看订阅</span>
+                </button>
+                <button id="clear-subscriptions-btn" class="action-btn2 warning">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>清除订阅</span>
+                </button>
+            </div>
             
             <table class="table-content-header">
                 <thead>
@@ -55,6 +131,7 @@
                         <th>持续天数</th>
                         <th>最新价格</th>
                         <th>金叉之后涨幅</th>
+                        <th>操作</th>
                     </tr>
                 </thead>
                 <tbody id="result-tbody">
@@ -70,16 +147,22 @@
     </div>
 
     <script>
+        // 存储key，与third_buy.html区分开
+        const UP_TREND_STORAGE_KEY = 'up_trend_subscribed_stocks';
+
         // 获取DOM元素
         const resultContainer = document.getElementById('result-container');
         const resultTbody = document.getElementById('result-tbody');
         const resultCount = document.getElementById('result-count');
         const emptyResult = document.getElementById('empty-result');
         const showAllCodeBtn = document.getElementById('showAllCodeBtn');
+        const showSubscribedBtn = document.getElementById('show-subscribed-btn');
+        const clearSubscriptionsBtn = document.getElementById('clear-subscriptions-btn');
 
         let stockList = [];
         let openAllCodeListIndex = 0;
         let sortOrder = 'asc'; // 'asc' 或 'desc'
+        let showSubscribedOnly = false; // 当前是否只显示订阅
 
         // 页面加载时自动获取数据
         document.addEventListener('DOMContentLoaded', async function() {
@@ -121,34 +204,127 @@
             
             if (data && data.length > 0) {
                 emptyResult.style.display = 'none';
-                resultCount.textContent = data.length;
                 stockList = data;
                 initShowAllCodeBtn();
                 renderIndustryStats(data);
                 
-                data.forEach(item => {
+                // 过滤订阅股票
+                let rows = data;
+                if (showSubscribedOnly) {
+                    const subscribed = getSubscribedStocks();
+                    const subscribedCodes = new Set(subscribed.map(s => s.code));
+                    rows = rows.filter(item => subscribedCodes.has(item.code));
+                }
+                
+                resultCount.textContent = rows.length;
+                
+                if (rows.length === 0) {
+                    emptyResult.style.display = 'block';
+                    return;
+                }
+                
+                rows.forEach(item => {
+                    const subscribed = isSubscribed(item.code);
                     const tr = document.createElement('tr');
+                    // 为订阅的股票行添加特殊样式类
+                    if (subscribed) {
+                        tr.className = 'subscribed-row';
+                    }
                     tr.innerHTML = `
                         <td>
                             <a href="https://xueqiu.com/S/${item.code}" target="_blank" class="no-underline">${item.code}</a>
+                            ${subscribed ? '<span class="subscribed-badge"><i class="fas fa-star"></i>已订阅</span>' : ''}
                         </td>
                         <td>
-                            <a href="https://xueqiu.com/S/${item.code}" target="_blank" class="no-underline">${item.name}</a>
+                            <a href="https://xueqiu.com/S/${item.code}" target="_blank" class="no-underline ${subscribed ? 'stock-highlight' : ''}">${item.name}</a>
                         </td>
                         <td>${item.industry_name}</td>
                         <td>${item.gold_cross_date}</td>
                         <td><span class="table-colume-badge increase">${item.duration_days}</span></td>
                         <td>${item.last_price}</td>
-                        <td>${item.price_change_rate}%</td>
+                        <td><span class="${subscribed ? 'highlight-rate' : ''}">${item.price_change_rate}%</span></td>
+                        <td>
+                            <button class="stock-action-btn subscribe-btn ${subscribed ? 'subscribed' : ''}" data-code="${item.code}" data-name="${item.name}">
+                                <i class="fas ${subscribed ? 'fa-check-circle' : 'fa-bell'}"></i>
+                                <span>${subscribed ? '已订阅' : '订阅'}</span>
+                            </button>
+                        </td>
                     `;
                     resultTbody.appendChild(tr);
                 });
+                
+                initSubscribeButtons();
             } else {
                 emptyResult.style.display = 'block';
                 resultCount.textContent = '0';
                 showAllCodeBtn.style.display = 'none';
                 document.getElementById('industry-stats').style.display = 'none';
             }
+        }
+
+        // 初始化订阅按钮事件
+        function initSubscribeButtons() {
+            document.querySelectorAll('.subscribe-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const code = btn.dataset.code;
+                    const name = btn.dataset.name;
+                    const stock = { code, name };
+                    toggleSubscribe(stock);
+                });
+            });
+        }
+
+        // 切换只看订阅模式
+        function toggleShowSubscribed() {
+            showSubscribedOnly = !showSubscribedOnly;
+            const btn = document.getElementById('show-subscribed-btn');
+            if (showSubscribedOnly) {
+                btn.innerHTML = '<i class="fas fa-eye-slash"></i><span>显示全部</span>';
+            } else {
+                btn.innerHTML = '<i class="fas fa-eye"></i><span>只看订阅</span>';
+            }
+            renderTable(stockList);
+        }
+
+        // 清除所有订阅
+        function clearAllSubscriptions() {
+            if (confirm('确定清除所有订阅吗？')) {
+                localStorage.removeItem(UP_TREND_STORAGE_KEY);
+                showSubscribedOnly = false;
+                document.getElementById('show-subscribed-btn').innerHTML = '<i class="fas fa-eye"></i><span>只看订阅</span>';
+                renderTable(stockList);
+            }
+        }
+
+        // 订阅/取消订阅
+        function toggleSubscribe(stock) {
+            let subscribed = getSubscribedStocks();
+            const index = subscribed.findIndex(item => item.code === stock.code);
+            if (index === -1) {
+                subscribed.push({ code: stock.code, name: stock.name });
+            } else {
+                subscribed.splice(index, 1);
+            }
+            saveSubscribedStocks(subscribed);
+            renderTable(stockList);
+        }
+
+        // 获取订阅列表
+        function getSubscribedStocks() {
+            const stored = localStorage.getItem(UP_TREND_STORAGE_KEY);
+            return stored ? JSON.parse(stored) : [];
+        }
+
+        // 保存订阅列表
+        function saveSubscribedStocks(subscribed) {
+            localStorage.setItem(UP_TREND_STORAGE_KEY, JSON.stringify(subscribed));
+        }
+
+        // 检查某股票是否已订阅
+        function isSubscribed(code) {
+            const subscribed = getSubscribedStocks();
+            return subscribed.some(item => item.code === code);
         }
 
         function initShowAllCodeBtn() {
@@ -199,6 +375,9 @@
         showAllCodeBtn.addEventListener('click', () => {
             openAllCodeList();
         });
+
+        showSubscribedBtn.addEventListener('click', toggleShowSubscribed);
+        clearSubscriptionsBtn.addEventListener('click', clearAllSubscriptions);
     </script>
 </body>
 </html>
