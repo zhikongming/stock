@@ -8,6 +8,41 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
     <link rel="stylesheet" href="./common.css">
     <script src="./common.js"></script>
+    <style>
+        .buy-date-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .buy-option {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+        
+        .option-label {
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        .option-date {
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        .option-date.morning {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        
+        .option-date.afternoon {
+            background: #dcfce7;
+            color: #166534;
+        }
+    </style>
 </head>
 <body>
     <div class="page-container">
@@ -52,6 +87,7 @@
                         <th>异常类型</th>
                         <th>开始日期</th>
                         <th>截止日期</th>
+                        <th>买入日期建议</th>
                         <th>通知日期</th>
                         <th>异常类型描述</th>
                     </tr>
@@ -81,6 +117,46 @@
             1: '严重异常波动',
             2: '交易所风险提示'
         };
+
+        // 计算买入日期
+        // 规则：截止日期到期之前，提前两天开盘买入或提前三天尾盘买入
+        // 遇到周六日则跳过，顺延计算
+        function calculateBuyDate(endDateStr) {
+            if (!endDateStr) {
+                return { morningBuy: '-', afternoonBuy: '-' };
+            }
+            
+            try {
+                const endDate = new Date(endDateStr);
+                
+                // 计算提前两天的日期（早盘买入）
+                const morningBuyDate = subtractTradingDays(new Date(endDate), 2);
+                // 计算提前三天的日期（尾盘买入）
+                const afternoonBuyDate = subtractTradingDays(new Date(endDate), 3);
+                
+                return {
+                    morningBuy: formatDate(morningBuyDate),
+                    afternoonBuy: formatDate(afternoonBuyDate)
+                };
+            } catch (error) {
+                console.error('计算买入日期失败:', error);
+                return { morningBuy: '-', afternoonBuy: '-' };
+            }
+        }
+
+        // 减去指定数量的交易日（跳过周六日）
+        function subtractTradingDays(date, days) {
+            let count = 0;
+            while (count < days) {
+                date.setDate(date.getDate() - 1);
+                // 判断是否为工作日（周一到周五）
+                const dayOfWeek = date.getDay();
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    count++;
+                }
+            }
+            return date;
+        }
 
         // 页面加载时自动获取数据
         document.addEventListener('DOMContentLoaded', async function() {
@@ -129,6 +205,7 @@
                     const tr = document.createElement('tr');
                     const endDateClass = getEndDateClass(item.end_date);
                     const unusualType = unusualTypeMap[item.type] || '未知';
+                    const buyDateInfo = calculateBuyDate(item.end_date);
                     
                     tr.innerHTML = `
                         <td>
@@ -140,6 +217,18 @@
                         <td><span class="table-colume-badge">${unusualType}</span></td>
                         <td>${formatDate(item.start_date)}</td>
                         <td class="${endDateClass}">${formatDate(item.end_date)}</td>
+                        <td>
+                            <div class="buy-date-info">
+                                <div class="buy-option">
+                                    <span class="option-label">早盘买入:</span>
+                                    <span class="option-date morning">${buyDateInfo.morningBuy}</span>
+                                </div>
+                                <div class="buy-option">
+                                    <span class="option-label">尾盘买入:</span>
+                                    <span class="option-date afternoon">${buyDateInfo.afternoonBuy}</span>
+                                </div>
+                            </div>
+                        </td>
                         <td>${formatDate(item.notice_date)}</td>
                         <td>${item.unusual_type || '-'}</td>
                     `;
