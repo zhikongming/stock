@@ -321,3 +321,7 @@ func (c *BaiduClient) GetRemoteSpecialUnusualStock(ctx context.Context) ([]*mode
 func (c *BaiduClient) GetRemoteMarketRisk(ctx context.Context) ([]*model.UnusualStock, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+
+func (c *BaiduClient) GetRemoteUnusualPredict(ctx context.Context) ([]*model.UnusualPredict, error) {
+	return nil, fmt.Errorf("not implemented")
+}

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>严重异动预测</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="./common.css">
+    <script src="./common.js"></script>
+</head>
+<body>
+    <div class="page-container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-chart-line"></i>
+                严重异动预测
+            </h1>
+            <p>展示股票异动预测数据，帮助识别潜在的异常波动风险</p>
+        </div>
+
+        <!-- 结果表格 -->
+        <div id="result-container" class="table-container">
+            <div class="table-header">
+                <h2 class="table-title">
+                    <i class="fas fa-table"></i>
+                    <span>异动预测列表</span>
+                    <span id="date-badge" style="display: none; margin-left: 10px; font-size: 14px; color: #666;">（<span id="predict-date"></span>）</span>
+                </h2>
+                <div class="table-info">共 <span id="result-count">0</span> 条记录</div>
+            </div>
+            
+            <table class="table-content-header">
+                <thead>
+                    <tr>
+                        <th>股票名称</th>
+                        <th>当日涨跌幅</th>
+                        <th>当日是否异动</th>
+                        <th>当日异动条件</th>
+                        <th id="next-trading-day-header">下一个交易日异动预测条件</th>
+                        <th>规则描述</th>
+                        <th>偏离值</th>
+                    </tr>
+                </thead>
+                <tbody id="result-tbody">
+                    <!-- 动态生成 -->
+                </tbody>
+            </table>
+            
+            <div id="empty-result" class="empty-state" style="display: none;">
+                <i class="fas fa-database"></i>
+                <h3>暂无数据</h3>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const resultContainer = document.getElementById('result-container');
+        const resultTbody = document.getElementById('result-tbody');
+        const resultCount = document.getElementById('result-count');
+        const emptyResult = document.getElementById('empty-result');
+        const dateBadge = document.getElementById('date-badge');
+        const predictDate = document.getElementById('predict-date');
+        const nextTradingDayHeader = document.getElementById('next-trading-day-header');
+
+        // 预测类型映射
+        const predictTypeMap = {
+            0: { text: '当日未异动', class: 'badge-default' },
+            1: { text: '当日异动', class: 'badge-warning' },
+            2: { text: '次日预测异动', class: 'badge-danger' }
+        };
+
+        // 页面加载时自动获取数据
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 更新下一个交易日表头
+            updateNextTradingDayHeader();
+            
+            let resp = await fetchUnusualPredict();
+            renderTable(resp);
+        });
+
+        // 获取下一个交易日
+        function getNextTradingDay() {
+            const today = new Date();
+            let nextDay = new Date(today);
+            nextDay.setDate(nextDay.getDate() + 1);
+            
+            // 跳过周六日
+            while (nextDay.getDay() === 0 || nextDay.getDay() === 6) {
+                nextDay.setDate(nextDay.getDate() + 1);
+            }
+            
+            return nextDay;
+        }
+
+        // 更新下一个交易日表头
+        function updateNextTradingDayHeader() {
+            const nextDay = getNextTradingDay();
+            const year = nextDay.getFullYear();
+            const month = String(nextDay.getMonth() + 1).padStart(2, '0');
+            const day = String(nextDay.getDate()).padStart(2, '0');
+            nextTradingDayHeader.textContent = `${year}-${month}-${day} 异动预测条件`;
+        }
+
+        // 渲染表格
+        function renderTable(data) {
+            resultTbody.innerHTML = '';
+            dateBadge.style.display = 'none';
+            
+            if (data && data.length > 0) {
+                emptyResult.style.display = 'none';
+                resultCount.textContent = data.length;
+                
+                // 显示日期在标题后面
+                if (data[0] && data[0].date) {
+                    predictDate.textContent = formatDate(data[0].date);
+                    dateBadge.style.display = 'inline';
+                }
+                
+                data.forEach(item => {
+                    const tr = document.createElement('tr');
+                    
+                    // 当日预测
+                    const todayPredictType = item.today_predict && item.today_predict.predict_type != null 
+                        ? predictTypeMap[item.today_predict.predict_type] 
+                        : { text: '-', class: '' };
+                    
+                    // 当日异动条件描述
+                    let todayPredictDesc = "";
+                    if (item.today_predict && item.today_predict.predict_rate != null) {
+                        if (item.today_predict.predict_rate >= 0) {
+                            todayPredictDesc = `收盘涨幅达到${formatRate(item.today_predict.predict_rate)}将触发严重异动`;
+                        } else {
+                            todayPredictDesc = `收盘涨幅小于${formatRate(item.today_predict.predict_rate)}将触发严重异动`;
+                        }
+                    }
+                    
+                    // 次日预测条件描述
+                    let nextDayPredictDesc = "";
+                    if (item.next_day_predict && item.next_day_predict.predict_rate != null) {
+                        if (item.next_day_predict.predict_rate >= 0) {
+                            nextDayPredictDesc = `预测涨幅${formatRate(item.next_day_predict.predict_rate)}将触发严重异动`;
+                        } else {
+                            nextDayPredictDesc = `预测涨幅小于${formatRate(item.next_day_predict.predict_rate)}将触发严重异动`;
+                        }
+                    }
+
+                    tr.innerHTML = `
+                        <td>
+                            <a href="https://xueqiu.com/S/${item.code}" target="_blank" class="no-underline">${item.name}</a>
+                        </td>
+                        <td>${formatRate(item.change_rate)}</td>
+                        <td><span class="table-colume-badge ${todayPredictType.class}">${todayPredictType.text}</span></td>
+                        <td>${todayPredictDesc}</td>
+                        <td>${nextDayPredictDesc}</td>
+                        <td>${item.rule || '-'}</td>
+                        <td>${item.deviation_day}日涨幅偏离值${formatRate(item.deviation_rate)}</td>
+                    `;
+                    resultTbody.appendChild(tr);
+                });
+            } else {
+                emptyResult.style.display = 'block';
+                resultCount.textContent = '0';
+            }
+        }
+
+        // 格式化日期
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            
+            try {
+                const date = new Date(dateStr);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            } catch (error) {
+                return dateStr;
+            }
+        }
+
+        // 格式化涨跌幅
+        function formatRate(rate) {
+            if (rate === null || rate === undefined) return '-';
+            
+            const prefix = rate >= 0 ? '+' : '';
+            const className = rate >= 0 ? 'negative' : 'positive';
+            return `<span class="${className}">${prefix}${rate.toFixed(2)}%</span>`;
+        }
+    </script>
+</body>
+</html>

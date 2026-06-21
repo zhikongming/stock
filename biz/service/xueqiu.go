@@ -135,3 +135,7 @@ func (c *XueqiuClient) GetRemoteSpecialUnusualStock(ctx context.Context) ([]*mod
 func (c *XueqiuClient) GetRemoteMarketRisk(ctx context.Context) ([]*model.UnusualStock, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+
+func (c *XueqiuClient) GetRemoteUnusualPredict(ctx context.Context) ([]*model.UnusualPredict, error) {
+	return nil, fmt.Errorf("not implemented")
+}

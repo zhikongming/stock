@@ -92,6 +92,10 @@ func customizedRegister(r *server.Hertz) {
 	r.POST("/unusual/stock", handler.CreateUnusualStock)
 	r.GET("/unusual/stock", handler.GetUnusualStockList)
 
+	// 异动预测API
+	r.POST("/unusual/predict", handler.CreateUnusualPredict)
+	r.GET("/unusual/predict", handler.GetUnusualPredictList)
+
 	// 事件管理API
 	r.POST("/event/create", handler.CreateEvent)
 	r.POST("/event/update", handler.UpdateEvent)

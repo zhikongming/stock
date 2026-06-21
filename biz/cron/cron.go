@@ -40,6 +40,8 @@ func InitCron() {
 			return
 		}
 		service.CreateUnusualStock(ctx)
+
+		service.CreateUnusualPredict(ctx)
 	})
 
 	c.Start()
