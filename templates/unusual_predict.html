@@ -80,10 +80,9 @@
             renderTable(resp);
         });
 
-        // 获取下一个交易日
-        function getNextTradingDay() {
-            const today = new Date();
-            let nextDay = new Date(today);
+        // 获取下一个交易日（根据给定日期计算）
+        function getNextTradingDay(baseDate) {
+            let nextDay = new Date(baseDate);
             nextDay.setDate(nextDay.getDate() + 1);
             
             // 跳过周六日
@@ -94,9 +93,10 @@
             return nextDay;
         }
 
-        // 更新下一个交易日表头
-        function updateNextTradingDayHeader() {
-            const nextDay = getNextTradingDay();
+        // 更新下一个交易日表头（根据预测日期计算）
+        function updateNextTradingDayHeader(predictDateStr) {
+            const predictDate = predictDateStr ? new Date(predictDateStr) : new Date();
+            const nextDay = getNextTradingDay(predictDate);
             const year = nextDay.getFullYear();
             const month = String(nextDay.getMonth() + 1).padStart(2, '0');
             const day = String(nextDay.getDate()).padStart(2, '0');
@@ -116,6 +116,8 @@
                 if (data[0] && data[0].date) {
                     predictDate.textContent = formatDate(data[0].date);
                     dateBadge.style.display = 'inline';
+                    // 根据预测日期更新下一个交易日表头
+                    updateNextTradingDayHeader(data[0].date);
                 }
                 
                 data.forEach(item => {
