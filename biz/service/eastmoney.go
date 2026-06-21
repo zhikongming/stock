@@ -17,13 +17,15 @@ const (
 	EastMoneyDomain2 = "https://push2.eastmoney.com"
 	EastMoneyDomain3 = "https://push2his.eastmoney.com"
 	EastMoneyDomain4 = "https://mobappconfig.securities.eastmoney.com"
+	EastMoneyDomain5 = "https://dycalchis.eastmoney.com"
 
-	EastMoneyBasicPath         = "/securities/api/data/v1/get"
-	EastMoneyStockRelationPath = "/api/qt/stock/get"
-	EastMoneyStockDailyPath    = "/api/qt/stock/kline/get"
-	EastMoneyIndustryPath      = "/api/qt/clist/get"
-	EastMoneyFundFlowPath      = "/api/qt/stock/fflow/daykline/get"
-	EastMoneyMarketRiskPath    = "/emcfg/stock_monitor.json"
+	EastMoneyBasicPath          = "/securities/api/data/v1/get"
+	EastMoneyStockRelationPath  = "/api/qt/stock/get"
+	EastMoneyStockDailyPath     = "/api/qt/stock/kline/get"
+	EastMoneyIndustryPath       = "/api/qt/clist/get"
+	EastMoneyFundFlowPath       = "/api/qt/stock/fflow/daykline/get"
+	EastMoneyMarketRiskPath     = "/emcfg/stock_monitor.json"
+	EastMoneyUnusualPredictPath = "/price-anomaly/list"
 
 	KLineTypeDay   = "101"
 	KLineType30Min = "30"
@@ -590,4 +592,43 @@ func TransferEmCodeToStandard(code string) string {
 		return code
 	}
 	return strings.ToUpper(code[idx+1:]) + code[:idx]
+}
+
+func (c *EastMoneyClient) GetRemoteUnusualPredict(ctx context.Context) ([]*model.UnusualPredict, error) {
+	path := fmt.Sprintf("%s%s", EastMoneyDomain5, EastMoneyUnusualPredictPath)
+	params := map[string]string{
+		"team":     "h5",
+		"product":  "EastMoney",
+		"client":   "WAP",
+		"version":  "9001",
+		"name":     "WAP",
+		"user":     "12",
+		"pageSize": "200",
+		"pageNo":   "1",
+	}
+	resp, err := DoGet(ctx, path, params, nil)
+	if err != nil {
+		return nil, err
+	}
+	var ret *model.EMUnusualPredictResp
+	err = json.Unmarshal(resp, &ret)
+	if err != nil {
+		log.Printf("json unmarshal failed: %v", err)
+		return nil, err
+	}
+	data := make([]*model.UnusualPredict, 0)
+	for _, item := range ret.Data {
+		data = append(data, &model.UnusualPredict{
+			Date:          utils.FormatDate(utils.ParseDate2(fmt.Sprintf("%d", ret.Date))),
+			Code:          utils.GetFullStockCodeOfNumber(item.C),
+			Name:          item.N,
+			PredictType:   model.PredictType(item.O),
+			ChangeRate:    item.A,
+			DeviationDay:  item.D,
+			DeviationRate: item.X,
+			PredictRate:   item.T,
+			RuleType:      item.E,
+		})
+	}
+	return data, nil
 }

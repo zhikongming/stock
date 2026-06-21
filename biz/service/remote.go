@@ -25,4 +25,5 @@ type RemoteClient interface {
 	GetRemoteUnusualStock(ctx context.Context) ([]*model.UnusualStock, error)
 	GetRemoteSpecialUnusualStock(ctx context.Context) ([]*model.UnusualStock, error)
 	GetRemoteMarketRisk(ctx context.Context) ([]*model.UnusualStock, error)
+	GetRemoteUnusualPredict(ctx context.Context) ([]*model.UnusualPredict, error)
 }

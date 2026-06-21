@@ -72,3 +72,18 @@ CREATE TABLE `event` (
   PRIMARY KEY (`id`),
   KEY `idx_date` (`date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='事件数据';
+
+CREATE TABLE `unusual_predict` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'id',
+  `date` DATE NOT NULL COMMENT '预测日期',
+  `code` varchar(255) NOT NULL DEFAULT '' COMMENT '股票代码',
+  `name` varchar(255) NOT NULL DEFAULT '' COMMENT '股票名称',
+  `predict_type` tinyint NOT NULL DEFAULT '0' COMMENT '预测类型: 0: 当日未异动; 1: 当日异动; 2: 次日预测异动',
+  `change_rate` float NOT NULL DEFAULT 0.0 COMMENT '当日涨跌幅',
+  `deviation_day` int NOT NULL DEFAULT 0 COMMENT '偏离天数',
+  `deviation_rate` float NOT NULL DEFAULT 0.0 COMMENT '偏离涨跌幅',
+  `predict_rate` float NOT NULL DEFAULT 0.0 COMMENT '预测涨跌幅',
+  `rule_type` tinyint NOT NULL DEFAULT '0' COMMENT '规则类型: 代码里面定义',
+  PRIMARY KEY (`id`),
+  KEY `idx_date` (`date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='严重异动预测';

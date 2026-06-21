@@ -26,6 +26,7 @@ const queryVolumeReportUrl = "/analyze/volume/report"
 const queryLimitUpReportUrl = "/analyze/limitup/report"
 const queryUpTrendReportUrl = "/analyze/up_trend/report"
 const queryUnusualStockUrl = "/unusual/stock"
+const queryUnusualPredictUrl = "/unusual/predict"
 
 // 概念管理API
 const getConceptsUrl = "/concept/list"
@@ -709,6 +710,17 @@ async function deleteConceptStock(conceptId, stockCode) {
 // 获取异常股票数据
 async function fetchUnusualStock() {
     const response = await fetch(domain + queryUnusualStockUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
+
+ // 获取异动预测数据
+ async function fetchUnusualPredict() {
+    const response = await fetch(domain + queryUnusualPredictUrl, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json'
