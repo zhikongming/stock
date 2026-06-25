@@ -71,6 +71,9 @@ func GetUnusualPredictList(ctx context.Context) ([]*model.MergedUnusualPredict, 
 	// 合并同一种rule的数据
 	mergedPredictMap := make(map[string][]*dal.UnusualPredict)
 	for _, predict := range predicts {
+		if predict.DeviationRate < 0 {
+			continue
+		}
 		key := fmt.Sprintf("%s_%d", predict.Code, predict.RuleType)
 		if _, ok := mergedPredictMap[key]; !ok {
 			mergedPredictMap[key] = []*dal.UnusualPredict{}
