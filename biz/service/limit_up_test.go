@@ -44,4 +44,22 @@ func TestIsLimitUpWithRate(t *testing.T) {
 	prevClosePrice = 25.41
 	curClosePrice = 27.95
 	fmt.Printf("%s: IsLimitUpWithRate = %v\n", code, IsLimitUpWithRate(prevClosePrice, curClosePrice, rate))
+
+	code = "002674"
+	rate = GetLimitUpRate(code)
+	prevClosePrice = 16.27
+	curClosePrice = 17.90
+	fmt.Printf("%s: IsLimitUpWithRate = %v\n", code, IsLimitUpWithRate(prevClosePrice, curClosePrice, rate))
+
+	code = "002674"
+	rate = GetLimitUpRate(code)
+	prevClosePrice = 17.90
+	curClosePrice = 19.69
+	fmt.Printf("%s: IsLimitUpWithRate = %v\n", code, IsLimitUpWithRate(prevClosePrice, curClosePrice, rate))
+
+	code = "002674"
+	rate = GetLimitUpRate(code)
+	prevClosePrice = 19.69
+	curClosePrice = 21.66
+	fmt.Printf("%s: IsLimitUpWithRate = %v\n", code, IsLimitUpWithRate(prevClosePrice, curClosePrice, rate))
 }
