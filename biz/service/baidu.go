@@ -69,6 +69,9 @@ func (c *BaiduClient) GetRemoteStockDaily(ctx context.Context, code string, date
 		log.Printf("code:%s, json unmarshal failed: %v", code, err)
 		return nil, err
 	}
+	if ret.Result == nil || ret.Result.NewMarketData == nil || ret.Result.NewMarketData.MarketData == "" {
+		return nil, fmt.Errorf("result is nil")
+	}
 
 	data := &model.StockDailyData{
 		Column: []string{
