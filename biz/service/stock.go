@@ -23,8 +23,9 @@ const (
 	KdjRsvPeriod = 9
 	KdjEmaPeriod = 3
 
-	MaxJobNum   = 1
-	MaxDBJobNum = 100
+	MaxJobNum      = 1
+	MaxFailTaskNum = 5
+	MaxDBJobNum    = 100
 )
 
 func GetAllCode(ctx context.Context) ([]*dal.StockCode, error) {
@@ -78,7 +79,7 @@ func syncAllStockCode(ctx context.Context, req *model.SyncStockCodeReq) error {
 	for _, stockCode := range stockCodeList {
 		// 检查任务是否大量出现了问题
 		mutex.Lock()
-		if failTaskNum > MaxJobNum {
+		if failTaskNum > MaxFailTaskNum {
 			mutex.Unlock()
 			break
 		}
