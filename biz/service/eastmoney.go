@@ -531,7 +531,7 @@ func (c *EastMoneyClient) GetRemoteSpecialUnusualStock(ctx context.Context) ([]*
 		"reportName":   "RPT_APP_UNUSUALBASIC",
 		"columns":      "SECUCODE,SECURITY_CODE,SECURITY_NAME_ABBR,UNUSUAL_TYPE,START_DATE,END_DATE,INFO_CODE,NOTICE_DATE,UNUSUAL_REASON,UNUSUAL_REASON_TYPE,MRAKET_TYPE,PREDICT_START_DATE,PREDICT_END_DATE,IS_HIS",
 		"quoteColumns": "",
-		"filter":       "(UNUSUAL_TYPE=\"002\")(IS_HIS=\"1\")",
+		"filter":       "(UNUSUAL_TYPE=\"002\")(IS_HIS=\"0\")",
 		"v":            "06945155531701716",
 	}
 	resp, err := DoGet(ctx, path, params, nil)
