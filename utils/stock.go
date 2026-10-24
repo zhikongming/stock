@@ -49,6 +49,12 @@ func IsStockTypeOfB(code string) bool {
 	return strings.HasPrefix(c, "900")
 }
 
+// 是否为创业板
+func IsStockTypeOfGrowth(code string) bool {
+	c := GetStockCodeNumber(code)
+	return strings.HasPrefix(c, "30")
+}
+
 func RemoveIndustryNumberSuffix(name string) string {
 	return strings.TrimRightFunc(name, unicode.IsNumber)
 }

@@ -203,8 +203,15 @@ func GetLimitUpReport(ctx context.Context, c *app.RequestContext) {
 	c.JSON(http.StatusOK, data)
 }
 
-func GetUpTrendReport(ctx context.Context, c *app.RequestContext) {
-	data, err := service.GetUpTrendReport(ctx)
+func ChooseMatchStock(ctx context.Context, c *app.RequestContext) {
+	var req model.ChooseMatchStockReq
+	if c.BindQuery(&req) != nil {
+		c.JSON(http.StatusBadRequest, utils.H{
+			"message": "bad request",
+		})
+		return
+	}
+	data, err := service.ChooseMatchStock(ctx, req.Type)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.H{
 			"message": fmt.Sprintf("%v", err),

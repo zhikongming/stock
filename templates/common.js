@@ -123,6 +123,7 @@ const BTN_TYPE_STOCK = "stock";
 const CODE_TYPE_INDUSTRY = "industry";
 const CODE_TYPE_STOCK = "stock";
 const THIRD_BUY_STORAGE_KEY = "third_buy_subscribed";
+const MATCH_STOCK_STRATEGY = "match_stock_strategy";
 
 async function getPriceData(code, start_date, line_type) {
     let line_type_int = parseInt(line_type);
@@ -615,9 +616,11 @@ async function fetchLimitUpReport() {
 }
 
 // 获取上升趋势报告数据
-async function fetchUpTrendReport() {
+async function fetchUpTrendReport(type = 0) {
     const url = domain + queryUpTrendReportUrl;
-    const response = await fetch(url, {
+    const baseUrl = new URL(url);
+    baseUrl.searchParams.append('type', type);
+    const response = await fetch(baseUrl, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json'

@@ -70,3 +70,8 @@ type GoldCrossResult struct {
 	LastPrice       float64
 	PriceChangeRate float64
 }
+
+type ShortTimeResult struct {
+	LastPrice       float64
+	PriceChangeRate float64
+}
