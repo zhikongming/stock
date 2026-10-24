@@ -344,3 +344,7 @@ type FilterThirdBuyCodeReq struct {
 	ThresholdDeviation float64 `json:"threshold_deviation"`
 	ThresholdProfit    float64 `json:"threshold_profit"`
 }
+
+type ChooseMatchStockReq struct {
+	Type int `json:"type" query:"type"`
+}

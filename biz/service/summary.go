@@ -15,9 +15,14 @@ import (
 	"github.com/zhikongming/stock/utils"
 )
 
+type ChooseMatchStockStrategy int
+
 const (
-	VolumeReportDiffThreshold = 1.8
-	MaxVolumeReportJobNum     = 50
+	VolumeReportDiffThreshold                = 1.8
+	MaxVolumeReportJobNum                    = 50
+	ChooseMatchStockStrategyUpTrend          = 0
+	ChooseMatchStockStrategyShortTime        = 1
+	ChooseMatchStockStrategyUpTrendShortTime = 2
 )
 
 func GetAnalyzeReport(ctx context.Context) ([]*model.ScoreResult, error) {
@@ -834,9 +839,7 @@ func GetPriceAnalyseReport(ctx context.Context) (*model.PriceAnalyseReport, erro
 	return result, nil
 }
 
-// GetUpTrendReport 获取上升趋势报告
-// 找出均线金叉（MA5上穿MA10）的股票，并计算持续天数
-func GetUpTrendReport(ctx context.Context) ([]*model.UpTrendReportItem, error) {
+func ChooseMatchStock(ctx context.Context, tp int) ([]*model.UpTrendReportItem, error) {
 	// 获取所有股票代码
 	stockList, err := dal.GetAllStockCode(ctx)
 	if err != nil {
@@ -859,6 +862,138 @@ func GetUpTrendReport(ctx context.Context) ([]*model.UpTrendReportItem, error) {
 	for _, industryRelation := range allIndustryRelationList {
 		stockMap[industryRelation.CompanyCode] = industryMap[industryRelation.IndustryCode]
 	}
+	switch tp {
+	case ChooseMatchStockStrategyUpTrend:
+		return GetUpTrendReport(ctx, stockList, stockMap)
+	case ChooseMatchStockStrategyShortTime:
+		return GetShortTimeReport(ctx, stockList, stockMap)
+	case ChooseMatchStockStrategyUpTrendShortTime:
+		return GetUpTrendShortTimeReport(ctx, stockList, stockMap)
+	default:
+		return nil, fmt.Errorf("invalid choose match stock strategy")
+	}
+}
+
+func GetUpTrendShortTimeReport(ctx context.Context, stockList []*dal.StockCode, stockMap map[string]string) ([]*model.UpTrendReportItem, error) {
+	upTrendList, err := GetUpTrendReport(ctx, stockList, stockMap)
+	if err != nil {
+		return nil, err
+	}
+	shortTimeList, err := GetShortTimeReport(ctx, stockList, stockMap)
+	if err != nil {
+		return nil, err
+	}
+	shortTimeMap := make(map[string]*model.UpTrendReportItem)
+	for _, item := range shortTimeList {
+		shortTimeMap[item.Code] = item
+	}
+	var ret []*model.UpTrendReportItem
+	for _, item := range upTrendList {
+		if _, ok := shortTimeMap[item.Code]; ok {
+			ret = append(ret, item)
+		}
+	}
+	return ret, nil
+}
+
+func GetShortTimeReport(ctx context.Context, stockList []*dal.StockCode, stockMap map[string]string) ([]*model.UpTrendReportItem, error) {
+	const GET_PRICE_DAY = 4
+	// 需要使用并发来计算, 以减少耗时
+	jobList := make([]func() (interface{}, error), 0)
+	for _, stockCode := range stockList {
+		jobList = append(jobList, func(stockCode *dal.StockCode) func() (interface{}, error) {
+			return func() (interface{}, error) {
+				// 获取最近3天的股价数据
+				stockPriceList, err := dal.GetLastNStockPrice(ctx, stockCode.CompanyCode, "", GET_PRICE_DAY)
+				if err != nil {
+					return nil, err
+				}
+				if len(stockPriceList) < GET_PRICE_DAY {
+					return nil, nil
+				}
+				// 按日期升序排列（最新的在最后）
+				stockPriceList = utils.ListSwap(stockPriceList)
+				// 根据短线策略做过滤
+				result := filterShortTimeStock(stockCode.CompanyCode, stockPriceList)
+				if result == nil {
+					return nil, nil
+				}
+				report := &model.UpTrendReportItem{
+					Code:            stockCode.CompanyCode,
+					Name:            stockCode.CompanyName,
+					IndustryName:    stockMap[stockCode.CompanyCode],
+					LastPrice:       result.LastPrice,
+					PriceChangeRate: result.PriceChangeRate,
+				}
+				return report, nil
+			}
+		}(stockCode))
+	}
+	// 执行并发任务
+	reportList, err := utils.ConcurrentActuator(jobList, MaxVolumeReportJobNum)
+	if err != nil {
+		return nil, err
+	}
+	var ret []*model.UpTrendReportItem
+	for _, item := range reportList {
+		if item != nil {
+			ret = append(ret, item.(*model.UpTrendReportItem))
+		}
+	}
+	return ret, nil
+}
+
+func filterShortTimeStock(stockCode string, stockPriceList []*dal.StockPrice) *model.ShortTimeResult {
+	length := len(stockPriceList)
+	lastPrice := stockPriceList[length-1]
+	last1Price := stockPriceList[length-2]
+	last2Price := stockPriceList[length-3]
+	// 只针对创业板股票
+	if !utils.IsStockTypeOfGrowth(stockCode) {
+		return nil
+	}
+
+	// 三连阳
+	if last2Price.PriceClose < last2Price.PriceOpen ||
+		last1Price.PriceClose < last1Price.PriceOpen ||
+		lastPrice.PriceClose < lastPrice.PriceOpen {
+		return nil
+	}
+
+	// 今日上影线小于5%
+	if (lastPrice.PriceHigh-math.Max(lastPrice.PriceOpen, lastPrice.PriceClose))/last1Price.PriceClose*100 >= 5 {
+		return nil
+	}
+
+	// 三日总涨幅判断
+	changeRate := (lastPrice.PriceClose/stockPriceList[0].PriceClose - 1) * 100
+	if changeRate < 10 || changeRate > 30 {
+		return nil
+	}
+
+	// 总市值判断
+	// TODO: 确实市值数据, 所以这里暂时不做判断
+
+	// 今日没有涨停
+	rate := GetLimitUpRate(utils.GetStockCodeNumber(stockCode))
+	if IsLimitUpWithRate(last1Price.PriceClose, lastPrice.PriceClose, rate) {
+		return nil
+	}
+
+	// 今日和昨天的成交量大于第一天
+	if lastPrice.Amount <= last2Price.Amount || last1Price.Amount <= last2Price.Amount {
+		return nil
+	}
+
+	return &model.ShortTimeResult{
+		LastPrice:       lastPrice.PriceClose,
+		PriceChangeRate: utils.Float64KeepDecimal(changeRate, 2),
+	}
+}
+
+// GetUpTrendReport 获取上升趋势报告
+// 找出均线金叉（MA5上穿MA10）的股票，并计算持续天数
+func GetUpTrendReport(ctx context.Context, stockList []*dal.StockCode, stockMap map[string]string) ([]*model.UpTrendReportItem, error) {
 	// 需要使用并发来计算, 以减少耗时
 	jobList := make([]func() (interface{}, error), 0)
 	for _, stockCode := range stockList {
