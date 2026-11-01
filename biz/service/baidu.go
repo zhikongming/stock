@@ -242,6 +242,9 @@ func (c *BaiduClient) GetRemoteShareholder(ctx context.Context, code string, dat
 		ShareholderList: make([]*model.Shareholder, 0),
 	}
 	tmpDate := strings.ReplaceAll(date, "-", "/")
+	if ret.Result.BDShareholders == nil {
+		return nil, fmt.Errorf("shareholders is nil")
+	}
 	for _, item := range ret.Result.BDShareholders.BDShareholderList {
 		if item.ReportDate == tmpDate {
 			top10Shareholder.Num, _ = strconv.Atoi(item.NumOrigin)
