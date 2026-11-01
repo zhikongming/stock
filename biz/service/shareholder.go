@@ -48,7 +48,9 @@ func SyncShareholder(ctx context.Context, req *model.SyncShareholderReq) error {
 			// 拉取并缓存最新的报告
 			curCache, err = cozeCache.GetAndSetShareholderReport(ctx, stockCode, reportDate)
 			if err != nil {
-				return err
+				fmt.Printf("code:%s, get and set shareholder report failed: %v", stockCode, err)
+				continue
+				// return err
 			}
 		}
 
@@ -60,11 +62,11 @@ func SyncShareholder(ctx context.Context, req *model.SyncShareholderReq) error {
 			// 拉取并缓存上一期报告
 			preCache, err = cozeCache.GetAndSetShareholderReport(ctx, stockCode, preReportDate)
 			if err != nil {
-				return err
+				fmt.Printf("code:%s, get and set shareholder report failed: %v", stockCode, err)
+				continue
+				// return err
 			}
 		}
-
-		time.Sleep(500 * time.Millisecond)
 	}
 
 	return nil
